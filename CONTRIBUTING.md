@@ -29,7 +29,7 @@ Questions and ideas that are not yet concrete go to [Discussions](https://github
 
 ## Looking for something to work on?
 
-Start at the [roadmap](docs/roadmap.md). Issues labelled [`up-for-grabs`](https://github.com/global-suite/global-service-studio/issues?q=is%3Aissue+is%3Aopen+label%3Aup-for-grabs) are scoped, approved and unclaimed: comment that you are taking one and go.
+Start at the [community roadmap](docs/community-roadmap.md), and read the [codebase guide](docs/CODEBASE-GUIDE.md) to find where a change goes. Issues labelled [`up-for-grabs`](https://github.com/global-suite/global-service-studio/issues?q=is%3Aissue+is%3Aopen+label%3Aup-for-grabs) are scoped, approved and unclaimed: comment that you are taking one and go.
 
 An issue labelled `status:needs-design` or `status:needs-info` is waiting on a decision or on missing information. Discuss it first; code written before the decision usually gets thrown away.
 
@@ -137,6 +137,7 @@ Do not add `Co-Authored-By` or similar trailers for AI tools.
 - The pull request needs exactly one `type:*` label. If you cannot add labels, tick the type in the pull request template and a maintainer adds the label; the check re-runs when the label is added.
 - If the issue is approved after you opened the pull request, `Linked approved issue` does not refresh by itself. Edit the pull request description (any change works) or ask a maintainer to re-run the check.
 - Stay within **400 changed lines** (additions plus deletions). Split larger work into a chain of small pull requests, each one useful on its own. A maintainer can grant `size:exception` when splitting makes no sense, for example for generated files.
+- When a pull request depends on one that is not merged yet, build its branch on the earlier branch and open it after the earlier one merges. Bring `main` into your branch with a merge, not a rebase, once the branch is pushed, and never force-push a branch someone else may have fetched.
 - Keep tests and documentation in the same pull request as the behavior they cover.
 - Fill in the pull request template completely, including the test plan and the AI assistance section.
 - All checks must pass. Pull requests are squash-merged, so the pull request title must also be a valid Conventional Commit.

@@ -41,6 +41,7 @@ To add or change a skill, follow [docs/skill-style-guide.md](docs/skill-style-gu
 swift build
 swift test
 node .github/scripts/test-pr-policy.mjs   # after changing .github/workflows/pr-policy.yml
+node .github/scripts/check-skills-index.mjs   # after adding, renaming or removing a skill
 ```
 
 `swift test` needs full Xcode. If it fails with `no such module 'XCTest'`, run it as `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`.
@@ -53,5 +54,6 @@ node .github/scripts/test-pr-policy.mjs   # after changing .github/workflows/pr-
 | `Tests/` | Unit tests |
 | `docs/architecture.md` | Modules and the render engine |
 | `docs/adr/` | Architecture decision records |
+| `docs/CODEBASE-GUIDE.md` | Mental model and where each kind of change goes |
 | `docs/roadmap.md` | Phases and current focus |
 | `skills/` | Skills for coding agents, indexed above |
