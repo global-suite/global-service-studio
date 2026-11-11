@@ -11,6 +11,11 @@ struct LiveView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        GeometryReader { proxy in content(contentWidth: proxy.size.width - 64) }
+            .background(appearance.window.color)
+    }
+
+    private func content(contentWidth: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
                 Text(state.song.title).font(.system(size: 15, weight: .semibold)).foregroundColor(Appearance.label.color)
@@ -18,17 +23,21 @@ struct LiveView: View {
                     Text(String(format: Strings.text("Key %1$@ · %2$ld bpm"), key, Int(tempo))).foregroundColor(Appearance.labelSecondary.color)
                 }
             }
+            // The panels share the width; the buttons keep a fixed, compact column.
+            let panels = max(contentWidth - Self.buttonsWidth - 40, 400)
+            let liveWidth = min(panels * 0.57, Self.maxLiveWidth)
+            let height = 28 + liveWidth * 9 / 16
             HStack(alignment: .top, spacing: 20) {
-                livePanel.frame(minWidth: 300, maxWidth: 392)
-                nextPanel.frame(minWidth: 220, maxWidth: 288)
-                buttons.frame(minWidth: 240)
+                livePanel.frame(width: liveWidth)
+                nextPanel.frame(width: liveWidth * 0.75)
+                buttons.frame(width: Self.buttonsWidth).padding(.top, 28)
             }
+            .frame(height: height, alignment: .top)
             allSlides
         }
         .font(.system(size: 13))
         .padding(EdgeInsets(top: 18, leading: 32, bottom: 14, trailing: 32))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(appearance.window.color)
     }
 
     private var livePanel: some View {
@@ -68,29 +77,19 @@ struct LiveView: View {
         .opacity(0.92)
     }
 
+    static let buttonsWidth: CGFloat = 200
+    static let maxLiveWidth: CGFloat = 640
+
     private var buttons: some View {
-        HStack(spacing: 10) {
-            Button { state.perform(.previousSlide) } label: {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(Strings.text("Previous")).font(.system(size: 15, weight: .semibold)).foregroundColor(Appearance.label.color)
-                    Text(state.previousSlide?.position ?? Strings.text("Start of song")).foregroundColor(Appearance.labelSecondary.color)
-                    Spacer(minLength: 0)
-                    KeyCap(label: "←", fill: Appearance.control.color)
-                }
-                .padding(16)
-                .frame(maxWidth: 170, maxHeight: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Appearance.control.color))
-            }
-            .disabled(state.previousSlide == nil)
-            .opacity(state.previousSlide == nil ? 0.45 : 1)
+        VStack(spacing: 8) {
             Button { state.perform(.nextSlide) } label: {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .top) {
-                        Text(Strings.text("Next")).font(.system(size: 22, weight: .bold))
-                        Spacer(minLength: 8)
-                        Image(systemName: "arrow.right").font(.system(size: 24, weight: .semibold))
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(Strings.text("Next")).font(.system(size: 17, weight: .bold))
+                        Spacer(minLength: 6)
+                        Image(systemName: "arrow.right").font(.system(size: 17, weight: .semibold))
                     }
-                    Text(state.nextSlide?.position ?? Strings.text("End of song"))
+                    Text(state.nextSlide?.position ?? Strings.text("End of song")).font(.system(size: 11)).opacity(0.85)
                     Spacer(minLength: 0)
                     HStack(spacing: 4) {
                         KeyCap(label: Strings.text("Space"), fill: appearance.window.color)
@@ -98,17 +97,32 @@ struct LiveView: View {
                     }
                 }
                 .foregroundColor(.white)
-                .padding(16)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Appearance.accent.color))
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: 96)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Appearance.accent.color))
             }
             .disabled(state.nextSlide == nil)
             .opacity(state.nextSlide == nil ? 0.45 : 1)
+            Button { state.perform(.previousSlide) } label: {
+                HStack(spacing: 8) {
+                    KeyCap(label: "←", fill: appearance.window.color)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Strings.text("Previous")).font(.system(size: 13, weight: .semibold)).foregroundColor(Appearance.label.color)
+                        Text(state.previousSlide?.position ?? Strings.text("Start of song")).font(.system(size: 11)).foregroundColor(Appearance.labelSecondary.color)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Appearance.control.color))
+            }
+            .disabled(state.previousSlide == nil)
+            .opacity(state.previousSlide == nil ? 0.45 : 1)
         }
         .buttonStyle(.plain)
         .lineLimit(1)
-        .frame(height: 221)
-        .padding(.top, 28)
     }
 
     private var allSlides: some View {
