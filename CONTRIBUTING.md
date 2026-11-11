@@ -133,7 +133,7 @@ Do not add `Co-Authored-By` or similar trailers for AI tools.
 
 ## Pull requests
 
-- Link the approved issue with `Closes #N` (or `Fixes #N`, `Resolves #N`). The full issue URL also works: `Closes https://github.com/global-suite/global-service-studio/issues/N`. References inside code blocks, inline code or HTML comments are ignored.
+- Link the approved issue with `Closes #N` (or `Fixes #N`, `Resolves #N`). The full issue URL also works: `Closes https://github.com/global-suite/global-service-studio/issues/N`. References inside closed code blocks, inline code or HTML comments are ignored.
 - The pull request needs exactly one `type:*` label. If you cannot add labels, tick the type in the pull request template and a maintainer adds the label; the check re-runs when the label is added.
 - If the issue is approved after you opened the pull request, `Linked approved issue` does not refresh by itself. Edit the pull request description (any change works) or ask a maintainer to re-run the check.
 - Stay within **400 changed lines** (additions plus deletions). Split larger work into a chain of small pull requests, each one useful on its own. A maintainer can grant `size:exception` when splitting makes no sense, for example for generated files.
