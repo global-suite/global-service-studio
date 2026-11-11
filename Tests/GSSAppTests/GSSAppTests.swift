@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import SwiftUI
 import XCTest
 @testable import GSSApp
 
@@ -57,5 +58,59 @@ final class GSSAppTests: XCTestCase {
         XCTAssertEqual(Strings.language(for: ["es-US", "en-US"]), "es")
         XCTAssertEqual(Strings.language(for: ["fr-FR", "en-GB"]), "en")
         XCTAssertEqual(Strings.text("Live", language: "es"), "En vivo")
+    }
+
+    func testSampleSongHasElevenSlidesInArrangementOrder() {
+        let slides = AppState().slides
+        XCTAssertEqual(slides.map(\.section), ["Verse 1", "Verse 1", "Chorus", "Chorus", "Verse 2", "Verse 2", "Chorus", "Chorus", "Bridge", "Chorus", "Chorus"])
+        XCTAssertEqual(slides[2].lines, ["We lift our voice", "We lift our eyes"])
+        XCTAssertEqual([slides[2].part, slides[2].partCount, slides[3].part, slides[8].partCount], [1, 2, 2, 1])
+    }
+
+    func testSlideCommandsMoveTheLiveSlideAndStopAtTheEnds() {
+        let state = AppState()
+        var published: [Int] = []
+        let subscription = state.$liveIndex.dropFirst().sink { published.append($0) }
+        XCTAssertEqual(state.liveIndex, 0)
+        XCTAssertNil(state.previousSlide)
+        state.perform(.previousSlide)
+        XCTAssertEqual(state.liveIndex, 0)
+        state.perform(.nextSlide)
+        XCTAssertEqual([state.previousSlide, state.liveSlide, state.nextSlide], Array(state.slides[0...2]))
+        state.perform(.goToSlide(10))
+        XCTAssertNil(state.nextSlide)
+        state.perform(.nextSlide)
+        state.perform(.goToSlide(11))
+        state.perform(.goToSlide(-1))
+        XCTAssertEqual(state.liveIndex, 10)
+        XCTAssertEqual(published, [1, 10])
+        subscription.cancel()
+    }
+
+    func testLiveKeysMoveTheSlideOnlyInLiveMode() throws {
+        let controller = MainWindowController(state: AppState())
+        let window = try XCTUnwrap(controller.window)
+        func key(_ code: UInt16, _ characters: String) -> NSEvent? {
+            let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: window.windowNumber, context: nil, characters: characters, charactersIgnoringModifiers: characters, isARepeat: false, keyCode: code)
+            return controller.handleKey(try! XCTUnwrap(event))
+        }
+        XCTAssertNotNil(key(49, " "))
+        XCTAssertEqual(controller.state.liveIndex, 0)
+        controller.state.perform(.setMode(.live))
+        XCTAssertNil(key(49, " "))
+        XCTAssertNil(key(124, "\u{F703}"))
+        XCTAssertNil(key(123, "\u{F702}"))
+        XCTAssertNotNil(key(0, "a"))
+        XCTAssertEqual(controller.state.liveIndex, 1)
+    }
+
+    func testLiveLabelsAreTranslatedAndTheLiveViewLaysOut() {
+        XCTAssertEqual(Strings.text("LIVE", language: "es"), "EN VIVO")
+        XCTAssertEqual(Strings.text("NEXT", language: "es"), "SIGUIENTE")
+        XCTAssertEqual(String(format: Strings.text("%1$@ · %2$ld of %3$ld", language: "es"), "Coro", 1, 2), "Coro · 1 de 2")
+        let view = NSHostingView(rootView: LiveView(state: AppState(), appearance: .standard))
+        view.frame = NSRect(x: 0, y: 0, width: 1200, height: 850)
+        view.layoutSubtreeIfNeeded()
+        XCTAssertGreaterThan(view.fittingSize.height, 0)
     }
 }

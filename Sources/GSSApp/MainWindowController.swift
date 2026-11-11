@@ -16,6 +16,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
     let modeControl = NSSegmentedControl(labels: AppMode.allCases.map(\.title), trackingMode: .selectOne, target: nil, action: nil)
     private let splitViewController = NSSplitViewController()
     private var subscription: AnyCancellable?
+    private var keyMonitor: Any?
 
     init(state: AppState, appearance: Appearance = .standard) {
         self.state = state
@@ -27,7 +28,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
         let sidebar = NSSplitViewItem(sidebarWithViewController: NSHostingController(rootView: SidebarPlaceholder()))
         (sidebar.minimumThickness, sidebar.maximumThickness) = (200, 320)
         splitViewController.addSplitViewItem(sidebar)
-        splitViewController.addSplitViewItem(NSSplitViewItem(viewController: NSHostingController(rootView: ModePlaceholder(state: state, appearance: appearance))))
+        splitViewController.addSplitViewItem(NSSplitViewItem(viewController: NSHostingController(rootView: ModeContent(state: state, appearance: appearance))))
         window.contentViewController = splitViewController
         window.setContentSize(NSSize(width: 1440, height: 900))
         window.contentMinSize = NSSize(width: 1100, height: 700)
@@ -42,10 +43,24 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
         (modeControl.target, modeControl.action) = (self, #selector(modeControlChanged(_:)))
         modeControl.toolTip = Strings.text("Switch between Prepare and Live")
         subscription = state.$mode.sink { [weak self] in self?.modeControl.selectedSegment = AppMode.allCases.firstIndex(of: $0) ?? 0 }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] in self?.handleKey($0) ?? $0 }
     }
+
+    deinit { if let keyMonitor { NSEvent.removeMonitor(keyMonitor) } }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
     @objc func selectMode(_ sender: NSMenuItem) { state.perform(.setMode(AppMode.allCases[sender.tag])) }
+    @objc func goToNextSlide(_ sender: Any?) { state.perform(.nextSlide) }
+    @objc func goToPreviousSlide(_ sender: Any?) { state.perform(.previousSlide) }
+
+    /// In Live mode, Space and Right arrow go to the next slide and Left arrow to the previous one; returns nil when the key was used.
+    func handleKey(_ event: NSEvent) -> NSEvent? {
+        let commands: [UInt16: AppCommand] = [49: .nextSlide, 124: .nextSlide, 123: .previousSlide]
+        guard state.mode == .live, event.window === window, !(window?.firstResponder is NSText),
+              event.modifierFlags.isDisjoint(with: [.command, .control, .option]), let command = commands[event.keyCode] else { return event }
+        state.perform(command)
+        return nil
+    }
     @objc private func modeControlChanged(_ sender: NSSegmentedControl) { state.perform(.setMode(AppMode.allCases[sender.selectedSegment])) }
 
     @objc func toggleSidebar(_ sender: Any?) { splitViewController.toggleSidebar(sender) }
@@ -54,6 +69,8 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
         if menuItem.action == #selector(selectMode(_:)) {
             menuItem.state = AppMode.allCases[menuItem.tag] == state.mode ? .on : .off
         }
+        if menuItem.action == #selector(goToNextSlide(_:)) { return state.mode == .live && state.nextSlide != nil }
+        if menuItem.action == #selector(goToPreviousSlide(_:)) { return state.mode == .live && state.previousSlide != nil }
         return true
     }
 
@@ -87,11 +104,15 @@ struct SidebarPlaceholder: View {
     }
 }
 
-struct ModePlaceholder: View {
+struct ModeContent: View {
     @ObservedObject var state: AppState
     let appearance: Appearance
 
     var body: some View {
+        if state.mode == .live { LiveView(state: state, appearance: appearance) } else { placeholder }
+    }
+
+    private var placeholder: some View {
         VStack(spacing: 8) {
             Text(state.mode.title).font(.system(size: 22, weight: .bold)).foregroundColor(Color(nsColor: Appearance.label.nsColor))
             Text(state.mode.explanation).font(.system(size: 13)).foregroundColor(Color(nsColor: Appearance.labelSecondary.nsColor))
