@@ -8,6 +8,7 @@ An ADR records one significant decision: what was decided, why, and what it cost
 | [0002](0002-minimum-macos-13.md) | Support macOS 13 Ventura and later, on Apple silicon and Intel | Accepted |
 | [0003](0003-mit-license-and-trademark-policy.md) | MIT license with a separate trademark policy | Accepted |
 | [0004](0004-open-file-formats.md) | Store user content in open, versioned files | Accepted |
+| [0005](0005-file-format-design.md) | Design of the song, theme, presentation and service plan formats | Accepted |
 
 ## Adding one
 

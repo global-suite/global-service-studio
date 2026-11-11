@@ -19,7 +19,8 @@ The order is deliberate: each phase produces something a church can use on its o
 - [x] Stack and platform decisions recorded
 - [ ] Xcode app target, signed and notarized build pipeline
 - [ ] Localization pipeline with English and Spanish
-- [ ] File formats for songs, presentations, playlists and themes
+- [x] File formats designed: songs, themes, presentations and service plans ([ADR 0005](adr/0005-file-format-design.md))
+- [ ] File formats implemented in `GSSCore`
 
 ## Phase 1: Basic Sunday
 
