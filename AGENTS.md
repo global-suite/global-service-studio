@@ -56,4 +56,6 @@ node .github/scripts/check-skills-index.mjs   # after adding, renaming or removi
 | `docs/adr/` | Architecture decision records |
 | `docs/CODEBASE-GUIDE.md` | Mental model and where each kind of change goes |
 | `docs/roadmap.md` | Phases and current focus |
+| `docs/community-roadmap.md` | How to find work that is ready to be picked up |
+| `docs/skill-style-guide.md` | How skills are written |
 | `skills/` | Skills for coding agents, indexed above |

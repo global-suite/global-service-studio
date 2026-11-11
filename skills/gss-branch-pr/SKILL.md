@@ -4,7 +4,7 @@ description: "Trigger: branch, commit, pull request, PR, split a large change, s
 license: MIT
 metadata:
   author: global-suite
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## Activation Contract
