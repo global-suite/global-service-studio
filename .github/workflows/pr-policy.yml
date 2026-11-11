@@ -30,33 +30,10 @@ jobs:
               pull_number: context.payload.pull_request.number,
             });
 
-            // Ignore references inside HTML comments (such as the template hint),
-            // fenced code blocks and inline code, like GitHub does.
-            const kept = [];
-            let fence = null;
-            for (const raw of (pr.body || '').replace(/<!--[\s\S]*?-->/g, '').split('\n')) {
-              const line = raw.replace(/\r$/, '');
-              if (fence) {
-                // Only a bare fence of the same character, at least as long, closes a block.
-                const close = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
-                if (close && close[1][0] === fence.char && close[1].length >= fence.length) fence = null;
-                else fence.lines.push(line);
-                continue;
-              }
-              // A backtick fence cannot have backticks in its info string; otherwise
-              // inline code at the start of a line would open a block.
-              const open = line.match(/^ {0,3}(?:(`{3,})[^`]*|(~{3,})[\s\S]*)$/);
-              if (open) {
-                const marker = open[1] || open[2];
-                fence = { char: marker[0], length: marker.length, lines: [line] };
-                continue;
-              }
-              kept.push(line);
-            }
-            // An unclosed fence hides nothing: where it ends depends on lists, quotes
-            // and HTML blocks, and guessing wrong would reject a valid pull request.
-            if (fence) for (const line of fence.lines) kept.push(line);
-            const body = kept.join('\n').replace(/(?<!\\)`[^`\n]*`/g, '');
+            // Ignore references inside HTML comments, such as the template hint.
+            // Markdown code is deliberately not parsed: telling code from text needs a
+            // full parser, and an approximation would reject valid pull requests.
+            const body = (pr.body || '').replace(/<!--[\s\S]*?-->/g, '');
             // Accepts "Closes #N", "Closes#N", "Closes OWNER/REPO#N" and
             // "Closes https://github.com/OWNER/REPO/issues/N".
             const pattern = new RegExp(
