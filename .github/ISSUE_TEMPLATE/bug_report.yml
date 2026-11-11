@@ -1,0 +1,108 @@
+name: Bug Report
+description: Report something in Global Service Studio that does not work as expected.
+labels: ["type:bug", "status:needs-review"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug.
+
+        New issues get the `status:needs-review` label. Work starts only after a maintainer adds `status:approved`.
+        Pull requests linked to an issue without `status:approved` are rejected by CI. See [CONTRIBUTING.md](https://github.com/global-suite/global-service-studio/blob/main/CONTRIBUTING.md).
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched [existing issues](https://github.com/global-suite/global-service-studio/issues) and this is not a duplicate.
+          required: true
+        - label: This report contains no sensitive data (passwords, tokens, private church or member information, copyrighted lyrics or media).
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: A clear and concise description of the bug.
+      placeholder: When I send a slide to the main output, ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact steps that trigger the bug.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+      description: What you expected to happen, and what happened instead.
+      value: |
+        Expected:
+
+        Actual:
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App version (or commit)
+      description: Shown in the About window, or the commit hash if you built from source.
+      placeholder: "e.g. 0.1.0 or 1a2b3c4"
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "e.g. macOS 14.6"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mac-type
+    attributes:
+      label: Mac type
+      options:
+        - Apple silicon
+        - Intel
+    validations:
+      required: true
+
+  - type: input
+    id: mac-model
+    attributes:
+      label: Mac model
+      placeholder: "e.g. MacBook Pro 14-inch, M3 Pro, 2023"
+    validations:
+      required: false
+
+  - type: textarea
+    id: outputs
+    attributes:
+      label: Displays and outputs setup
+      description: Number of displays, projectors or capture devices, how they are connected, and which outputs are configured.
+      placeholder: "e.g. Built-in display + projector over HDMI + stage display over USB-C adapter"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant log output or crash reports. Remove any sensitive data first.
+      render: text
+    validations:
+      required: false

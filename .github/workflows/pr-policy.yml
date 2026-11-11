@@ -1,0 +1,150 @@
+name: PR Policy
+
+# Runs in the context of the base repository so it also works for pull requests
+# from forks. It never checks out or executes pull request code: every fact is
+# read live from the GitHub API.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  linked-approved-issue:
+    name: Linked approved issue
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that the pull request links an approved issue
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          script: |
+            const guide = 'See https://github.com/global-suite/global-service-studio/blob/main/CONTRIBUTING.md#issue-first-workflow';
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            // Ignore references inside HTML comments, such as the template hint.
+            const body = (pr.body || '').replace(/<!--[\s\S]*?-->/g, '');
+            const pattern = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)(?::\s*|\s+)(?:([\w.-]+)\/([\w.-]+))?#(\d+)\b/gi;
+            const numbers = new Set();
+            for (const match of body.matchAll(pattern)) {
+              const [, refOwner, refRepo, number] = match;
+              const sameRepo = !refOwner ||
+                (refOwner.toLowerCase() === owner.toLowerCase() && refRepo.toLowerCase() === repo.toLowerCase());
+              if (sameRepo) numbers.add(Number(number));
+            }
+
+            if (numbers.size === 0) {
+              core.setFailed(
+                'The pull request body must link an issue in this repository with "Closes #N", "Fixes #N" or "Resolves #N".\n' +
+                `${guide}`
+              );
+              return;
+            }
+
+            const approved = [];
+            const problems = [];
+            for (const number of numbers) {
+              try {
+                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: number });
+                if (issue.pull_request) {
+                  problems.push(`#${number} is a pull request, not an issue.`);
+                  continue;
+                }
+                const labels = issue.labels.map((label) => (typeof label === 'string' ? label : label.name));
+                if (labels.includes('status:approved')) {
+                  approved.push(number);
+                } else {
+                  problems.push(`Issue #${number} does not have the "status:approved" label.`);
+                }
+              } catch (error) {
+                problems.push(`Could not read issue #${number}: ${error.message}`);
+              }
+            }
+
+            if (approved.length === 0) {
+              core.setFailed(
+                'The pull request must link at least one issue labelled "status:approved".\n' +
+                problems.map((problem) => `- ${problem}`).join('\n') + '\n' +
+                'Wait for a maintainer to approve the issue before opening a pull request.\n' +
+                `${guide}`
+              );
+              return;
+            }
+
+            for (const problem of problems) core.warning(problem);
+            core.info(`Linked approved issue(s): ${approved.map((n) => `#${n}`).join(', ')}`);
+
+  exactly-one-type-label:
+    name: Exactly one type label
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that the pull request has exactly one type label
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          script: |
+            const guide = 'See https://github.com/global-suite/global-service-studio/blob/main/CONTRIBUTING.md#labels';
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            const typeLabels = pr.labels.map((label) => label.name).filter((name) => name.startsWith('type:'));
+
+            if (typeLabels.length === 1) {
+              core.info(`Type label: ${typeLabels[0]}`);
+              return;
+            }
+
+            const found = typeLabels.length === 0 ? 'none' : typeLabels.join(', ');
+            core.setFailed(
+              `The pull request must have exactly one type:* label (found: ${found}).\n` +
+              'Valid labels: type:bug, type:feature, type:docs, type:refactor, type:chore, type:breaking-change.\n' +
+              `${guide}`
+            );
+
+  pr-size-budget:
+    name: PR size budget
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that the pull request stays within the size budget
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          script: |
+            const limit = 400;
+            const guide = 'See https://github.com/global-suite/global-service-studio/blob/main/CONTRIBUTING.md#pull-requests';
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            const total = pr.additions + pr.deletions;
+            const hasException = pr.labels.some((label) => label.name === 'size:exception');
+            core.info(`Changed lines: +${pr.additions} / -${pr.deletions} = ${total} (limit ${limit})`);
+
+            if (total <= limit) return;
+
+            const message =
+              `The pull request changes ${total} lines (+${pr.additions} / -${pr.deletions}), over the ${limit}-line budget.`;
+
+            if (hasException) {
+              core.warning(`${message} Allowed by the size:exception label.`);
+              return;
+            }
+
+            core.setFailed(
+              `${message}\n` +
+              'Split the work into a chain of smaller pull requests, or ask a maintainer for the size:exception label.\n' +
+              `${guide}`
+            );

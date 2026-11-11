@@ -1,0 +1,72 @@
+name: Feature Request
+description: Suggest a new feature or an improvement for Global Service Studio.
+labels: ["type:feature", "status:needs-review"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the suggestion.
+
+        New issues get the `status:needs-review` label. Work starts only after a maintainer adds `status:approved`.
+        Pull requests linked to an issue without `status:approved` are rejected by CI. See [CONTRIBUTING.md](https://github.com/global-suite/global-service-studio/blob/main/CONTRIBUTING.md).
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched [existing issues](https://github.com/global-suite/global-service-studio/issues) and this is not a duplicate.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: What are you trying to do during a service or rehearsal, and what gets in the way?
+      placeholder: During worship, I need to ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you would like, as specifically as possible.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Library & songs
+        - Slide editor
+        - Playlists
+        - Outputs & screens
+        - Stage display
+        - Media & video
+        - Remote & API
+        - Automation
+        - Localization
+        - Docs
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Other solutions or workarounds you have considered.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, mockups or examples. Do not attach copyrighted lyrics or media.
+    validations:
+      required: false
