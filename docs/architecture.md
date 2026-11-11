@@ -64,7 +64,7 @@ Performance is judged on the slower supported machine, an Intel Mac from 2017, n
 
 ## Data
 
-User content is stored as versioned JSON files in a library folder, with a rebuildable SQLite index for search. See [ADR 0004](adr/0004-open-file-formats.md).
+User content is stored as versioned JSON files in a library folder, with a rebuildable SQLite index for search. See [ADR 0004](adr/0004-open-file-formats.md). The files themselves are designed in [ADR 0005](adr/0005-file-format-design.md): songs store sections and lines without slide breaks, and themes decide how they are split and styled.
 
 ## Localization
 
