@@ -32,6 +32,8 @@ Phase **–** means the feature is deliberately out of scope for now.
 | Slide grid | See every slide; click one to send it live | 1 |
 | Clear actions | Clear the slide, the background, or everything | 1 |
 | Media bin | Images and videos ready to use as backgrounds | 1 |
+| Full-screen video | Play a video with sound and playback controls | 1 |
+| PDF documents | Show the pages of a PDF as slides | 1 |
 | Playlist templates | Start each week from a saved structure | 2 |
 | Props | Persistent overlays such as a logo | 2 |
 | Messages | Short on-demand text, such as a nursery call | 2 |
@@ -45,19 +47,19 @@ Phase **–** means the feature is deliberately out of scope for now.
 
 | Feature | What it does | Phase |
 |---|---|---|
-| Audience output | Full-screen output on a chosen display | 1 |
+| Audience output | Full-screen output on a chosen display, on one screen or several | 1 |
 | Image and video backgrounds | Media behind the slide text | 1 |
 | Live preview | See in the operator window what the audience sees | 1 |
-| Stage display | Current and next slide, clock and messages for people on stage | 2 |
+| Stage display | A teleprompter view: current and next lines, clock and messages for people on stage | 1 |
 | Stage layouts | Arrange what the stage display shows | 2 |
-| Multiple outputs | Several screens from one Mac | 2 |
+| Configurable outputs | Any number of outputs, each with a display, a role (audience, stage, key) and a theme | 1 |
 | Looks | Choose which layers each output shows | 2 |
-| Chroma key output | Render over a key color for a video switcher | 2 |
+| Chroma key output | Lyrics over a key color, for a video switcher to overlay on camera | 1 |
 | Alpha key output | Separate fill and key signals | 4 |
 | NDI output | Send an output over the network | 4 |
 | Syphon output | Share an output with other apps on the same Mac | 4 |
 | SDI output | Output through Blackmagic hardware | 4 |
-| Video inputs | Show a live camera or capture device | 4 |
+| Video inputs | Show a live camera or capture device, to mix lyrics over camera on the Mac | 4 |
 | Edge blending | Blend several projectors into one image | 5 |
 
 ## Control and automation
@@ -83,7 +85,8 @@ Phase **–** means the feature is deliberately out of scope for now.
 | OpenLyrics import and export | Exchange songs in the open standard | 1 |
 | ChordPro and OpenSong import | Bring in songs from other free tools | 2 |
 | Import from other presentation software | Migrate an existing library | 2 |
-| Slide deck import | Bring in a sermon slide deck | 2 |
+| Keynote and PowerPoint import | Show a slide deck made in another app | 1 |
+| Deck editing | Edit an imported deck inside the app | 2 |
 | CCLI number and song credits | Show license and copyright details on slides | 2 |
 | Song usage log | Export what was sung, for license reporting | 2 |
 | Service planning integration | Pull the order of service from a planning tool | 5 |
