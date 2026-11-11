@@ -1,10 +1,10 @@
 ---
 name: gss-localization
-description: "Trigger: user-facing string, UI text, translation, Spanish, localization, String Catalog, xcstrings. Localize Global Service Studio strings in English and Spanish."
+description: "Trigger: user-facing string, UI text, translation, Spanish, localization, Localizable.strings, lproj. Localize Global Service Studio strings in English and Spanish."
 license: MIT
 metadata:
   author: global-suite
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## Activation Contract
@@ -13,7 +13,8 @@ Load this skill before adding or changing any text the user sees.
 
 ## Hard Rules
 
-- Hard-code no user-facing string; every one goes through the String Catalog (`.xcstrings`) of its module.
+- Hard-code no user-facing string; every one goes through the `Localizable.strings` files of its module, in `Resources/en.lproj` and `Resources/es.lproj`.
+- Use no String Catalog (`.xcstrings`): `swift build` does not compile them.
 - Add English (base) and Spanish in the same pull request.
 - Use a full sentence as the source text, with a comment saying where the string appears.
 - Never build a sentence by joining fragments; use format placeholders.
@@ -34,8 +35,8 @@ Load this skill before adding or changing any text the user sees.
 
 ## Execution Steps
 
-1. Find the module's String Catalog.
-2. Add or change the entry with its comment, in English and Spanish.
+1. Find the module's `Localizable.strings` files in `en.lproj` and `es.lproj`.
+2. Add or change the entry with its comment in both files, with the same key.
 3. Check the glossary for every interface term.
 4. Check the layout with the Spanish text.
 
