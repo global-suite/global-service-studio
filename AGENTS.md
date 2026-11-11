@@ -8,6 +8,7 @@ Global Service Studio is a native macOS presentation app for churches and live s
 - **Universal binary.** Code must build and run on both `arm64` and `x86_64`.
 - **`GSSCore` is portable.** No AppKit, SwiftUI, Metal, AVFoundation or other Apple UI or media imports in it.
 - **Every user-facing string is localized** in English (base) and Spanish. See `docs/localization.md`.
+- **Nothing but the render engine runs on the render path**, and extensions never run inside the app's process. See `docs/adr/0006-extensibility-and-live-performance.md`.
 - **Saved file formats are a contract.** Changing one needs a version bump and a migration.
 - **No copyrighted lyrics, Bible text, fonts or media** in the repository or in tests. Use invented placeholder text.
 

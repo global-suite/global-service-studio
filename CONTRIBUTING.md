@@ -147,6 +147,7 @@ Do not add `Co-Authored-By` or similar trailers for AI tools.
 - **`GSSCore` stays portable.** It holds the data model and file formats and must not import AppKit, SwiftUI, Metal, AVFoundation or any other Apple UI or media framework. See the [architecture](docs/architecture.md).
 - **No API newer than macOS 13** without an `if #available` check and a working fallback.
 - **Every user-facing string is localized** in English and Spanish. See [localization](docs/localization.md).
+- **The live output comes first.** No file access, network or interface work on the render path, and no required closed dependency. See [ADR 0006](docs/adr/0006-extensibility-and-live-performance.md).
 - **Behavior changes come with tests.**
 - **File formats are a contract.** A change to a saved format needs a version bump, a migration and `type:breaking-change`.
 - **No copyrighted content.** Do not commit song lyrics, Bible translations, fonts or media unless they are in the public domain or openly licensed, and say which license applies.
