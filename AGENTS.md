@@ -2,6 +2,21 @@
 
 Global Service Studio is a native macOS presentation app for churches and live services, written in Swift.
 
+## Skills
+
+Before writing code, load the skill that matches your task and follow it.
+
+| Skill | Load when | Path |
+|---|---|---|
+| `gss-issue-creation` | Creating or triaging an issue | [skills/gss-issue-creation/SKILL.md](skills/gss-issue-creation/SKILL.md) |
+| `gss-branch-pr` | Creating a branch, commits or a pull request | [skills/gss-branch-pr/SKILL.md](skills/gss-branch-pr/SKILL.md) |
+| `gss-core-rules` | Changing anything under `Sources/GSSCore` | [skills/gss-core-rules/SKILL.md](skills/gss-core-rules/SKILL.md) |
+| `gss-file-formats` | Adding or changing a file format | [skills/gss-file-formats/SKILL.md](skills/gss-file-formats/SKILL.md) |
+| `gss-localization` | Adding or changing user-facing strings | [skills/gss-localization/SKILL.md](skills/gss-localization/SKILL.md) |
+| `gss-render-path` | Touching rendering, outputs, the local API or extensions | [skills/gss-render-path/SKILL.md](skills/gss-render-path/SKILL.md) |
+
+To add or change a skill, follow [docs/skill-style-guide.md](docs/skill-style-guide.md).
+
 ## Rules that are easy to break
 
 - **Deployment target is macOS 13.** Do not use newer APIs (`@Observable`, `Observation`, SwiftData, and so on) without `if #available` and a working fallback.
@@ -39,3 +54,4 @@ node .github/scripts/test-pr-policy.mjs   # after changing .github/workflows/pr-
 | `docs/architecture.md` | Modules and the render engine |
 | `docs/adr/` | Architecture decision records |
 | `docs/roadmap.md` | Phases and current focus |
+| `skills/` | Skills for coding agents, indexed above |
