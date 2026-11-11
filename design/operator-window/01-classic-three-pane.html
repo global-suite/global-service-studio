@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440, initial-scale=1">
+<title>Operator window — Classic three-pane</title>
+<style>
+:root{
+  --bg:#161618; --panel:#1e1e21; --raised:#26262a; --line:#323237; --line-soft:#2a2a2e;
+  --text:#f2f2f4; --text-2:#b4b4ba; --text-3:#a1a1a7;
+  --live:#ff453a; --live-strong:#c4001a; --next:#9cc7ff; --focus:#7fb3ff;
+  --verse:#6aa8ff; --chorus:#c792ff; --bridge:#ffad5c; --key:#00b140;
+  --sel:#2f3a4f;
+  font-family:-apple-system,"SF Pro Text","Helvetica Neue",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#0d0d0f;color:var(--text);font-size:13px;line-height:1.35}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+kbd{font:600 10.5px/1 -apple-system,"SF Pro Text","Helvetica Neue",sans-serif;padding:2px 5px;border-radius:4px;background:#34343a;color:#e6e6ea;border:1px solid #45454c;border-bottom-width:2px}
+svg{display:block;flex:none}
+
+.window{width:1440px;height:900px;display:grid;grid-template-rows:40px 1fr 48px;background:var(--bg);overflow:hidden}
+
+/* Title bar */
+.titlebar{display:flex;align-items:center;gap:14px;padding:0 14px;background:#1b1b1e;border-bottom:1px solid var(--line)}
+.lights{display:flex;gap:8px}.lights span{width:12px;height:12px;border-radius:50%;background:#ff5f57}
+.lights span:nth-child(2){background:#febc2e}.lights span:nth-child(3){background:#28c840}
+.service{display:flex;align-items:baseline;gap:8px;margin-left:10px}
+.service h1{font-size:13px;font-weight:600}.service span{color:var(--text-2)}
+.tb-spacer{flex:1}
+.onair{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--live-strong);color:#fff;font-weight:700;font-size:11px;letter-spacing:.06em}
+.onair i{width:7px;height:7px;border-radius:50%;background:#fff;animation:pulse 1.6s ease-in-out infinite}
+.clock{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px}
+.tb-btn{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;color:var(--text-2)}
+.tb-btn:hover{background:var(--raised);color:var(--text)}
+@keyframes pulse{50%{opacity:.35}}
+
+.panes{display:grid;grid-template-columns:264px minmax(0,1fr) 396px;min-height:0}
+
+/* Left: order of service + library */
+.left{display:grid;grid-template-rows:1fr auto;border-right:1px solid var(--line);background:var(--panel);min-height:0}
+.pane-h{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.order{overflow:auto;padding:0 8px 8px}
+.order h3{font-size:11px;font-weight:600;color:var(--text-3);padding:12px 8px 4px;letter-spacing:.04em}
+.order ul{list-style:none}
+.item{width:100%;display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:9px;padding:7px 8px;border-radius:7px;text-align:left}
+.item:hover{background:var(--raised)}
+.item .meta{color:var(--text-3);font-size:12px;font-variant-numeric:tabular-nums}
+.item svg{color:var(--text-2)}
+.item[aria-current="true"]{background:var(--sel)}
+.item[aria-current="true"] .meta{color:#ff8c84;font-weight:700;font-size:11px;letter-spacing:.05em;display:flex;align-items:center;gap:4px}
+.library{border-top:1px solid var(--line);padding:10px 12px 12px}
+.search{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:7px;background:#121214;border:1px solid var(--line)}
+.search input{flex:1;background:none;border:0;outline:0;min-width:0}
+.search input::placeholder{color:var(--text-3)}
+.search:focus-within{outline:2px solid var(--focus);outline-offset:1px}
+.scopes{display:flex;gap:4px;margin:8px 0 6px}
+.scopes button{flex:1;padding:4px 0;border-radius:5px;font-size:11.5px;color:var(--text-2);background:var(--raised)}
+.scopes button[aria-pressed="true"]{background:#3a3a41;color:var(--text);font-weight:600}
+.results{list-style:none}
+.results li{display:flex;justify-content:space-between;padding:5px 4px;font-size:12px;color:var(--text-2);border-radius:5px}
+.results li span:last-child{color:var(--text-3)}
+
+/* Center: slides */
+.center{display:grid;grid-template-rows:auto auto 1fr;min-height:0}
+.doc-h{display:flex;align-items:center;gap:14px;padding:14px 20px 10px}
+.doc-h h2{font-size:20px;font-weight:650}
+.facts{display:flex;gap:12px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.facts b{color:var(--text);font-weight:600}
+.seg{display:inline-flex;padding:2px;border-radius:7px;background:#121214;border:1px solid var(--line)}
+.seg button{padding:3px 10px;border-radius:5px;font-size:12px;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:#3a3a41;color:var(--text);font-weight:600}
+.lang{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--text-3);font-size:12px}
+.arrange{display:flex;align-items:center;gap:6px;padding:0 20px 12px;border-bottom:1px solid var(--line-soft)}
+.arrange .lbl{color:var(--text-3);font-size:12px;margin-right:4px}
+.step{display:flex;align-items:center;gap:6px;padding:3px 9px 3px 7px;border-radius:999px;background:var(--raised);font-size:12px;color:var(--text-2)}
+.step i{width:8px;height:8px;border-radius:2px;background:var(--c)}
+.step.on{background:#3b1d1f;color:#fff;box-shadow:inset 0 0 0 1px var(--live)}
+.step.on::after{content:"▶ live";font-size:10px;font-weight:700;color:#ff8c84}
+.slide:focus-visible{outline-offset:5px}
+.grid-wrap{overflow:auto;padding:6px 20px 20px}
+.group{margin-top:14px}
+.group h3{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.group h3 i{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.group h3 span{color:var(--text-3);font-weight:400}
+.slides{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.slide{position:relative;display:flex;flex-direction:column;border-radius:8px;background:var(--raised);padding:0;text-align:left;box-shadow:inset 0 0 0 1px var(--line)}
+.slide:hover{box-shadow:inset 0 0 0 1px #55555d}
+.thumb{aspect-ratio:16/9;margin:4px 4px 0;border-radius:5px;background:radial-gradient(120% 90% at 50% 0%,#24262e,#0b0b0d);display:grid;place-items:center;text-align:center;font-size:11.5px;font-weight:600;line-height:1.35;padding:8px;color:#fff;text-shadow:0 1px 2px #000}
+.cap{display:flex;align-items:center;gap:6px;padding:5px 8px 6px;font-size:11.5px;color:var(--text-2)}
+.cap i{width:4px;height:12px;border-radius:2px;background:var(--c)}
+.cap .n{margin-left:auto;color:var(--text-3);font-variant-numeric:tabular-nums}
+.badge{display:none;position:absolute;top:9px;left:9px;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:800;letter-spacing:.06em}
+.slide.live{box-shadow:0 0 0 3px var(--live);background:#3a1a1c}
+.slide.live .badge{display:flex;background:var(--live-strong);color:#fff}
+.slide.next{box-shadow:0 0 0 2px var(--next)}
+.slide.next .badge{display:flex;background:var(--next);color:#0b1a33}
+.slide.cleared .badge{background:#5a5a62}
+
+/* Right: live, clear, next, outputs */
+.right{border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:12px 14px 14px;display:flex;flex-direction:column;gap:14px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.live-tag{display:inline-flex;align-items:center;gap:5px;color:#ff8c84;font-weight:800}
+.live-tag i{width:7px;height:7px;border-radius:50%;background:var(--live);animation:pulse 1.6s ease-in-out infinite}
+.screen{position:relative;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:radial-gradient(120% 100% at 50% 10%,#3b3324,#121011 70%);box-shadow:0 0 0 3px var(--live);display:grid;place-items:center;text-align:center}
+.screen p{font-size:21px;font-weight:650;line-height:1.35;text-shadow:0 2px 6px #000}
+.screen small{position:absolute;left:10px;bottom:8px;font-size:11px;color:#e6e6ea;background:#000a;padding:2px 6px;border-radius:4px}
+.screen.cleared p{visibility:hidden}
+.screen.nobg{background:#000}
+.clears{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.clear{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px 8px;border-radius:8px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--line);font-size:12px;font-weight:600}
+.clear:hover{background:#303036}
+.clear.all{box-shadow:inset 0 0 0 1px #8a2a2a;color:#ffb0aa}
+.next-row{display:grid;grid-template-columns:168px 1fr;gap:12px;align-items:center}
+.next-row .thumb{margin:0;box-shadow:0 0 0 2px var(--next);font-size:11px}
+.next-row dl{display:grid;gap:3px;font-size:12px}
+.next-row dt{color:var(--text-3)}.next-row dd{font-weight:600}
+.outputs{list-style:none;display:grid;gap:6px}
+.out{display:grid;grid-template-columns:88px 1fr auto;gap:10px;align-items:center;padding:6px;border-radius:8px;background:var(--raised)}
+.mini{aspect-ratio:16/9;border-radius:4px;overflow:hidden;background:#0b0b0d;display:grid;place-items:center;font-size:6.5px;font-weight:700;line-height:1.3;text-align:center;color:#fff}
+.mini.audience{background:radial-gradient(120% 100% at 50% 10%,#3b3324,#121011 70%)}
+.mini.stage{display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;padding:3px 4px;text-align:left;background:#000}
+.mini.stage .t{display:flex;justify-content:space-between;color:#bdbdc4;font-size:6px}
+.mini.stage .nx{color:#ffd60a;font-weight:600;font-size:5.5px}
+.mini.stage .msg{font-size:5.5px;background:#26262a;padding:1px 3px;border-radius:2px;color:#bdbdc4;font-weight:500}
+.mini.key{background:var(--key);align-items:end;padding:0 0 5px}
+.mini.key span{background:#000c;padding:2px 5px;border-radius:2px;font-size:6px}
+.out b{display:block;font-size:13px}
+.out .sub{font-size:11.5px;color:var(--text-3)}
+.state{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.04em;color:#ff8c84;padding-right:4px}
+.state.idle{color:var(--text-3)}
+.layout-note{font-size:11.5px;color:var(--text-3);margin-top:2px}
+.layout-note button{color:var(--focus);text-decoration:underline;text-underline-offset:2px}
+
+/* Bottom bar */
+.bottom{display:flex;align-items:center;gap:16px;padding:0 14px;border-top:1px solid var(--line);background:#1b1b1e;font-size:12px}
+.bg-thumb{width:46px;height:26px;border-radius:4px;background:radial-gradient(120% 100% at 50% 10%,#6b5a35,#1a1510 75%)}
+.bg-name{display:flex;flex-direction:column;line-height:1.2}
+.bg-name span{color:var(--text-3);font-size:11px}
+.loop{display:flex;align-items:center;gap:5px;color:var(--text-2)}
+.bar{width:200px;height:4px;border-radius:2px;background:#3a3a41;overflow:hidden}.bar i{display:block;width:40%;height:100%;background:#d8d8de}
+.tp{display:flex;gap:2px}.tp button{padding:6px;border-radius:6px;color:var(--text-2)}.tp button:hover{background:var(--raised);color:var(--text)}
+.hints{margin-left:auto;display:flex;gap:14px;color:var(--text-3)}
+.hints span{display:flex;align-items:center;gap:5px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-song" viewBox="0 0 16 16"><path d="M6 12.5a2 2 0 1 1-2-2 2 2 0 0 1 2 2Zm0 0V3.5l7-1.5v8.5m0 0a2 2 0 1 1-2-2 2 2 0 0 1 2 2Z" fill="none" stroke="currentColor" stroke-width="1.3"/></symbol>
+  <symbol id="i-video" viewBox="0 0 16 16"><rect x="1.5" y="3.5" width="10" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m11.5 7 3-2v6l-3-2" fill="none" stroke="currentColor" stroke-width="1.3"/></symbol>
+  <symbol id="i-pres" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="8.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 11v3M5.5 14h5" stroke="currentColor" stroke-width="1.3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 16 16"><path d="M3.5 1.5h6l3 3v10h-9Z M9.5 1.5v3h3 M5.5 8h5M5.5 10.5h5" fill="none" stroke="currentColor" stroke-width="1.3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="m10.5 10.5 3.5 3.5" stroke="currentColor" stroke-width="1.4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 16 16"><path d="M4.5 2.8v10.4L13 8Z" fill="currentColor"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6"/></symbol>
+  <symbol id="i-img-x" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m5.5 6 5 5m0-5-5 5" stroke="currentColor" stroke-width="1.3"/></symbol>
+  <symbol id="i-all" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="m3.8 3.8 8.4 8.4" stroke="currentColor" stroke-width="1.4"/></symbol>
+  <symbol id="i-loop" viewBox="0 0 16 16"><path d="M3 7V6a2 2 0 0 1 2-2h7.5m0 0L10.5 2m2 2-2 2M13 9v1a2 2 0 0 1-2 2H3.5m0 0 2 2m-2-2 2-2" fill="none" stroke="currentColor" stroke-width="1.3"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 16 16"><path d="M4.5 3h2.5v10H4.5zM9 3h2.5v10H9z" fill="currentColor"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 16 16"><path d="M3.5 3v10M13 3 6 8l7 5Z" fill="currentColor" stroke="currentColor" stroke-width="1"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" stroke="currentColor" stroke-width="1.3"/></symbol>
+</svg>
+
+<div class="window">
+  <header class="titlebar">
+    <div class="lights" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="service"><h1>Sunday Service</h1><span>Nov 15 · 10:00</span></div>
+    <div class="tb-spacer"></div>
+    <span class="onair" role="status"><i aria-hidden="true"></i>ON AIR · 4 OUTPUTS</span>
+    <span class="clock" aria-label="Current time 10:14">10:14</span>
+    <button class="tb-btn" type="button"><svg width="15" height="15"><use href="#i-gear"/></svg>Outputs setup</button>
+  </header>
+
+  <div class="panes">
+    <!-- LEFT: order of service + library -->
+    <aside class="left" aria-label="Service and library">
+      <nav aria-label="Order of service" style="overflow:auto;min-height:0;display:flex;flex-direction:column">
+        <div class="pane-h"><span>Order of service</span><span style="text-transform:none;letter-spacing:0;font-weight:400">8 items</span></div>
+        <div class="order">
+          <h3>Pre-service</h3>
+          <ul><li><button class="item" type="button"><svg width="16" height="16"><use href="#i-video"/></svg>Countdown<span class="meta">5:00</span></button></li></ul>
+          <h3>Worship</h3>
+          <ul>
+            <li><button class="item" type="button" aria-current="true"><svg width="16" height="16"><use href="#i-song"/></svg><b style="font-weight:600">Morning Light</b><span class="meta"><svg width="9" height="9"><use href="#i-play"/></svg>LIVE</span></button></li>
+            <li><button class="item" type="button"><svg width="16" height="16"><use href="#i-song"/></svg>We Lift Our Voice<span class="meta">Key D</span></button></li>
+            <li><button class="item" type="button"><svg width="16" height="16"><use href="#i-song"/></svg>Great Is the Light<span class="meta">Key A</span></button></li>
+          </ul>
+          <h3>Welcome</h3>
+          <ul>
+            <li><button class="item" type="button"><svg width="16" height="16"><use href="#i-pres"/></svg>Welcome<span class="meta">3 slides</span></button></li>
+            <li><button class="item" type="button"><svg width="16" height="16"><use href="#i-video"/></svg>Announcements<span class="meta">2:10</span></button></li>
+          </ul>
+          <h3>Message</h3>
+          <ul><li><button class="item" type="button"><svg width="16" height="16"><use href="#i-doc"/></svg>Hope That Holds.pdf<span class="meta">24 pages</span></button></li></ul>
+          <h3>Response</h3>
+          <ul><li><button class="item" type="button"><svg width="16" height="16"><use href="#i-song"/></svg>Morning Light (short)<span class="meta">Key G</span></button></li></ul>
+        </div>
+      </nav>
+      <section class="library" aria-label="Library">
+        <label class="search"><svg width="14" height="14" style="color:var(--text-3)"><use href="#i-search"/></svg><span class="sr">Search library</span><input type="search" placeholder="Search library  ⌘F"></label>
+        <div class="scopes" role="group" aria-label="Library scope">
+          <button type="button" aria-pressed="true">Songs</button><button type="button" aria-pressed="false">Media</button><button type="button" aria-pressed="false">Files</button>
+        </div>
+        <ul class="results" aria-label="Recent songs">
+          <li><span>Rivers of Grace</span><span>Key E</span></li>
+          <li><span>Hold Me Steady</span><span>Key C</span></li>
+          <li><span>All the Way Home</span><span>Key F</span></li>
+        </ul>
+      </section>
+    </aside>
+
+    <!-- CENTER: slide grid -->
+    <main class="center" aria-labelledby="song-title">
+      <div class="doc-h">
+        <h2 id="song-title">Morning Light</h2>
+        <div class="facts"><span>Key <b>G</b></span><span><b>72</b> bpm</span></div>
+        <div class="lang">Arrangement
+          <div class="seg" role="group" aria-label="Arrangement"><button type="button" aria-pressed="true">Default</button><button type="button" aria-pressed="false">Short</button></div>
+          Language
+          <div class="seg" role="group" aria-label="Lyrics language"><button type="button" aria-pressed="true">EN</button><button type="button" aria-pressed="false">ES</button><button type="button" aria-pressed="false" title="Both languages, stacked">EN · ES</button></div>
+        </div>
+      </div>
+      <div class="arrange" aria-label="Arrangement order">
+        <span class="lbl">Order</span>
+        <span class="step" style="--c:var(--verse)"><i></i>Verse 1</span>
+        <span class="step on" style="--c:var(--chorus)"><i></i>Chorus</span>
+        <span class="step" style="--c:var(--verse)"><i></i>Verse 2</span>
+        <span class="step" style="--c:var(--chorus)"><i></i>Chorus</span>
+        <span class="step" style="--c:var(--bridge)"><i></i>Bridge</span>
+        <span class="step" style="--c:var(--chorus)"><i></i>Chorus</span>
+      </div>
+      <div class="grid-wrap" id="grid">
+        <section class="group" style="--c:var(--verse)" aria-label="Verse 1">
+          <h3><i></i>Verse 1 <span>2 slides</span></h3>
+          <div class="slides">
+            <button class="slide" type="button" data-id="v1-0"><span class="badge"></span><span class="thumb">Morning light is rising<br>Over all the earth</span><span class="cap"><i></i>Verse 1<span class="n">1</span></span></button>
+            <button class="slide" type="button" data-id="v1-1"><span class="badge"></span><span class="thumb">Every shadow fading<br>Hope is being born</span><span class="cap"><i></i>Verse 1<span class="n">2</span></span></button>
+          </div>
+        </section>
+        <section class="group" style="--c:var(--chorus)" aria-label="Chorus">
+          <h3><i></i>Chorus <span>2 slides · plays 3×</span></h3>
+          <div class="slides">
+            <button class="slide live" type="button" data-id="c-0" aria-current="true"><span class="badge">▶ LIVE</span><span class="thumb">We lift our voice<br>We lift our eyes</span><span class="cap"><i></i>Chorus<span class="n">3</span></span></button>
+            <button class="slide next" type="button" data-id="c-1"><span class="badge">NEXT</span><span class="thumb">You are the light<br>That never dies</span><span class="cap"><i></i>Chorus<span class="n">4</span></span></button>
+          </div>
+        </section>
+        <section class="group" style="--c:var(--verse)" aria-label="Verse 2">
+          <h3><i></i>Verse 2 <span>2 slides</span></h3>
+          <div class="slides">
+            <button class="slide" type="button" data-id="v2-0"><span class="badge"></span><span class="thumb">Mercy like a river<br>Running through the night</span><span class="cap"><i></i>Verse 2<span class="n">5</span></span></button>
+            <button class="slide" type="button" data-id="v2-1"><span class="badge"></span><span class="thumb">Every heart awakened<br>Every wrong made right</span><span class="cap"><i></i>Verse 2<span class="n">6</span></span></button>
+          </div>
+        </section>
+        <section class="group" style="--c:var(--bridge)" aria-label="Bridge">
+          <h3><i></i>Bridge <span>1 slide</span></h3>
+          <div class="slides">
+            <button class="slide" type="button" data-id="b-0"><span class="badge"></span><span class="thumb">Shine on us<br>Shine through us</span><span class="cap"><i></i>Bridge<span class="n">7</span></span></button>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- RIGHT: live, clear, next, outputs -->
+    <aside class="right" aria-label="Live output">
+      <section aria-labelledby="live-h">
+        <div class="sec-h"><span id="live-h">Live preview</span><span class="live-tag"><i aria-hidden="true"></i>LIVE</span></div>
+        <div class="screen" id="screen"><p id="live-text">We lift our voice<br>We lift our eyes</p><small id="live-cap">Chorus · slide 3 of 7</small></div>
+      </section>
+
+      <section aria-label="Clear">
+        <div class="clears">
+          <button class="clear" type="button" data-clear="slide"><svg width="16" height="16"><use href="#i-x"/></svg>Clear Slide<kbd>F1</kbd></button>
+          <button class="clear" type="button" data-clear="bg"><svg width="16" height="16"><use href="#i-img-x"/></svg>Clear Background<kbd>F2</kbd></button>
+          <button class="clear all" type="button" data-clear="all"><svg width="16" height="16"><use href="#i-all"/></svg>Clear All<kbd>F3</kbd></button>
+        </div>
+      </section>
+
+      <section aria-labelledby="next-h">
+        <div class="sec-h"><span id="next-h">Next</span><span style="text-transform:none;letter-spacing:0;font-weight:400"><kbd>Space</kbd> or <kbd>→</kbd></span></div>
+        <div class="next-row">
+          <div class="thumb" id="next-thumb">You are the light<br>That never dies</div>
+          <dl><dt>Section</dt><dd id="next-sec">Chorus · slide 4</dd><dt>Then</dt><dd id="next-then" style="font-weight:400;color:var(--text-2)">Verse 2</dd></dl>
+        </div>
+      </section>
+
+      <section aria-labelledby="out-h">
+        <div class="sec-h"><span id="out-h">Outputs</span><span style="text-transform:none;letter-spacing:0;font-weight:400">4 configured</span></div>
+        <ul class="outputs">
+          <li class="out">
+            <div class="mini audience" aria-hidden="true"><span class="o-text">We lift our voice<br>We lift our eyes</span></div>
+            <div><b>Center</b><span class="sub">Audience · 1920×1080</span></div>
+            <span class="state"><svg width="9" height="9"><use href="#i-play"/></svg>LIVE</span>
+          </li>
+          <li class="out">
+            <div class="mini audience" aria-hidden="true"><span class="o-text">We lift our voice<br>We lift our eyes</span></div>
+            <div><b>Sides</b><span class="sub">Audience · 1920×1080</span></div>
+            <span class="state"><svg width="9" height="9"><use href="#i-play"/></svg>LIVE</span>
+          </li>
+          <li class="out">
+            <div class="mini stage" aria-hidden="true"><span class="t"><span>Morning Light</span><span>10:14</span></span><span class="o-text">We lift our voice<br>We lift our eyes</span><span class="nx" id="stage-next">You are the light…</span><span class="msg">Message: none</span></div>
+            <div><b>Stage</b><span class="sub">Stage · current + next, clock</span></div>
+            <span class="state"><svg width="9" height="9"><use href="#i-play"/></svg>LIVE</span>
+          </li>
+          <li class="out">
+            <div class="mini key" aria-hidden="true"><span class="o-text">We lift our voice<br>We lift our eyes</span></div>
+            <div><b>Key</b><span class="sub">Key · lower third, 2 lines</span></div>
+            <span class="state"><svg width="9" height="9"><use href="#i-play"/></svg>LIVE</span>
+          </li>
+        </ul>
+        <p class="layout-note">Each output keeps its own layout and language. <button type="button">Edit layouts</button></p>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="bottom" aria-label="Background and transport">
+    <div class="bg-thumb" aria-hidden="true"></div>
+    <div class="bg-name"><span>Background</span><b id="bg-name">Soft Light Loop</b></div>
+    <span class="loop"><svg width="14" height="14"><use href="#i-loop"/></svg>Looping</span>
+    <div class="bar" role="progressbar" aria-label="Background position" aria-valuenow="12" aria-valuemin="0" aria-valuemax="30"><i></i></div>
+    <span style="font-variant-numeric:tabular-nums;color:var(--text-2)">0:12 / 0:30</span>
+    <div class="tp">
+      <button type="button" aria-label="Restart background"><svg width="14" height="14"><use href="#i-prev"/></svg></button>
+      <button type="button" aria-label="Pause background"><svg width="14" height="14"><use href="#i-pause"/></svg></button>
+    </div>
+    <div class="hints" aria-label="Keyboard shortcuts">
+      <span><kbd>←</kbd> Previous</span><span><kbd>Space</kbd><kbd>→</kbd> Next</span><span><kbd>F1</kbd> Clear slide</span><span><kbd>F3</kbd> Clear all</span>
+    </div>
+  </footer>
+</div>
+<p class="sr" role="status" aria-live="polite" id="announce"></p>
+
+<script>
+(() => {
+  const order = ['v1-0','v1-1','c-0','c-1','v2-0','v2-1','c-0','c-1','b-0','c-0','c-1'];
+  const steps = [0,0,1,1,2,2,3,3,4,5,5]; // arrangement step per position
+  const names = ['Verse 1','Chorus','Verse 2','Chorus','Bridge','Chorus'];
+  const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+  const slide = id => $(`.slide[data-id="${id}"]`);
+  const text = id => slide(id).querySelector('.thumb').innerHTML;
+  const num = id => slide(id).querySelector('.n').textContent;
+  let pos = 2, cleared = false;
+
+  function render() {
+    const live = order[pos], next = order[pos + 1];
+    $$('.slide').forEach(s => { s.classList.remove('live','next','cleared'); s.removeAttribute('aria-current'); s.querySelector('.badge').textContent = ''; });
+    const l = slide(live);
+    l.classList.add('live'); l.setAttribute('aria-current','true');
+    l.querySelector('.badge').textContent = cleared ? 'CLEARED' : '▶ LIVE';
+    if (cleared) l.classList.add('cleared');
+    if (next && next !== live) { slide(next).classList.add('next'); slide(next).querySelector('.badge').textContent = 'NEXT'; }
+    $$('.step').forEach((s, i) => s.classList.toggle('on', i === steps[pos]));
+    $('#live-text').innerHTML = text(live);
+    $('#live-cap').textContent = cleared ? 'Slide cleared · background only' : `${names[steps[pos]]} · slide ${num(live)} of 7`;
+    $('#screen').classList.toggle('cleared', cleared);
+    $$('.o-text').forEach(o => o.innerHTML = cleared ? '' : text(live));
+    $('#next-thumb').innerHTML = next ? text(next) : 'End of song';
+    $('#next-sec').textContent = next ? `${names[steps[pos + 1]]} · slide ${num(next)}` : 'End of song';
+    $('#next-then').textContent = order[pos + 2] ? names[steps[pos + 2]] : 'We Lift Our Voice';
+    $('#stage-next').textContent = next ? text(next).split('<br>')[0] + '…' : '';
+  }
+  function say(m) { $('#announce').textContent = m; }
+  function go(p) { if (p < 0 || p >= order.length) return; pos = p; cleared = false; render(); say(`Live: ${names[steps[pos]]}, slide ${num(order[pos])}`); }
+  function clear(kind) {
+    if (kind !== 'bg') { cleared = true; render(); }
+    if (kind !== 'slide') { $('#screen').classList.add('nobg'); $('#bg-name').textContent = 'None'; }
+    say(kind === 'slide' ? 'Slide cleared. Press Space to resume.' : kind === 'bg' ? 'Background cleared.' : 'All outputs cleared.');
+  }
+
+  $$('.slide').forEach(s => s.addEventListener('click', () => {
+    const id = s.dataset.id, after = order.indexOf(id, pos);
+    go(after >= 0 ? after : order.indexOf(id));
+  }));
+  $$('[data-clear]').forEach(b => b.addEventListener('click', () => clear(b.dataset.clear)));
+  document.addEventListener('keydown', e => {
+    const t = e.target.tagName;
+    if (t === 'INPUT') return;
+    if (e.key === 'ArrowRight' || (e.key === ' ' && t !== 'BUTTON')) { e.preventDefault(); go(pos + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); go(pos - 1); }
+    else if (e.key === 'F1') { e.preventDefault(); clear('slide'); }
+    else if (e.key === 'F2') { e.preventDefault(); clear('bg'); }
+    else if (e.key === 'F3') { e.preventDefault(); clear('all'); }
+  });
+})();
+</script>
+</body>
+</html>

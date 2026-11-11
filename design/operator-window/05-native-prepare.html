@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440, initial-scale=1">
+<title>Sunday Service — Prepare — Global Service Studio</title>
+<style>
+:root{
+  --window:#1C1C1C; --raised:#242424; --desk:#0B0B0B;
+  --sidebar:rgba(22,22,22,0.90); --titlebar:rgba(28,28,28,0.92);
+  --sep:rgba(255,255,255,0.10); --control:rgba(255,255,255,0.08); --control-hover:rgba(255,255,255,0.13);
+  --label:rgba(255,255,255,0.85); --label-2:rgba(255,255,255,0.55); --label-3:rgba(255,255,255,0.28);
+  --accent:#0A84FF; --live:#FF453A; --next:#FF9F0A; --ok:#32D74B; --key-green:#00B140;
+  --focus:rgba(10,132,255,0.5);
+  --font:-apple-system,"SF Pro Text","Helvetica Neue",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--desk);color:var(--label);font:400 13px/1.3 var(--font);display:grid;place-items:center;min-height:900px;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit;background:none;border:0;margin:0;padding:0}
+button{cursor:default}
+:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+ul{list-style:none;margin:0;padding:0}
+h1,h2,h3,p{margin:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.num{font-variant-numeric:tabular-nums}
+
+/* Window */
+.win{width:1408px;height:868px;border-radius:10px;overflow:hidden;display:grid;grid-template-columns:240px 1fr;
+  box-shadow:inset 0 0 0 1px var(--sep),0 0 0 1px rgba(0,0,0,0.5),0 22px 60px rgba(0,0,0,0.5)}
+
+/* Sidebar (source list) */
+.sidebar{background:var(--sidebar);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);
+  border-right:1px solid var(--sep);display:flex;flex-direction:column;min-height:0}
+.sb-top{height:52px;flex:none;display:flex;align-items:center;padding:0 12px 0 20px}
+.lights{display:flex;gap:8px}.lights i{width:12px;height:12px;border-radius:50%;background:var(--live)}
+.lights i:nth-child(2){background:var(--next)}.lights i:nth-child(3){background:var(--ok)}
+.sb-top .tb{margin-left:auto}
+.sb-scroll{overflow:auto;padding:4px 10px 12px;flex:1}
+.sb-h{font-size:11px;font-weight:600;color:var(--label-2);padding:14px 8px 4px}
+.sb-h:first-child{padding-top:2px}
+.grp{display:flex;align-items:center;gap:4px;height:28px;padding:0 6px 0 2px;color:var(--label-2)}
+.disc{width:16px;height:16px;display:grid;place-items:center;border-radius:4px;color:var(--label-2)}
+.disc .ic{width:12px;height:12px;stroke-width:2}
+.row{display:flex;align-items:center;gap:7px;width:100%;height:28px;padding:0 8px 0 26px;border-radius:6px;text-align:left;white-space:nowrap}
+.row.lib{padding-left:8px}
+.row .ic{color:var(--accent)}
+.row .meta{margin-left:auto;padding-left:6px;font-size:12px;color:var(--label-2)}
+.row .nm{overflow:hidden;text-overflow:ellipsis}
+.row:hover{background:var(--control)}
+.row[aria-current="page"]{background:rgba(10,132,255,0.6);color:#FFFFFF;font-weight:600}
+.row[aria-current="page"] .ic,.row[aria-current="page"] .meta{color:#FFFFFF}
+.state{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--label)}
+.state i{width:7px;height:7px;border-radius:50%;background:var(--live)}
+.state.nx i{background:var(--next)}
+.row[aria-current="page"] .state{color:#FFFFFF}
+.row[aria-current="page"] .state i{box-shadow:0 0 0 1.5px #FFFFFF}
+
+/* Main column */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 280px;grid-template-rows:52px minmax(0,1fr) 150px;background:var(--window);min-width:0}
+
+/* Unified toolbar */
+.toolbar{grid-column:1/-1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:0 12px 0 16px;
+  background:var(--titlebar);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);border-bottom:1px solid var(--sep)}
+.tl{display:flex;align-items:center;gap:6px;min-width:0}
+.title{margin-right:10px;line-height:1.15}
+.title h1{font-size:15px;font-weight:600}
+.title p{font-size:11px;color:var(--label-2)}
+.tr{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.tb{width:32px;height:28px;display:grid;place-items:center;border-radius:6px;color:var(--label-2)}
+.tb .ic{width:18px;height:18px}
+.tb:hover{background:var(--control);color:var(--label)}
+.tb[aria-pressed="true"]{color:var(--label)}
+.clock{font-size:13px;color:var(--label-2);padding:0 6px}
+.search{display:flex;align-items:center;gap:5px;width:180px;height:28px;padding:0 8px;border-radius:6px;background:var(--control);color:var(--label-2)}
+.search .ic{width:14px;height:14px}
+.search input{flex:1;min-width:0;outline:0;color:var(--label)}
+.search input::placeholder{color:var(--label-2)}
+.search:focus-within{box-shadow:0 0 0 3px var(--focus)}
+
+/* Segmented control */
+.seg{display:inline-flex;padding:2px;border-radius:6px;background:var(--control)}
+.seg button{height:22px;padding:0 14px;border-radius:5px;color:var(--label-2);font-weight:500}
+.seg button:hover{color:var(--label)}
+.seg button[aria-pressed="true"]{background:var(--control-hover);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,0.5)}
+.seg.lg button{height:24px;padding:0 20px;font-size:13px}
+.seg.sm button{height:18px;padding:0 8px;font-size:11px;font-weight:600}
+
+/* Pop-up button, push button, key cap */
+.pop{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 5px 0 9px;border-radius:6px;background:var(--control)}
+.pop:hover,.push:hover{background:var(--control-hover)}
+.pop .ud{width:8px;height:12px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;color:var(--label-2)}
+.push{display:flex;align-items:center;gap:8px;height:24px;padding:0 6px 0 10px;border-radius:6px;background:var(--control);white-space:nowrap}
+.push.danger{background:rgba(255,69,58,0.16)}
+.push.danger:hover{background:rgba(255,69,58,0.24)}
+.push .kbd{margin-left:auto}
+.kbd{display:inline-grid;place-items:center;min-width:22px;height:18px;padding:0 5px;border-radius:4px;background:var(--control);
+  box-shadow:inset 0 -1px 0 rgba(0,0,0,0.5);font:600 11px/1 var(--font);color:var(--label-2)}
+.lbl{color:var(--label-2)}
+
+/* Content: slide navigator */
+.content{display:flex;flex-direction:column;min-height:0;min-width:0}
+.c-head{flex:none;height:44px;display:flex;align-items:center;gap:8px;padding:0 20px;border-bottom:1px solid var(--sep)}
+.c-head h2{font-size:15px;font-weight:600;margin-right:4px}
+.c-head .facts{color:var(--label-2)}
+.c-head .sp{flex:1}
+.c-head .lbl{margin-left:8px}
+.c-body{flex:1;overflow:auto;padding:16px 24px 24px}
+.track{display:flex;gap:2px;height:22px;margin:6px 0 20px}
+.blk{display:flex;align-items:center;gap:6px;padding:0 8px;background:var(--control);font-size:11px;color:var(--label-2);white-space:nowrap}
+.blk:first-child{border-radius:6px 0 0 6px}.blk:last-child{border-radius:0 6px 6px 0}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--c)}
+.groups{display:grid;grid-template-columns:1fr 1fr;gap:24px 32px}
+.g-h{display:flex;align-items:center;gap:7px;height:20px;margin-bottom:10px;font-weight:600}
+.g-h .n{font-weight:400;color:var(--label-2)}
+.slides{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.slide{display:flex;flex-direction:column;gap:7px;text-align:left;border-radius:6px}
+.slide:focus-visible{outline-offset:5px}
+.thumb{aspect-ratio:16/9;border-radius:6px;background:#000000;display:grid;place-items:center;text-align:center;
+  color:#FFFFFF;font-size:12px;font-weight:600;line-height:1.35;padding:8px;box-shadow:inset 0 0 0 1px var(--sep)}
+.slide:hover .thumb{box-shadow:inset 0 0 0 1px var(--control-hover)}
+.slide.live .thumb{box-shadow:0 0 0 3px var(--live)}
+.slide.next .thumb{box-shadow:0 0 0 2px var(--next)}
+.slide[aria-selected="true"] .thumb{box-shadow:0 0 0 3px var(--accent)}
+.cap{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:var(--label-2)}
+.cap .state{margin-left:auto}
+
+
+/* Guided song builder: order, words, resulting slides */
+.build{display:flex;flex-direction:column;gap:22px;padding:18px 20px 16px;overflow:auto}
+.step{display:flex;align-items:baseline;gap:8px;margin:0 0 10px;font:600 15px/1.2 var(--font);color:var(--label)}
+.step .num{align-self:center;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--control-hover);font:600 11px/1 var(--font);color:var(--label)}
+.step .hint{font:400 11px/1.3 var(--font);color:var(--label-2);margin-left:4px}
+.parts{display:flex;flex-wrap:nowrap;align-items:stretch;gap:4px;list-style:none;margin:0;padding:0}
+.parts li{display:flex;align-items:center;gap:6px}
+.parts li+li::before{content:"";width:6px;height:6px;border-top:1.5px solid var(--label-3);border-right:1.5px solid var(--label-3);transform:rotate(45deg);margin-right:4px}
+.part{display:flex;flex-direction:column;gap:4px;min-width:92px;padding:9px 10px;border-radius:6px;background:var(--control);text-align:left}
+.part:hover{background:var(--control-hover)}
+.part strong{display:flex;align-items:center;gap:6px;font:600 13px/1 var(--font);color:var(--label)}
+.part strong i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.part span{font:400 11px/1 var(--font);color:var(--label-2);white-space:nowrap}
+.part .on{color:var(--live);font-weight:600}
+.part[aria-pressed="true"]{background:var(--control-hover);box-shadow:0 0 0 3px var(--accent)}
+.part[aria-pressed="true"] span.ed{color:var(--label);font-weight:600}
+.parts li:last-child::before{display:none}
+.parts li:last-child{margin-left:6px}
+.part.add{justify-content:center;align-items:center;min-width:0;height:100%;white-space:nowrap;padding:0 12px;color:var(--label-2);font:500 13px/1 var(--font);background:none;box-shadow:inset 0 0 0 1px var(--sep)}
+.work{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:24px;min-height:0}
+.editor{border-radius:6px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--sep);padding:10px 0;font:400 15px/1.2 var(--font)}
+.editor .ln{display:flex;align-items:center;gap:12px;height:30px;padding:0 14px}
+.editor .ln i{width:14px;text-align:right;font:400 11px/1 var(--font);font-style:normal;color:var(--label-3);font-variant-numeric:tabular-nums}
+.editor .brk{display:flex;align-items:center;gap:8px;height:22px;padding:0 14px;font:500 11px/1 var(--font);color:var(--label-2)}
+.editor .brk::before,.editor .brk::after{content:"";flex:1;border-top:1px dashed var(--label-3)}
+.editor .caret{display:inline-block;width:1.5px;height:17px;margin-left:1px;background:var(--accent);vertical-align:-3px}
+.help{margin:10px 0 0;font:400 11px/1.5 var(--font);color:var(--label-2)}
+.help b{font-weight:600;color:var(--label)}
+.help .kbd{display:inline-grid;place-items:center;height:16px;padding:0 5px;border-radius:4px;background:var(--control);font:500 11px/1 var(--font);color:var(--label)}
+.pvs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pv figure{margin:0}
+.pv .sc{aspect-ratio:16/9;border-radius:6px;background:#000000;display:grid;place-items:center;text-align:center;color:#FFFFFF;font:600 15px/1.3 var(--font);box-shadow:0 0 0 1px var(--sep)}
+.pv figcaption{display:flex;justify-content:space-between;margin-top:6px;font:400 11px/1 var(--font);color:var(--label-2)}
+.pv figcaption b{font-weight:600}
+.pv.live .sc{box-shadow:0 0 0 3px var(--live)} .pv.live figcaption b{color:var(--live)}
+.pv.next .sc{box-shadow:0 0 0 2px var(--next)} .pv.next figcaption b{color:var(--next)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.look{display:flex;align-items:flex-start;gap:14px;margin-top:10px}
+.look .help{margin:0;flex:1}
+.look .push{padding:0 10px;flex:none}
+/* Inspector */
+.inspector{background:var(--sidebar);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);
+  border-left:1px solid var(--sep);overflow:auto;min-height:0}
+.ins{padding:10px 16px 14px;border-bottom:1px solid var(--sep)}
+.ins:last-child{border-bottom:0}
+.ins-h{display:flex;align-items:center;gap:4px;margin:0 0 8px -4px;font-size:13px;font-weight:600}
+.ins-h .aside{margin-left:auto;font-weight:400;font-size:11px;color:var(--label-2)}
+.f{display:grid;grid-template-columns:92px 1fr;align-items:center;min-height:28px}
+.f .pop{justify-self:start}
+.screen{position:relative;aspect-ratio:16/9;border-radius:6px;overflow:hidden;display:grid;place-items:center;text-align:center;color:#FFFFFF;font-weight:600;
+  background:radial-gradient(90% 80% at 50% 25%,var(--control-hover),#000000 72%)}
+.ins .screen{box-shadow:0 0 0 3px var(--live);margin:3px 3px 8px;font-size:15px;line-height:1.35}
+.ins .cap{font-size:11px}
+.stepper{display:inline-flex;align-items:center;gap:4px}
+.stepper output{display:inline-grid;place-items:center;width:34px;height:22px;border-radius:6px;background:var(--control)}
+.stepper span{display:grid;border-radius:6px;background:var(--control);overflow:hidden}
+.stepper button{width:16px;height:11px;display:grid;place-items:center;color:var(--label-2)}
+.stepper button:hover{background:var(--control-hover)}
+.stepper .ic{width:10px;height:10px;stroke-width:2}
+.check{display:flex;align-items:center;gap:7px;min-height:28px;padding-left:92px}
+.check input{position:absolute;opacity:0;width:14px;height:14px}
+.box{width:14px;height:14px;border-radius:4px;background:var(--accent);display:grid;place-items:center;color:#FFFFFF}
+.box .ic{width:11px;height:11px;stroke-width:2.2}
+.check input:focus-visible+.box{outline:3px solid var(--focus);outline-offset:1px}
+.outs li{display:flex;align-items:center;gap:8px;height:28px}
+.outs .role{color:var(--label-2)}
+.outs .state{margin-left:auto}
+
+/* Bottom bar */
+.bottom{grid-column:1/-1;display:flex;align-items:center;gap:20px;padding:0 16px;border-top:1px solid var(--sep);background:var(--window)}
+.mons{display:flex;gap:12px}
+.mon{width:160px}
+.mon .screen{height:90px;width:160px;font-size:9px;line-height:1.3;box-shadow:inset 0 0 0 1px var(--sep)}
+.mon-cap{display:flex;align-items:center;gap:6px;margin-top:6px}
+.mon-cap b{font-weight:600}
+.mon-cap .state{margin-left:auto;font-weight:600}
+.mon .role{font-size:11px;color:var(--label-2)}
+.stage{background:#000000;display:grid;grid-template-rows:auto 1fr auto auto;place-items:stretch;text-align:left;padding:5px 7px;gap:2px}
+.stage .top{display:flex;justify-content:space-between;font-size:8px;color:var(--label-2)}
+.stage .top b{color:#FFFFFF;font-size:10px}
+.stage .cur{align-self:center;font-size:11px;font-weight:700;line-height:1.2}
+.stage .nxt{font-size:7.5px;font-weight:500;color:var(--label-2)}
+.stage .msg{font-size:7px;font-weight:500;background:var(--control-hover);border-radius:2px;padding:1px 4px;color:var(--label)}
+.keyout{background:var(--key-green);align-content:end;padding-bottom:8px}
+.keyout span{display:block;width:132px;background:rgba(0,0,0,0.72);padding:3px 0;border-radius:2px}
+.vsep{align-self:stretch;width:1px;background:var(--sep);margin:20px 0}
+.clears{display:grid;gap:6px;width:176px}
+.bg{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center}
+.bg .screen{width:96px;height:54px;grid-row:span 3}
+.bg b{font-weight:600}
+.bg .loop{display:flex;align-items:center;gap:4px;color:var(--label-2);font-size:11px}
+.bg .loop .ic{width:13px;height:13px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Appearances: Midnight is the default. Graphite and Black are alternatives (design/system.md). */
+html[data-appearance="graphite"]{--window:#1E1E1E;--raised:#2A2A2C;--desk:#2A2A2C;--sidebar:rgba(40,40,42,0.72);--titlebar:rgba(46,46,48,0.86)}
+html[data-appearance="black"]{--window:#000000;--raised:#1C1C1C;--desk:#000000;--sidebar:rgba(10,10,10,0.94);--titlebar:rgba(10,10,10,0.94);--sep:rgba(255,255,255,0.14)}
+.appearance{position:fixed;left:36px;bottom:32px;z-index:10;display:flex;flex-direction:column;align-items:flex-start;gap:6px;font:500 11px/1 var(--font);color:var(--label-2)}
+.appearance div{display:flex;padding:2px;border-radius:6px;background:var(--control)}
+.appearance button{height:20px;padding:0 9px;border-radius:5px;font:500 11px/1 var(--font);color:var(--label-2)}
+.appearance button[aria-pressed="true"]{background:var(--control-hover);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,0.35)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sidebar" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="M6 2.5v11M3.3 5h1M3.3 7h1"/></symbol>
+  <symbol id="i-inspector" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="M10 2.5v11M11.8 5h1M11.8 7h1"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+  <symbol id="i-rehearse" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.25"/><path d="M6.6 5.6v4.8l3.9-2.4z"/></symbol>
+  <symbol id="i-display" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="8.5" rx="1.5"/><path d="M8 11v2.5M5.5 13.5h5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.25"/><path d="m10.2 10.2 3.3 3.3"/></symbol>
+  <symbol id="i-note" viewBox="0 0 16 16"><path d="M6 12.5V3.6l7-1.6v9"/><circle cx="4.2" cy="12.5" r="1.8"/><circle cx="11.2" cy="11" r="1.8"/></symbol>
+  <symbol id="i-film" viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="1.5"/><path d="M4.5 3v10M11.5 3v10M1.5 8h3M11.5 8h3"/></symbol>
+  <symbol id="i-slides" viewBox="0 0 16 16"><rect x="3.5" y="4.5" width="11" height="8" rx="1.5"/><path d="M1.5 10.5v-6a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 16 16"><path d="M4 1.5h5l3.5 3.5v9.5h-8.5zM9 1.5V5h3.5M6.2 8.5h4M6.2 11h4"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><circle cx="5.5" cy="6" r="1.2"/><path d="m2 12 4-4 3 3 2-2 3.5 3.5"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.25"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5z" fill="currentColor"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 16 16"><path d="m4.5 6 3.5 3.5L11.5 6"/></symbol>
+  <symbol id="i-up" viewBox="0 0 16 16"><path d="m4 10 4-4 4 4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 16 16"><path d="m4 6 4 4 4-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-6.5"/></symbol>
+  <symbol id="i-loop" viewBox="0 0 16 16"><path d="M2.5 7.5v-1A2.5 2.5 0 0 1 5 4h8.5M11.5 2l2 2-2 2M13.5 8.5v1A2.5 2.5 0 0 1 11 12H2.5M4.5 14l-2-2 2-2"/></symbol>
+  <symbol id="i-ud" viewBox="0 0 8 12"><path d="M1.5 4.5 4 2l2.5 2.5M1.5 7.5 4 10l2.5-2.5"/></symbol>
+</svg>
+
+<div class="win">
+  <!-- Source list -->
+  <nav class="sidebar" aria-label="Service and library">
+    <div class="sb-top">
+      <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+      <button class="tb" type="button" aria-label="Hide sidebar" aria-pressed="true"><svg class="ic"><use href="#i-sidebar"/></svg></button>
+    </div>
+    <div class="sb-scroll">
+      <h2 class="sb-h">Service</h2>
+      <div class="grp"><button class="disc" type="button" aria-expanded="true" aria-label="Collapse Pre-service"><svg class="ic"><use href="#i-chev"/></svg></button>Pre-service</div>
+      <ul><li><button class="row" type="button"><svg class="ic"><use href="#i-film"/></svg>Countdown<span class="meta num">5:00</span></button></li></ul>
+      <div class="grp"><button class="disc" type="button" aria-expanded="true" aria-label="Collapse Worship"><svg class="ic"><use href="#i-chev"/></svg></button>Worship</div>
+      <ul>
+        <li><button class="row" type="button" aria-current="page"><svg class="ic"><use href="#i-note"/></svg>Morning Light<span class="meta state"><i aria-hidden="true"></i>LIVE</span></button></li>
+        <li><button class="row" type="button"><svg class="ic"><use href="#i-note"/></svg>We Lift Our Voice</button></li>
+        <li><button class="row" type="button"><svg class="ic"><use href="#i-note"/></svg>Great Is the Light</button></li>
+      </ul>
+      <div class="grp"><button class="disc" type="button" aria-expanded="true" aria-label="Collapse Welcome"><svg class="ic"><use href="#i-chev"/></svg></button>Welcome</div>
+      <ul>
+        <li><button class="row" type="button"><svg class="ic"><use href="#i-slides"/></svg>Welcome<span class="meta">3 slides</span></button></li>
+        <li><button class="row" type="button"><svg class="ic"><use href="#i-film"/></svg>Announcements<span class="meta num">2:10</span></button></li>
+      </ul>
+      <div class="grp"><button class="disc" type="button" aria-expanded="true" aria-label="Collapse Message"><svg class="ic"><use href="#i-chev"/></svg></button>Message</div>
+      <ul><li><button class="row" type="button"><svg class="ic"><use href="#i-doc"/></svg><span class="nm" title="Hope That Holds.pdf">Hope That Holds.pdf</span><span class="meta">24 pages</span></button></li></ul>
+      <div class="grp"><button class="disc" type="button" aria-expanded="true" aria-label="Collapse Response"><svg class="ic"><use href="#i-chev"/></svg></button>Response</div>
+      <ul><li><button class="row" type="button"><svg class="ic"><use href="#i-note"/></svg>Morning Light (short)</button></li></ul>
+
+      <h2 class="sb-h">Library</h2>
+      <ul>
+        <li><button class="row lib" type="button"><svg class="ic"><use href="#i-note"/></svg>Songs</button></li>
+        <li><button class="row lib" type="button"><svg class="ic"><use href="#i-slides"/></svg>Presentations</button></li>
+        <li><button class="row lib" type="button"><svg class="ic"><use href="#i-photo"/></svg>Media</button></li>
+        <li><button class="row lib" type="button"><svg class="ic"><use href="#i-doc"/></svg>Documents</button></li>
+        <li><button class="row lib" type="button"><svg class="ic"><use href="#i-theme"/></svg>Themes</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="main">
+    <!-- Unified title bar and toolbar -->
+    <header class="toolbar">
+      <div class="tl" role="toolbar" aria-label="Service">
+        <div class="title"><h1>Sunday Service</h1><p class="num">Nov 15 · 10:00</p></div>
+        <button class="tb" type="button" aria-label="Add to service"><svg class="ic"><use href="#i-plus"/></svg></button>
+        <button class="tb" type="button" aria-label="Rehearse from selection"><svg class="ic"><use href="#i-rehearse"/></svg></button>
+      </div>
+      <div class="seg lg" role="group" aria-label="Mode">
+        <button type="button" aria-pressed="true">Prepare</button><button type="button" aria-pressed="false">Live</button>
+      </div>
+      <div class="tr" role="toolbar" aria-label="View">
+        <span class="clock num" aria-label="Current time 10:14">10:14</span>
+        <button class="tb" type="button" aria-label="Outputs"><svg class="ic"><use href="#i-display"/></svg></button>
+        <label class="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="sr">Search service and library</span><input type="search" placeholder="Search"></label>
+        <button class="tb" type="button" aria-label="Hide inspector" aria-pressed="true"><svg class="ic"><use href="#i-inspector"/></svg></button>
+      </div>
+    </header>
+
+    <!-- Slide navigator -->
+    <main class="content" aria-labelledby="item-title">
+      <div class="c-head">
+        <h2 id="item-title">Morning Light</h2>
+        <span class="facts">Key G · 72 bpm</span>
+        <span class="sp"></span>
+        <span class="lbl" id="l-arr">Arrangement</span>
+        <button class="pop" type="button" aria-haspopup="listbox" aria-labelledby="l-arr v-arr"><span id="v-arr">Default</span><svg class="ud" aria-hidden="true"><use href="#i-ud"/></svg></button>
+        <span class="lbl" id="l-thm">Theme</span>
+        <button class="pop" type="button" aria-haspopup="listbox" aria-labelledby="l-thm v-thm"><span id="v-thm">Clean Dark</span><svg class="ud" aria-hidden="true"><use href="#i-ud"/></svg></button>
+      </div>
+      <div class="c-body build">
+        <section aria-labelledby="h-order">
+          <h3 class="step" id="h-order"><span class="num">1</span>Song order<span class="hint">The parts of the song, in the order they are sung. Click a part to work on it.</span></h3>
+          <ol class="parts" id="parts"></ol>
+        </section>
+        <div class="work">
+          <section class="words" aria-labelledby="h-words">
+            <h3 class="step" id="h-words"><span class="num">2</span>Words of <span id="w-name"></span></h3>
+            <div class="editor" id="editor" role="textbox" aria-multiline="true" aria-labelledby="h-words" tabindex="0"></div>
+            <p class="help">Type or paste the words, one line per row. Slides are made for you: a new slide starts every 2 lines. To start one yourself, press <span class="kbd">⌘</span> <span class="kbd">Return</span>.</p>
+          </section>
+          <section class="result" aria-labelledby="h-result">
+            <h3 class="step" id="h-result"><span class="num">3</span>Slides of <span id="r-name"></span><span class="hint" id="r-count"></span></h3>
+            <div class="pvs" id="pvs"></div>
+            <div class="look">
+              <p class="help">This is how the audience will see them. Font, size, alignment and position come from the theme <b>Clean Dark</b>, so every song changes at once.</p>
+              <button class="push" type="button" aria-haspopup="dialog">Edit the look…</button>
+            </div>
+          </section>
+        </div>
+        <p class="sr" aria-live="polite" id="say"></p>
+      </div>
+    </main>
+
+    <!-- Inspector -->
+    <aside class="inspector" aria-label="Inspector">
+      <section class="ins" aria-labelledby="h-prev">
+        <h2 class="ins-h"><button class="disc" type="button" aria-expanded="true" aria-label="Collapse Preview"><svg class="ic"><use href="#i-chev"/></svg></button><span id="h-prev">Preview</span><span class="aside">Center</span></h2>
+        <div class="screen" role="img" aria-label="Live output: We lift our voice, We lift our eyes">We lift our voice<br>We lift our eyes</div>
+        <p class="cap">Chorus · 1 of 2<span class="state"><i aria-hidden="true"></i>LIVE</span></p>
+      </section>
+      <section class="ins" aria-labelledby="h-slide">
+        <h2 class="ins-h"><button class="disc" type="button" aria-expanded="true" aria-label="Collapse Slide"><svg class="ic"><use href="#i-chev"/></svg></button><span id="h-slide">Slide</span><span class="aside">Verse 1 · 1</span></h2>
+        <div class="f"><span class="lbl" id="l-sec">Section</span><button class="pop" type="button" aria-haspopup="listbox" aria-labelledby="l-sec v-sec"><span id="v-sec">Verse 1</span><svg class="ud" aria-hidden="true"><use href="#i-ud"/></svg></button></div>
+        <div class="f"><span class="lbl">Lines</span><span class="num">2</span></div>
+        <div class="f"><span class="lbl" id="l-brk">Break after</span><button class="pop" type="button" aria-haspopup="listbox" aria-labelledby="l-brk v-brk"><span id="v-brk">Automatic</span><svg class="ud" aria-hidden="true"><use href="#i-ud"/></svg></button></div>
+        <label class="check"><input type="checkbox" checked><span class="box" aria-hidden="true"><svg class="ic"><use href="#i-check"/></svg></span>Show on Stage</label>
+      </section>
+      <section class="ins" aria-labelledby="h-theme">
+        <h2 class="ins-h"><button class="disc" type="button" aria-expanded="true" aria-label="Collapse Theme"><svg class="ic"><use href="#i-chev"/></svg></button><span id="h-theme">Theme</span></h2>
+        <div class="f"><span class="lbl" id="l-tn">Name</span><button class="pop" type="button" aria-haspopup="listbox" aria-labelledby="l-tn v-tn"><span id="v-tn">Clean Dark</span><svg class="ud" aria-hidden="true"><use href="#i-ud"/></svg></button></div>
+        <div class="f"><span class="lbl" id="l-ml">Max lines</span>
+          <span class="stepper" role="group" aria-labelledby="l-ml"><output class="num">2</output><span>
+            <button type="button" aria-label="More lines"><svg class="ic"><use href="#i-up"/></svg></button>
+            <button type="button" aria-label="Fewer lines"><svg class="ic"><use href="#i-down"/></svg></button></span></span></div>
+        <div class="f"><span class="lbl" id="l-wr">Wrap</span><button class="pop" type="button" aria-haspopup="listbox" aria-labelledby="l-wr v-wr"><span id="v-wr">Balanced</span><svg class="ud" aria-hidden="true"><use href="#i-ud"/></svg></button></div>
+      </section>
+      <section class="ins" aria-labelledby="h-out">
+        <h2 class="ins-h"><button class="disc" type="button" aria-expanded="true" aria-label="Collapse Outputs"><svg class="ic"><use href="#i-chev"/></svg></button><span id="h-out">Outputs</span><span class="aside">4 connected</span></h2>
+        <ul class="outs">
+          <li><b>Center</b><span class="role">Audience</span><span class="state"><i aria-hidden="true"></i>Live</span></li>
+          <li><b>Sides</b><span class="role">Audience</span><span class="state"><i aria-hidden="true"></i>Live</span></li>
+          <li><b>Stage</b><span class="role">Teleprompter</span><span class="state"><i aria-hidden="true"></i>Live</span></li>
+          <li><b>Key</b><span class="role">Lower third</span><span class="state"><i aria-hidden="true"></i>Live</span></li>
+        </ul>
+      </section>
+    </aside>
+
+    <!-- Outputs strip, clear actions, background -->
+    <footer class="bottom" aria-label="Outputs and clear actions">
+      <ul class="mons" aria-label="Output monitors">
+        <li class="mon">
+          <div class="screen" role="img" aria-label="Center output: We lift our voice, We lift our eyes">We lift our voice<br>We lift our eyes</div>
+          <div class="mon-cap"><b>Center</b><span class="state"><i aria-hidden="true"></i>Live</span></div><span class="role">Audience</span>
+        </li>
+        <li class="mon">
+          <div class="screen" role="img" aria-label="Sides output: We lift our voice, We lift our eyes">We lift our voice<br>We lift our eyes</div>
+          <div class="mon-cap"><b>Sides</b><span class="state"><i aria-hidden="true"></i>Live</span></div><span class="role">Audience</span>
+        </li>
+        <li class="mon">
+          <div class="screen stage" role="img" aria-label="Stage output: current and next lines, clock 10:14, message">
+            <span class="top"><span>Morning Light</span><b class="num">10:14</b></span>
+            <span class="cur">We lift our voice<br>We lift our eyes</span>
+            <span class="nxt">You are the light / That never dies</span>
+            <span class="msg">Message: Band, chorus twice</span>
+          </div>
+          <div class="mon-cap"><b>Stage</b><span class="state"><i aria-hidden="true"></i>Live</span></div><span class="role">Teleprompter</span>
+        </li>
+        <li class="mon">
+          <div class="screen keyout" role="img" aria-label="Key output: two-line lower third on key green"><span>We lift our voice<br>We lift our eyes</span></div>
+          <div class="mon-cap"><b>Key</b><span class="state"><i aria-hidden="true"></i>Live</span></div><span class="role">Lower third · switcher</span>
+        </li>
+      </ul>
+      <span class="vsep" aria-hidden="true"></span>
+      <div class="clears" role="group" aria-label="Clear">
+        <button class="push" type="button" aria-keyshortcuts="F1">Clear Slide<span class="kbd">F1</span></button>
+        <button class="push" type="button" aria-keyshortcuts="F2">Clear Background<span class="kbd">F2</span></button>
+        <button class="push danger" type="button" aria-keyshortcuts="F3">Clear All<span class="kbd">F3</span></button>
+      </div>
+      <span class="vsep" aria-hidden="true"></span>
+      <div class="bg">
+        <div class="screen" role="img" aria-label="Background preview"></div>
+        <span class="lbl" style="font-size:11px">Background</span>
+        <b>Soft Light Loop</b>
+        <span class="loop"><svg class="ic" aria-hidden="true"><use href="#i-loop"/></svg>Looping video</span>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<aside class="appearance" aria-label="Appearance, design preview only">
+  <span>Appearance</span>
+  <div role="group" aria-label="Appearance">
+    <button type="button" aria-pressed="true" data-a="midnight">Midnight</button>
+    <button type="button" aria-pressed="false" data-a="graphite">Graphite</button>
+    <button type="button" aria-pressed="false" data-a="black">Black</button>
+  </div>
+</aside>
+<script>
+document.querySelectorAll('.appearance button').forEach(function(b){b.addEventListener('click',function(){
+  document.documentElement.dataset.appearance=b.dataset.a;
+  document.querySelectorAll('.appearance button').forEach(function(o){o.setAttribute('aria-pressed',String(o===b))});
+});});
+</script>
+<script>
+(function(){
+  var W={v1:["Verse 1","var(--accent)",["Morning light is rising","Over all the earth","Every shadow fading","Hope is being born"]],
+    c:["Chorus","var(--label)",["We lift our voice","We lift our eyes","You are the light","That never dies"]],
+    v2:["Verse 2","var(--accent)",["Mercy like a river","Running through the night","Every heart awakened","Every wrong made right"]],
+    b:["Bridge","var(--label-2)",["Shine on us","Shine through us"]]};
+  var order=["v1","c","v2","c","b","c"],sel=0,live=1,$=function(i){return document.getElementById(i)};
+  function slides(k){var l=W[k][2],o=[];for(var i=0;i<l.length;i+=2)o.push(l.slice(i,i+2));return o}
+  function draw(){
+    var seen={};
+    $("parts").innerHTML=order.map(function(k,i){var w=W[k],rep=seen[k];seen[k]=1;var n=slides(k).length;
+      return '<li><button class="part" type="button" data-i="'+i+'" aria-pressed="'+(i===sel)+'" style="--c:'+w[1]+'"><strong><i></i>'+w[0]+'</strong>'+
+        (i===sel?'<span class="ed">Editing</span>':i===live?'<span class="on">● On screen now</span>':'<span>'+n+(n===1?' slide':' slides')+(rep?' · repeat':'')+'</span>')+'</button></li>'}).join("")+
+      '<li><button class="part add" type="button">+ Add part</button></li>';
+    var k=order[sel],w=W[k],sl=slides(k),h="",n=0;
+    sl.forEach(function(g,j){if(j)h+='<div class="brk">New slide</div>';g.forEach(function(t,x){n++;h+='<div class="ln"><i>'+n+'</i><span>'+t+(j===sl.length-1&&x===g.length-1?'<span class="caret"></span>':'')+'</span></div>'})});
+    $("editor").innerHTML=h;$("w-name").textContent=w[0];$("r-name").textContent=w[0];$("r-count").textContent=sl.length+(sl.length===1?" slide":" slides");
+    $("pvs").innerHTML=sl.map(function(g,j){var st=sel===live?(j===0?" live":j===1?" next":""):"";
+      return '<div class="pv'+st+'"><figure><div class="sc">'+g.join("<br>")+'</div><figcaption><span>'+w[0]+" · "+(j+1)+'</span><b>'+(st===" live"?"LIVE":st===" next"?"NEXT":"")+'</b></figcaption></figure></div>'}).join("");
+    $("say").textContent="Editing "+w[0]+", "+sl.length+" slides";
+  }
+  $("parts").addEventListener("click",function(e){var b=e.target.closest(".part[data-i]");if(b){sel=+b.dataset.i;draw()}});
+  draw();
+})();
+</script>
+</body>
+</html>

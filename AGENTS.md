@@ -59,3 +59,4 @@ node .github/scripts/check-skills-index.mjs   # after adding, renaming or removi
 | `docs/community-roadmap.md` | How to find work that is ready to be picked up |
 | `docs/skill-style-guide.md` | How skills are written |
 | `skills/` | Skills for coding agents, indexed above |
+| `design/` | Design system (`design/system.md`) and self-contained HTML mockups; use its tokens when building interface |

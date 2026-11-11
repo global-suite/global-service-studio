@@ -25,3 +25,7 @@ build/
 # Local agent and planning workspaces
 .atl/
 odd/
+
+# Design canvas state: review comments and screenshots stay local
+design/**/comments.json
+design/**/.screenshots/
