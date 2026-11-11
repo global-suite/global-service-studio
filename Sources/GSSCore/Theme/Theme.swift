@@ -21,7 +21,7 @@ public struct Theme: Equatable, Sendable {
         (self.slots, self.languages) = (slots, languages)
     }
 
-    /// Reads a theme file.
+    /// Reads and validates a theme file.
     public static func decode(from data: Data) throws -> Theme {
         var (id, reader) = try Envelope.open(data, format: format, supportedVersion: supportedVersion)
         var theme = try Theme(id: id, name: reader.required("name"), canvas: reader.required("canvas"),
@@ -30,6 +30,7 @@ public struct Theme: Equatable, Sendable {
         theme.externalIds = try reader.optional("externalIds")
         theme.extensions = try reader.optional("extensions")
         theme.unknown = reader.unknown
+        try theme.validate()
         return theme
     }
 
