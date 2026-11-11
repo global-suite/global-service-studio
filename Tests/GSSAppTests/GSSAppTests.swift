@@ -52,4 +52,10 @@ final class GSSAppTests: XCTestCase {
         controller.selectMode(liveItem)
         XCTAssertEqual(controller.modeControl.selectedSegment, 1)
     }
+
+    func testInterfaceFollowsTheSystemLanguageWithoutAnAppBundle() {
+        XCTAssertEqual(Strings.language(for: ["es-US", "en-US"]), "es")
+        XCTAssertEqual(Strings.language(for: ["fr-FR", "en-GB"]), "en")
+        XCTAssertEqual(Strings.text("Live", language: "es"), "En vivo")
+    }
 }

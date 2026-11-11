@@ -37,6 +37,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
         let toolbar = NSToolbar(identifier: "MainToolbar")
         toolbar.delegate = self
         toolbar.centeredItemIdentifier = .mode
+        toolbar.displayMode = .iconOnly
         window.toolbar = toolbar
         (modeControl.target, modeControl.action) = (self, #selector(modeControlChanged(_:)))
         modeControl.toolTip = Strings.text("Switch between Prepare and Live")
@@ -44,9 +45,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
-
     @objc func selectMode(_ sender: NSMenuItem) { state.perform(.setMode(AppMode.allCases[sender.tag])) }
-
     @objc private func modeControlChanged(_ sender: NSSegmentedControl) { state.perform(.setMode(AppMode.allCases[sender.selectedSegment])) }
 
     @objc func toggleSidebar(_ sender: Any?) { splitViewController.toggleSidebar(sender) }

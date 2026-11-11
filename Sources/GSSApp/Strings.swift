@@ -3,8 +3,14 @@ import Foundation
 /// Looks up user-facing strings in this module's `Localizable.strings`, in the system language.
 enum Strings {
     static let bundle = Bundle.module
+    /// Chosen explicitly: without an app bundle, Foundation follows the executable, which has no localizations.
+    static let language = language(for: Locale.preferredLanguages)
+    static func language(for preferences: [String]) -> String { Bundle.preferredLocalizations(from: bundle.localizations, forPreferences: preferences).first ?? "en" }
 
-    static func text(_ key: String) -> String { bundle.localizedString(forKey: key, value: nil, table: nil) }
+    static func text(_ key: String, language: String = language) -> String {
+        let localized = bundle.path(forResource: language, ofType: "lproj").flatMap(Bundle.init(path:)) ?? bundle
+        return localized.localizedString(forKey: key, value: nil, table: nil)
+    }
 
     static var appName: String { text("Global Service Studio") }
 }

@@ -3,7 +3,7 @@ import AppKit
 /// The main menu, built in code.
 enum MainMenu {
     static func make() -> NSMenu {
-        let text = Strings.text, name = Strings.appName
+        let text = { (key: String) in Strings.text(key) }, name = Strings.appName
         let windowMenu = submenu(text("Window"), [item(text("Minimize"), #selector(NSWindow.performMiniaturize(_:)), "m"), item(text("Zoom"), #selector(NSWindow.performZoom(_:)))])
         NSApp.windowsMenu = windowMenu.submenu
         let menu = NSMenu()
