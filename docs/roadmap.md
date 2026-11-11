@@ -42,6 +42,8 @@ Work happens in this order. Each step ends with something that can be seen runni
 6. **Documents.** PDF files first. Keynote and PowerPoint decks after an investigation into how faithfully they can be imported.
 7. **The order of service.** Song library with search, the lyric editor, arrangements, playlists, and the service plan and library formats that back them.
 
+Lyrics are shown in one language in this release. The interface is in English or Spanish, chosen in Settings.
+
 Also part of this release:
 
 - Slide grid: click a slide to send it live
@@ -52,6 +54,7 @@ Also part of this release:
 
 ## Phase 2: Real church
 
+- Bilingual lyrics: show a song in two languages at once, or choose the language for each output. The song and theme formats already store what this needs, so no library has to be migrated
 - Timers and countdowns
 - Props and messages
 - Looks: choose which layers each output shows

@@ -18,6 +18,7 @@ Phase **–** means the feature is deliberately out of scope for now.
 | Themes | Apply consistent text and layout styling in one step | 1 |
 | Quick edit | Fix a typo on a slide without opening the editor | 1 |
 | Search | Find any song or presentation from the keyboard | 1 |
+| Bilingual lyrics | Show a song in two languages at once, or choose the language for each output | 2 |
 | Text reflow editor | Edit all the text of a presentation in one continuous view | 2 |
 | Slide editor objects | Layered objects with fills, strokes and shadows | 2 |
 | Text and background effects | Visual effects on text and media | 4 |
@@ -99,7 +100,7 @@ A commercial catalogue integration is out of scope because no partner program is
 
 | Feature | What it does | Phase |
 |---|---|---|
-| English and Spanish interface | Both languages from the first release | 1 |
+| English and Spanish interface | Both languages from the first release, chosen in Settings | 1 |
 | Apple silicon and Intel | One universal build | 1 |
 | Signed, notarized builds with updates | Install and update without security warnings | 1 |
 | More languages | Community translations | 3 |
