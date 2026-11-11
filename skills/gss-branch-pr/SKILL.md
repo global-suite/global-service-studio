@@ -4,7 +4,7 @@ description: "Trigger: branch, commit, pull request, PR, split a large change, s
 license: MIT
 metadata:
   author: global-suite
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## Activation Contract
@@ -29,6 +29,8 @@ Load this skill before creating a branch, writing a commit message or opening or
 | Situation | Action |
 |---|---|
 | Change over 400 lines | Split into a chain of small pull requests, each useful on its own |
+| A pull request depends on an unmerged one | Build its branch on the earlier branch; open it after the earlier one merges |
+| `main` moved after your branch was pushed | Merge `main` into the branch; do not rebase, and never force-push a shared branch |
 | Split makes no sense, for example generated files | Ask a maintainer for `size:exception` |
 | Issue approved after the pull request was opened | Edit the description, or ask a maintainer to re-run the check |
 | Changes a saved format or existing behavior | `type:breaking-change` |

@@ -47,7 +47,9 @@ swift test
 
 | Document | What it covers |
 |---|---|
-| [Roadmap](docs/roadmap.md) | Phases, and what is open for contributors |
+| [Codebase guide](docs/CODEBASE-GUIDE.md) | A mental model of the project and where each kind of change goes |
+| [Roadmap](docs/roadmap.md) | Phases and the order of work |
+| [Community roadmap](docs/community-roadmap.md) | Work that is ready to be picked up |
 | [Feature map](docs/feature-map.md) | Every planned feature and its phase |
 | [Architecture](docs/architecture.md) | Modules, the render engine, the output layers |
 | [Decisions](docs/adr/README.md) | Why the stack and the rules are what they are |
