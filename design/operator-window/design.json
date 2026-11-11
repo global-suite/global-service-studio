@@ -1,0 +1,41 @@
+{
+  "title": "Operator window",
+  "brief": "Operator window of Global Service Studio: close to what ProPresenter operators expect, more modern, with very simple views. Several configurable outputs (center, sides, stage teleprompter, key output for a switcher).",
+  "artboards": [
+    {
+      "file": "01-classic-three-pane.html",
+      "title": "Classic three-pane",
+      "tradeoff": "Most familiar to a ProPresenter operator and shows everything at once; dense, with three zones competing for attention",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "02-live-focus.html",
+      "title": "Live focus",
+      "tradeoff": "Fewest decisions for an untrained volunteer: NOW, NEXT and one key; browsing and editing are one step away",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "03-outputs-wall.html",
+      "title": "Outputs wall",
+      "tradeoff": "Best answer to what every screen shows right now; leaves less than half the height for slides and is visually heavier",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "04-native-live.html",
+      "title": "Native · Live",
+      "tradeoff": "The calmest view during the service: a red LIVE panel for what is on screen, Next beside it, and two rows of five slides that follow the live one; editing is one mode switch away",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "05-native-prepare.html",
+      "title": "Native · Prepare",
+      "tradeoff": "Guided song builder for a beginner: pick a part of the song, type its words, see its slides; shows one part at a time instead of the whole song",
+      "width": 1440,
+      "height": 900
+    }
+  ]
+}

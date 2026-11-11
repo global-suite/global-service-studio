@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Focus — Global Service Studio operator window</title>
+<style>
+  :root {
+    --bg: #111215; --chrome: #1a1b20; --panel: #1f2026; --raised: #272930; --line: #33353d;
+    --text: #f2f3f5; --muted: #a9acb6; --faint: #8b8f99;
+    --live: #d13438; --live-ink: #ffffff; --live-soft: rgba(209,52,56,.18);
+    --next: #5b9dff; --next-soft: rgba(91,157,255,.14);
+    --focus: #ffd166; --key: #00b140;
+    --font: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0a0a0c; color: var(--text); font: 13px/1.4 var(--font); }
+  body { display: grid; place-items: center; min-height: 900px; }
+  .window { width: 1440px; height: 900px; background: var(--bg); border-radius: 12px; overflow: hidden;
+    display: grid; grid-template-rows: 40px 1fr auto; box-shadow: 0 0 0 1px #2a2b31; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+  kbd { font: 600 11px/1 var(--font); color: var(--text); background: var(--raised); border: 1px solid #4a4d57;
+    border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px; }
+  [hidden] { display: none !important; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  /* Title bar */
+  .titlebar { display: flex; align-items: center; gap: 16px; padding: 0 14px; background: var(--chrome); border-bottom: 1px solid var(--line); }
+  .lights { display: flex; gap: 8px; } .lights span { width: 12px; height: 12px; border-radius: 50%; }
+  .lights span:nth-child(1) { background: #ff5f57; } .lights span:nth-child(2) { background: #febc2e; } .lights span:nth-child(3) { background: #28c840; }
+  .doc-title { font-weight: 600; } .doc-title small { color: var(--muted); font-weight: 400; margin-left: 8px; font-size: 12px; }
+  .spacer { flex: 1; }
+  .clock { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .clock b { color: var(--text); font-weight: 600; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 7px;
+    background: var(--raised); border: 1px solid #3d4049; font-weight: 500; }
+  .btn:hover { background: #30323a; }
+  .btn.primary { background: #2d3442; border-color: #47546b; }
+
+  /* Run list */
+  .body { display: grid; grid-template-columns: 252px 1fr; min-height: 0; }
+  .runlist { background: var(--chrome); border-right: 1px solid var(--line); overflow: auto; padding: 14px 10px; }
+  .runlist h2 { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 6px 10px; }
+  .runlist h3 { font-size: 11px; font-weight: 600; color: var(--faint); margin: 10px 8px 2px; text-transform: uppercase; letter-spacing: .05em; }
+  .runlist ol { list-style: none; margin: 0; padding: 0; }
+  .item { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 30px; padding: 5px 8px; border-radius: 7px; text-align: left; color: var(--muted); }
+  .item:hover { background: var(--raised); color: var(--text); }
+  .item .meta { white-space: nowrap; margin-left: auto; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .item.current { background: var(--live-soft); color: var(--text); font-weight: 600; box-shadow: inset 3px 0 0 var(--live); }
+  .tag-live { font: 700 10px/1 var(--font); letter-spacing: .06em; color: var(--live-ink); background: var(--live); padding: 3px 5px; border-radius: 4px; }
+  .runlist .sections { margin: 2px 0 4px 26px; border-left: 1px solid var(--line); padding-left: 8px; }
+  .sec { display: flex; gap: 8px; align-items: center; width: 100%; min-height: 26px; padding: 3px 8px; border-radius: 6px; color: var(--muted); text-align: left; }
+  .sec:hover { background: var(--raised); color: var(--text); }
+  .sec .n { margin-left: auto; font-size: 11px; color: var(--faint); }
+  .sec[aria-current="true"] { color: var(--text); font-weight: 600; background: var(--raised); }
+  .sec[aria-current="true"]::before { content: ""; width: 0; height: 0; border-left: 7px solid var(--live); border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+
+  /* Stage area */
+  main { padding: 22px 32px 18px; display: flex; flex-direction: column; gap: 16px; min-width: 0; overflow: hidden; }
+  .song-head { display: flex; align-items: flex-end; gap: 16px; }
+  .song-head h1 { margin: 0; font-size: 26px; line-height: 1.15; font-weight: 700; }
+  .song-head p { margin: 4px 0 0; color: var(--muted); }
+  .lang { display: inline-flex; border: 1px solid #3d4049; border-radius: 7px; overflow: hidden; }
+  .lang button { padding: 4px 10px; font-weight: 600; font-size: 12px; color: var(--muted); }
+  .lang button[aria-pressed="true"] { background: var(--raised); color: var(--text); }
+  .arr { display: flex; align-items: center; gap: 8px; }
+  .arr-label { color: var(--muted); font-size: 12px; margin-right: 4px; }
+  .chip { min-width: 52px; height: 40px; padding: 0 10px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line);
+    display: grid; place-items: center; font-weight: 700; font-size: 14px; color: var(--muted); position: relative; }
+  .chip:hover { color: var(--text); border-color: #4a4d57; }
+  .chip small { display: block; font-size: 9px; font-weight: 700; letter-spacing: .08em; line-height: 1; }
+  .chip.done { color: var(--faint); }
+  .chip[aria-current="true"] { background: var(--live); border-color: var(--live); color: var(--live-ink); }
+  .chip.is-next { border-color: var(--next); color: var(--text); box-shadow: inset 0 0 0 1px var(--next); }
+
+  .stage { display: grid; grid-template-columns: 640px 1fr; gap: 32px; align-items: start; }
+  .pane-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; min-height: 24px; }
+  .pane-head h2 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .pane-head .where { color: var(--muted); }
+  .pane-head .hint { margin-left: auto; color: var(--muted); font-size: 12px; display: flex; gap: 6px; align-items: center; }
+  .badge-live { display: inline-flex; align-items: center; gap: 6px; background: var(--live); color: var(--live-ink); padding: 4px 9px; border-radius: 6px; font-weight: 700; letter-spacing: .08em; font-size: 12px; }
+  .badge-live i { width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+  .badge-next { display: inline-flex; align-items: center; gap: 6px; color: var(--next); font-weight: 700; letter-spacing: .08em; font-size: 12px; }
+
+  .slide { aspect-ratio: 16/9; border-radius: 10px; display: grid; place-items: center; text-align: center; position: relative; overflow: hidden;
+    background: radial-gradient(120% 90% at 30% 20%, #3a3f52 0%, #1d2030 45%, #0c0d14 100%); }
+  .slide.no-bg { background: #000; }
+  .slide p { margin: 0; font-weight: 600; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.6); line-height: 1.3; }
+  .now .slide { outline: 3px solid var(--live); outline-offset: 3px; }
+  .now .slide p { font-size: 36px; }
+  .next .slide { outline: 2px dashed var(--next); outline-offset: 3px; }
+  .next .slide p { font-size: 25px; }
+  .slide .empty { color: #c9ccd4; font-size: 15px; font-weight: 500; text-shadow: none; }
+  .bgname { position: absolute; left: 10px; bottom: 8px; font-size: 11px; color: #d4d6dd; background: rgba(0,0,0,.55); padding: 2px 7px; border-radius: 5px; display: flex; gap: 5px; align-items: center; }
+  .bgname svg { width: 12px; height: 12px; }
+
+  .transport { display: flex; gap: 12px; align-items: center; }
+  .go { height: 46px; padding: 0 18px; border-radius: 9px; background: var(--raised); border: 1px solid #3d4049; font-weight: 600; font-size: 14px; display: inline-flex; gap: 10px; align-items: center; }
+  .go:hover { background: #30323a; }
+  .go.send { background: #24344f; border-color: var(--next); }
+  .go.send:hover { background: #2b3f60; }
+  .after { margin-left: auto; color: var(--muted); font-size: 12px; text-align: right; }
+  .after b { color: var(--text); font-weight: 600; }
+
+  /* Bottom strip */
+  .strip { display: flex; align-items: stretch; gap: 14px; padding: 14px 20px 16px; background: var(--chrome); border-top: 1px solid var(--line); }
+  .strip-head { display: flex; align-items: baseline; gap: 12px; }
+  .strip h2 { margin: 0 0 8px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .outputs ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 12px; }
+  .mon { width: 178px; }
+  .mon .scr { aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; position: relative; border: 2px solid var(--live); display: grid; place-items: center; text-align: center; }
+  .mon .scr p { font-size: 9.5px; margin: 0; }
+  .mon .cap { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
+  .mon .cap b { font-weight: 600; }
+  .mon .role { display: block; color: var(--muted); font-size: 11px; }
+  .mon .st { margin-left: auto; font-size: 11px; font-weight: 700; color: #ff8a8d; display: inline-flex; gap: 4px; align-items: center; }
+  .mon .st::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .stagescr { background: #000; display: grid !important; grid-template-rows: auto 1fr auto; place-items: stretch !important; text-align: left !important; padding: 5px 7px; font-size: 9px; }
+  .stagescr .clk { font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; }
+  .stagescr .cur { color: #fff; font-weight: 600; font-size: 10px; align-self: center; line-height: 1.25; }
+  .stagescr .nx { color: #ffd166; line-height: 1.25; }
+  .stagescr .msg { color: #b9bcc6; border-top: 1px solid #333; padding-top: 2px; margin-top: 2px; }
+  .keyscr { background: var(--key); align-content: end; }
+  .keyscr .lt { width: 100%; background: rgba(0,0,0,.72); color: #fff; font-weight: 600; font-size: 9.5px; padding: 3px 0; line-height: 1.3; }
+  .setup { font-size: 11px; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; padding: 2px 0; }
+  .clears { margin-left: auto; display: flex; flex-direction: column; }
+  .clears div { display: flex; gap: 18px; flex: 1; }
+  .clr { width: 156px; min-height: 112px; border-radius: 10px; background: var(--raised); border: 1px solid #454852; display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: space-between; padding: 12px 14px; text-align: left; font-weight: 600; font-size: 15px; }
+  .clr:hover { background: #30323a; }
+  .clr svg { width: 22px; height: 22px; }
+  .clr .k { display: flex; justify-content: space-between; width: 100%; align-items: center; font-weight: 500; font-size: 11px; color: var(--muted); }
+  .clr.all { border-color: var(--live); background: #3a1f22; }
+  .clr.all:hover { background: #4a2428; }
+  .clr[aria-pressed="true"] { background: #44464f; border-color: #8d909b; }
+  .clr[aria-pressed="true"] .k span::after { content: " · Cleared"; color: var(--text); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .chip, .sec, .slide, .item { transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="window">
+  <header class="titlebar">
+    <div class="lights" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="doc-title">Sunday Service<small>Nov 15 · 10:00</small></div>
+    <div class="spacer"></div>
+    <div class="clock" aria-label="Current time 10:14">Time <b>10:14</b></div>
+    <button class="btn primary" type="button" aria-haspopup="dialog" title="Songs, media, Bible, outputs and editing">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>Browse &amp; Edit</button>
+  </header>
+
+  <div class="body">
+    <nav class="runlist" aria-label="Order of service">
+      <h2>Order of service</h2>
+      <h3>Pre-service</h3>
+      <ol><li><button class="item" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/><path d="m6.5 6 3.5 2-3.5 2z"/></svg>Countdown<span class="meta">5:00</span></button></li></ol>
+      <h3>Worship</h3>
+      <ol>
+        <li>
+          <button class="item current" type="button" aria-current="true" aria-expanded="true"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 12V3l7-1.5V10"/><circle cx="4.3" cy="12" r="1.8"/><circle cx="11.3" cy="10" r="1.8"/></svg>Morning Light<span class="meta"><span class="tag-live">LIVE</span></span></button>
+          <ol class="sections" id="sections" aria-label="Morning Light arrangement"></ol>
+        </li>
+        <li><button class="item" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 12V3l7-1.5V10"/><circle cx="4.3" cy="12" r="1.8"/><circle cx="11.3" cy="10" r="1.8"/></svg>We Lift Our Voice</button></li>
+        <li><button class="item" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 12V3l7-1.5V10"/><circle cx="4.3" cy="12" r="1.8"/><circle cx="11.3" cy="10" r="1.8"/></svg>Great Is the Light</button></li>
+      </ol>
+      <h3>Welcome</h3>
+      <ol>
+        <li><button class="item" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M8 11.5V14M5.5 14h5"/></svg>Welcome<span class="meta">3 slides</span></button></li>
+        <li><button class="item" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/><path d="m6.5 6 3.5 2-3.5 2z"/></svg>Announcements<span class="meta">2:10</span></button></li>
+      </ol>
+      <h3>Message</h3>
+      <ol><li><button class="item" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h5.5L12.5 4.5v10h-8.5z"/><path d="M9.5 1.5v3h3M6.5 8.5h4M6.5 11h4"/></svg>Hope That Holds.pdf<span class="meta">24 pages</span></button></li></ol>
+      <h3>Response</h3>
+      <ol><li><button class="item" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 12V3l7-1.5V10"/><circle cx="4.3" cy="12" r="1.8"/><circle cx="11.3" cy="10" r="1.8"/></svg>Morning Light (short)</button></li></ol>
+    </nav>
+
+    <main aria-labelledby="song-title">
+      <div class="song-head">
+        <div>
+          <h1 id="song-title">Morning Light</h1>
+          <p>Key G · 72 bpm · Arrangement: Default</p>
+        </div>
+        <div class="spacer"></div>
+        <div class="lang" role="group" aria-label="Lyrics language">
+          <button type="button" aria-pressed="true">EN</button><button type="button" aria-pressed="false">ES</button>
+        </div>
+      </div>
+
+      <div class="arr" role="group" aria-label="Arrangement position">
+        <span class="arr-label">Arrangement</span>
+        <span id="chips" style="display:flex;gap:8px"></span>
+      </div>
+
+      <div class="stage">
+        <section class="now" aria-labelledby="now-h">
+          <div class="pane-head">
+            <span class="badge-live"><i aria-hidden="true"></i><span id="now-h">LIVE NOW</span></span>
+            <span class="where" id="now-where"></span>
+            <button class="btn" type="button" id="undo" hidden style="margin-left:auto">Undo clear <kbd>⌘Z</kbd></button>
+          </div>
+          <div class="slide" id="now-slide" role="img"></div>
+        </section>
+        <section class="next" aria-labelledby="next-h">
+          <div class="pane-head">
+            <span class="badge-next"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></svg><h2 id="next-h">Next</h2></span>
+            <span class="where" id="next-where"></span>
+          </div>
+          <div class="slide" id="next-slide" role="img"></div>
+          <div class="transport" style="margin-top:20px">
+            <button class="go" type="button" id="prev"><kbd>←</kbd>Previous</button>
+            <button class="go send" type="button" id="send">Send next<kbd>Space</kbd><kbd>→</kbd></button>
+          </div>
+          <p class="after" style="margin-top:14px">After this song: <b>We Lift Our Voice</b></p>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <footer class="strip" aria-label="Outputs and clear actions">
+    <section class="outputs" aria-labelledby="out-h">
+      <div class="strip-head"><h2 id="out-h">Outputs</h2><button class="setup" type="button">Set up outputs…</button></div>
+      <ul>
+        <li class="mon"><div class="scr slide" id="o-center" aria-hidden="true"></div>
+          <div class="cap"><b>Center</b><span class="st">Live</span></div><span class="role">Audience · 1920×1080</span></li>
+        <li class="mon"><div class="scr slide" id="o-sides" aria-hidden="true"></div>
+          <div class="cap"><b>Sides</b><span class="st">Live</span></div><span class="role">Audience · 1920×1080</span></li>
+        <li class="mon"><div class="scr stagescr" id="o-stage" aria-hidden="true"></div>
+          <div class="cap"><b>Stage</b><span class="st">Live</span></div><span class="role">Stage · current, next, clock</span></li>
+        <li class="mon"><div class="scr keyscr" id="o-key" aria-hidden="true"></div>
+          <div class="cap"><b>Key</b><span class="st">Live</span></div><span class="role">Key · green, lower third</span></li>
+      </ul>
+    </section>
+    <section class="clears" aria-labelledby="clr-h">
+      <h2 id="clr-h">Clear</h2>
+      <div>
+        <button class="clr" type="button" id="c-slide" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 10h8M8 13h5"/></svg>
+          Clear Slide<span class="k"><span>Lyrics only</span><kbd>F1</kbd></span></button>
+        <button class="clr" type="button" id="c-bg" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="m3 15 5-5 4 4 3-3 6 6"/></svg>
+          Clear Background<span class="k"><span>Soft Light Loop</span><kbd>F2</kbd></span></button>
+        <button class="clr all" type="button" id="c-all" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="m9 8 6 6M15 8l-6 6"/></svg>
+          Clear All<span class="k"><span>Black screens</span><kbd>F3</kbd></span></button>
+      </div>
+    </section>
+  </footer>
+  <p class="sr" aria-live="polite" id="announce"></p>
+</div>
+
+<script>
+  const arrangement = [
+    { name: "Verse 1", ab: "V1", slides: [["Morning light is rising", "Over all the earth"], ["Every shadow fading", "Hope is being born"]] },
+    { name: "Chorus", ab: "C", slides: [["We lift our voice", "We lift our eyes"], ["You are the light", "That never dies"]] },
+    { name: "Verse 2", ab: "V2", slides: [["Mercy like a river", "Running through the night"], ["Every heart awakened", "Every wrong made right"]] },
+    { name: "Chorus", ab: "C", slides: null },
+    { name: "Bridge", ab: "B", slides: [["Shine on us", "Shine through us"]] },
+    { name: "Chorus", ab: "C", slides: null }
+  ];
+  const flat = [];
+  arrangement.forEach((s, pos) => { (s.slides || arrangement[1].slides).forEach((lines, i, all) => flat.push({ pos, name: s.name, i, of: all.length, lines })); });
+  const state = { live: 2, slide: true, bg: true };
+  const $ = id => document.getElementById(id);
+  const esc = t => t.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const where = s => `${s.name} · slide ${s.i + 1} of ${s.of}`;
+  const bgTag = '<span class="bgname"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/><path d="m6.5 6 3.5 2-3.5 2z"/></svg>Soft Light Loop</span>';
+
+  function slideHTML(lines, withTag) { return (lines ? `<p>${lines.map(esc).join("<br>")}</p>` : "") + (withTag ? bgTag : ""); }
+
+  function render() {
+    const cur = flat[state.live], nxt = flat[state.live + 1];
+    const shown = state.slide ? cur.lines : null;
+    // NOW
+    const now = $("now-slide");
+    now.classList.toggle("no-bg", !state.bg);
+    now.innerHTML = shown ? slideHTML(shown, state.bg)
+      : `<p class="empty">${state.bg ? "Lyrics cleared — background only" : "Screens are black"}</p>` + (state.bg ? bgTag : "");
+    now.setAttribute("aria-label", shown ? `Live: ${cur.lines.join(" / ")}` : "Live: no lyrics on screen");
+    $("now-where").textContent = shown ? where(cur) : `Cleared · was ${where(cur)}`;
+    // NEXT
+    const next = $("next-slide");
+    next.innerHTML = nxt ? slideHTML(nxt.lines, false) : '<p class="empty">End of song<br>Next item: We Lift Our Voice</p>';
+    next.setAttribute("aria-label", nxt ? `Next: ${nxt.lines.join(" / ")}` : "End of song");
+    $("next-where").textContent = nxt ? where(nxt) : "";
+    // Arrangement chips
+    $("chips").innerHTML = arrangement.map((s, p) => {
+      const isCur = p === cur.pos, isNext = nxt && nxt.pos === p && !isCur;
+      const tag = isCur ? "<small>LIVE</small>" : isNext ? "<small>NEXT</small>" : "";
+      return `<button type="button" class="chip${p < cur.pos ? " done" : ""}${isNext ? " is-next" : ""}" data-pos="${p}"
+        ${isCur ? 'aria-current="true"' : ""} aria-label="${s.name}${isCur ? ", live" : isNext ? ", next" : ""}"><span>${s.ab}${tag}</span></button>`;
+    }).join("");
+    // Run list sections
+    $("sections").innerHTML = arrangement.map((s, p) => {
+      const n = (s.slides || arrangement[1].slides).length;
+      return `<li><button type="button" class="sec" data-pos="${p}" ${p === cur.pos ? 'aria-current="true"' : ""}>${s.name}<span class="n">${p === cur.pos ? "Live · " : ""}${n}</span></button></li>`;
+    }).join("");
+    // Outputs
+    ["o-center", "o-sides"].forEach(id => { const o = $(id); o.classList.toggle("no-bg", !state.bg); o.innerHTML = slideHTML(shown, false); });
+    $("o-stage").innerHTML = `<div class="clk"><span>10:14</span><span>${cur.name}</span></div>
+      <div class="cur">${shown ? shown.map(esc).join("<br>") : "— cleared —"}</div>
+      <div class="nx">${nxt ? esc(nxt.lines[0]) + " …" : "End of song"}<div class="msg">Message: none</div></div>`;
+    $("o-key").innerHTML = shown ? `<div class="lt">${shown.map(esc).join("<br>")}</div>` : "";
+    $("c-slide").setAttribute("aria-pressed", String(!state.slide));
+    $("c-bg").setAttribute("aria-pressed", String(!state.bg));
+    $("c-all").setAttribute("aria-pressed", String(!state.slide && !state.bg));
+    $("undo").hidden = state.slide && state.bg;
+  }
+
+  function say(t) { $("announce").textContent = t; }
+  function go(index) {
+    if (index < 0 || index >= flat.length) return;
+    state.live = index; state.slide = true; render();
+    say(`Live: ${where(flat[index])}`);
+  }
+  function jumpTo(pos) { go(flat.findIndex(s => s.pos === pos)); }
+
+  $("send").addEventListener("click", () => go(state.live + 1));
+  $("prev").addEventListener("click", () => go(state.live - 1));
+  $("undo").addEventListener("click", () => { state.slide = true; state.bg = true; render(); $("send").focus(); say("Restored: " + where(flat[state.live])); });
+  $("c-slide").addEventListener("click", () => { state.slide = false; render(); say("Lyrics cleared"); });
+  $("c-bg").addEventListener("click", () => { state.bg = false; render(); say("Background cleared"); });
+  $("c-all").addEventListener("click", () => { state.slide = false; state.bg = false; render(); say("All outputs cleared"); });
+  document.addEventListener("click", e => { const b = e.target.closest("[data-pos]"); if (b) jumpTo(Number(b.dataset.pos)); });
+  document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(".lang button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  }));
+  document.addEventListener("keydown", e => {
+    const keys = { " ": () => go(state.live + 1), ArrowRight: () => go(state.live + 1), ArrowLeft: () => go(state.live - 1),
+      F1: () => $("c-slide").click(), F2: () => $("c-bg").click(), F3: () => $("c-all").click() };
+    if (e.metaKey && e.key === "z" && !$("undo").hidden) { e.preventDefault(); $("undo").click(); return; }
+    if (keys[e.key] && !e.metaKey && !e.ctrlKey) { e.preventDefault(); keys[e.key](); }
+  });
+  render();
+</script>
+</body>
+</html>

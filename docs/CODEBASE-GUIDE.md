@@ -51,6 +51,7 @@ Only `GSSCore` exists. The other modules in [architecture.md](architecture.md) a
 | `Tests/GSSCoreTests/` | One test file per source area; format tests and validation tests are separate |
 | `.github/` | Issue forms, the pull request template, CI and the policy checks |
 | `skills/` | Task-oriented instructions for coding agents |
+| `design/` | The design system and the interface mockups the app is built from |
 | `docs/adr/` | Why things are the way they are |
 
 ## Where a change goes
@@ -63,6 +64,7 @@ Only `GSSCore` exists. The other modules in [architecture.md](architecture.md) a
 | Add or change text the user sees | The interface module, never `GSSCore` | [localization.md](localization.md) |
 | Touch rendering, outputs or the API | The render engine or remote module, once they exist | [ADR 0006](adr/0006-extensibility-and-live-performance.md) |
 | Change a policy check | `.github/workflows/pr-policy.yml` and its test | [CONTRIBUTING.md](../CONTRIBUTING.md#notes-for-maintainers) |
+| Build or change a screen | The interface module, once it exists | [design/system.md](../design/system.md) and the mockups in `design/` |
 | Record a decision that is expensive to reverse | `docs/adr/` | [adr/README.md](adr/README.md) |
 
 ## Commands

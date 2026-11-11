@@ -31,7 +31,7 @@ The first usable release. One operator and one Mac driving the screens of a typi
 
 Work happens in this order. Each step ends with something that can be seen running.
 
-1. **Operator window design.** Close to what operators of existing presentation software expect, more modern, with very simple views.
+1. **Operator window design.** Close to what operators of existing presentation software expect, more modern, with very simple views. Done: two modes, Live and Prepare, and a design system, in [`design/`](../design/system.md).
 2. **App skeleton.** The application target, the main window, English and Spanish.
 3. **First projection, end to end.** One song with a theme, full screen on a second display, with lines split and balanced automatically. Measured on the Intel test machine before anything is built on top.
 4. **Outputs.** Any number of outputs, each assigned to a display, each with a role and its own theme:
