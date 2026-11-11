@@ -11,11 +11,11 @@ struct LiveView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        GeometryReader { proxy in content(contentWidth: proxy.size.width - 64) }
+        GeometryReader { proxy in content(width: proxy.size.width - 64, height: proxy.size.height - 32) }
             .background(appearance.window.color)
     }
 
-    private func content(contentWidth: CGFloat) -> some View {
+    private func content(width: CGFloat, height: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
                 Text(state.song.title).font(.system(size: 15, weight: .semibold)).foregroundColor(Appearance.label.color)
@@ -23,16 +23,19 @@ struct LiveView: View {
                     Text(String(format: Strings.text("Key %1$@ · %2$ld bpm"), key, Int(tempo))).foregroundColor(Appearance.labelSecondary.color)
                 }
             }
-            // The panels share the width; the buttons keep a fixed, compact column.
-            let panels = max(contentWidth - Self.buttonsWidth - 40, 400)
-            let liveWidth = min(panels * 0.57, Self.maxLiveWidth)
-            let height = 28 + liveWidth * 9 / 16
+            // Live and the Next column fill the width and end at the same height:
+            // Next's slide plus its label (28) and the buttons (68) match Live's slide plus its band (28).
+            let liveWidth = max(min((width + 101) / 2, (height * 0.55 - 28) * 16 / 9), 360)
+            let liveHeight = 28 + liveWidth * 9 / 16
             HStack(alignment: .top, spacing: 20) {
-                livePanel.frame(width: liveWidth)
-                nextPanel.frame(width: liveWidth * 0.75)
-                buttons.frame(width: Self.buttonsWidth).padding(.top, 28)
+                livePanel.frame(width: liveWidth, height: liveHeight)
+                VStack(alignment: .leading, spacing: 12) {
+                    nextPanel
+                    buttons
+                }
+                .frame(width: (liveHeight - 96) * 16 / 9)
             }
-            .frame(height: height, alignment: .top)
+            .frame(height: liveHeight)
             allSlides
         }
         .font(.system(size: 13))
@@ -77,33 +80,8 @@ struct LiveView: View {
         .opacity(0.92)
     }
 
-    static let buttonsWidth: CGFloat = 200
-    static let maxLiveWidth: CGFloat = 640
-
     private var buttons: some View {
-        VStack(spacing: 8) {
-            Button { state.perform(.nextSlide) } label: {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(Strings.text("Next")).font(.system(size: 17, weight: .bold))
-                        Spacer(minLength: 6)
-                        Image(systemName: "arrow.right").font(.system(size: 17, weight: .semibold))
-                    }
-                    Text(state.nextSlide?.position ?? Strings.text("End of song")).font(.system(size: 11)).opacity(0.85)
-                    Spacer(minLength: 0)
-                    HStack(spacing: 4) {
-                        KeyCap(label: Strings.text("Space"), fill: appearance.window.color)
-                        KeyCap(label: "→", fill: appearance.window.color)
-                    }
-                }
-                .foregroundColor(.white)
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(height: 96)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Appearance.accent.color))
-            }
-            .disabled(state.nextSlide == nil)
-            .opacity(state.nextSlide == nil ? 0.45 : 1)
+        HStack(spacing: 10) {
             Button { state.perform(.previousSlide) } label: {
                 HStack(spacing: 8) {
                     KeyCap(label: "←", fill: appearance.window.color)
@@ -114,15 +92,34 @@ struct LiveView: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Appearance.control.color))
             }
             .disabled(state.previousSlide == nil)
             .opacity(state.previousSlide == nil ? 0.45 : 1)
+            .frame(maxWidth: 220)
+            Button { state.perform(.nextSlide) } label: {
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Strings.text("Next")).font(.system(size: 17, weight: .bold))
+                        Text(state.nextSlide?.position ?? Strings.text("End of song")).font(.system(size: 11)).opacity(0.85)
+                    }
+                    Spacer(minLength: 6)
+                    KeyCap(label: Strings.text("Space"), fill: appearance.window.color)
+                    KeyCap(label: "→", fill: appearance.window.color)
+                    Image(systemName: "arrow.right").font(.system(size: 17, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Appearance.accent.color))
+            }
+            .disabled(state.nextSlide == nil)
+            .opacity(state.nextSlide == nil ? 0.45 : 1)
         }
         .buttonStyle(.plain)
         .lineLimit(1)
+        .frame(height: 56)
     }
 
     private var allSlides: some View {
@@ -135,7 +132,7 @@ struct LiveView: View {
                     }
                     .padding(3)
                 }
-                .frame(height: 292)
+                .frame(maxHeight: .infinity)
                 .onChange(of: state.liveIndex) { index in
                     withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { proxy.scrollTo(index / 5 * 5, anchor: .top) }
                 }
