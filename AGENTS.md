@@ -24,6 +24,7 @@ Global Service Studio is a native macOS presentation app for churches and live s
 ```bash
 swift build
 swift test
+node .github/scripts/test-pr-policy.mjs   # after changing .github/workflows/pr-policy.yml
 ```
 
 `swift test` needs full Xcode. If it fails with `no such module 'XCTest'`, run it as `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`.

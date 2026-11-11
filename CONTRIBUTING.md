@@ -12,6 +12,7 @@ Thank you for wanting to help. Please read this guide fully before you start: th
 - [Pull requests](#pull-requests)
 - [Code rules](#code-rules)
 - [Roles and permissions](#roles-and-permissions)
+- [Notes for maintainers](#notes-for-maintainers)
 
 ## Issue-first workflow
 
@@ -132,8 +133,9 @@ Do not add `Co-Authored-By` or similar trailers for AI tools.
 
 ## Pull requests
 
-- Link the approved issue with `Closes #N` (or `Fixes #N`, `Resolves #N`).
-- Add exactly one `type:*` label.
+- Link the approved issue with `Closes #N` (or `Fixes #N`, `Resolves #N`). The full issue URL also works: `Closes https://github.com/global-suite/global-service-studio/issues/N`. References inside HTML comments are ignored. Markdown code is not parsed, so a reference inside a code block or inline code also counts: write the closing keyword only for the issue you mean to close.
+- The pull request needs exactly one `type:*` label. If you cannot add labels, tick the type in the pull request template and a maintainer adds the label; the check re-runs when the label is added.
+- If the issue is approved after you opened the pull request, `Linked approved issue` does not refresh by itself. Edit the pull request description (any change works) or ask a maintainer to re-run the check.
 - Stay within **400 changed lines** (additions plus deletions). Split larger work into a chain of small pull requests, each one useful on its own. A maintainer can grant `size:exception` when splitting makes no sense, for example for generated files.
 - Keep tests and documentation in the same pull request as the behavior they cover.
 - Fill in the pull request template completely, including the test plan and the AI assistance section.
@@ -154,11 +156,17 @@ Do not add `Co-Authored-By` or similar trailers for AI tools.
 | Role | Who | Can do |
 |---|---|---|
 | Contributor | Anyone | Open issues, comment, open pull requests from a fork |
-| Triage | Trusted contributors | Label and close issues, except protected labels |
+| Triage | Trusted contributors | Label and close issues; `status:approved` and `size:exception` stay with maintainers by rule, not protected labels |
 | Maintainer | Invited by the owner | Approve issues, review and merge pull requests, grant size exceptions |
 | Owner | Isaac Páez | Releases, repository settings, roles, final decisions |
 
 Roles are granted by invitation, based on sustained, careful contributions.
+
+## Notes for maintainers
+
+- **Required checks are matched by name.** A pull request that adds a workflow with a job of the same name could report a passing check without the real policy running. Review any pull request that touches `.github/` with care, and never approve workflow runs from a first-time contributor without reading the workflow changes.
+- **Maintainer-only labels are a rule, not a protection.** GitHub's Triage role can technically add any label, including `status:approved` and `size:exception`. The team follows the rule, and Triage is granted with that in mind.
+- **Test the policy checks.** After changing `.github/workflows/pr-policy.yml`, run `node .github/scripts/test-pr-policy.mjs`. CI runs it too.
 
 ## Code of Conduct
 
