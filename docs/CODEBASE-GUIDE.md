@@ -39,7 +39,7 @@ Three ideas explain most decisions:
 
 ## What exists today
 
-Only `GSSCore` exists. The other modules in [architecture.md](architecture.md) are added as the [roadmap](roadmap.md) reaches them.
+`GSSCore` and the first version of the app exist. The other modules in [architecture.md](architecture.md) are added as the [roadmap](roadmap.md) reaches them.
 
 | Path | Contents |
 |---|---|
@@ -48,7 +48,10 @@ Only `GSSCore` exists. The other modules in [architecture.md](architecture.md) a
 | `Sources/GSSCore/Song/` | The song format: model, reading and writing, validation |
 | `Sources/GSSCore/Theme/` | The theme format |
 | `Sources/GSSCore/Presentation/` | The presentation format |
+| `Sources/GSSApp/` | The app: main window, menu, appearances, app state and commands, English and Spanish strings in `Resources/` |
+| `Sources/GlobalServiceStudio/` | The executable; it only starts the app (`swift run GlobalServiceStudio`) |
 | `Tests/GSSCoreTests/` | One test file per source area; format tests and validation tests are separate |
+| `Tests/GSSAppTests/` | Strings, app state, appearances and the main window |
 | `.github/` | Issue forms, the pull request template, CI and the policy checks |
 | `skills/` | Task-oriented instructions for coding agents |
 | `design/` | The design system and the interface mockups the app is built from |

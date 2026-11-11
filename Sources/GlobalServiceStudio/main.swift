@@ -1,0 +1,3 @@
+import GSSApp
+
+GlobalServiceStudioApp.run()

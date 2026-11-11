@@ -40,6 +40,7 @@ To add or change a skill, follow [docs/skill-style-guide.md](docs/skill-style-gu
 ```bash
 swift build
 swift test
+swift run GlobalServiceStudio   # opens the app
 node .github/scripts/test-pr-policy.mjs   # after changing .github/workflows/pr-policy.yml
 node .github/scripts/check-skills-index.mjs   # after adding, renaming or removing a skill
 ```
