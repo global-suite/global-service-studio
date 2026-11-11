@@ -61,7 +61,7 @@ final class ThemeValidationTests: XCTestCase {
         try check("missingMedia", at: "background.media") { $0.background = ThemeBackground(kind: .video) }
         for path in ["", "/Users/a/sky.jpg", "~/sky.jpg", "media/../../sky.jpg"] {
             try check("invalidMediaPath", at: "background.media.path") {
-                $0.background = ThemeBackground(kind: .image, media: ThemeMediaReference(path: path, sha256: "ab12"))
+                $0.background = ThemeBackground(kind: .image, media: MediaReference(path: path, sha256: "ab12"))
             }
         }
     }

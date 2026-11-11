@@ -15,11 +15,8 @@ extension Theme {
         if let value = background.color { try color(value, "background.color") }
         if background.kind == .color, background.color == nil { throw fail("missingColor", "background.color") }
         if background.kind == .image || background.kind == .video {
-            guard let path = background.media?.path else { throw fail("missingMedia", "background.media") }
-            let parts = path.split(separator: "/", omittingEmptySubsequences: false)
-            guard !path.isEmpty, !path.hasPrefix("/"), !path.hasPrefix("~"), !parts.contains("..") else {
-                throw fail("invalidMediaPath", "background.media.path")
-            }
+            guard let media = background.media else { throw fail("missingMedia", "background.media") }
+            if !media.hasLibraryRelativePath { throw fail("invalidMediaPath", "background.media.path") }
         }
         let tolerance = 1e-9
         for (name, slot) in slots.sorted(by: { $0.key < $1.key }) {

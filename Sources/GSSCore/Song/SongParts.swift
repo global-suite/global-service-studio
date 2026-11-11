@@ -1,11 +1,9 @@
 import Foundation
 
 /// The kind of a song section; unknown kinds are kept as written.
-public struct SongSectionKind: RawRepresentable, Hashable, Sendable, JSONRepresentable {
+public struct SongSectionKind: OpenStringValue {
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
-    public init(json: JSONValue, at path: String) throws { rawValue = try String(json: json, at: path) }
-    public var json: JSONValue { .string(rawValue) }
 
     public static let verse = Self(rawValue: "verse")
     public static let chorus = Self(rawValue: "chorus")
