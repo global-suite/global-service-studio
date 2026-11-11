@@ -17,9 +17,9 @@ public struct ThemeCanvas: Equatable, Sendable, JSONRepresentable {
 public struct ThemeBackground: Equatable, Sendable, JSONRepresentable {
     public var kind: ThemeBackgroundKind
     public var color: String?
-    public var media: ThemeMediaReference?
+    public var media: MediaReference?
     public var unknown: [String: JSONValue] = [:]
-    public init(kind: ThemeBackgroundKind, color: String? = nil, media: ThemeMediaReference? = nil) {
+    public init(kind: ThemeBackgroundKind, color: String? = nil, media: MediaReference? = nil) {
         (self.kind, self.color, self.media) = (kind, color, media)
     }
     public init(json: JSONValue, at path: String) throws {
@@ -30,19 +30,6 @@ public struct ThemeBackground: Equatable, Sendable, JSONRepresentable {
     public var json: JSONValue {
         .object(["kind": kind.json, "color": color?.json, "media": media?.json], unknown: unknown)
     }
-}
-
-/// A media file by library-relative path and SHA-256 content hash.
-public struct ThemeMediaReference: Equatable, Sendable, JSONRepresentable {
-    public var path, sha256: String
-    public var unknown: [String: JSONValue] = [:]
-    public init(path: String, sha256: String) { (self.path, self.sha256) = (path, sha256) }
-    public init(json: JSONValue, at path: String) throws {
-        var reader = try JSONObjectReader(json, at: path)
-        try self.init(path: reader.required("path"), sha256: reader.required("sha256"))
-        unknown = reader.unknown
-    }
-    public var json: JSONValue { .object(["path": path.json, "sha256": sha256.json], unknown: unknown) }
 }
 
 /// A named text area of the theme, such as `lyrics` or `footer`.
@@ -124,49 +111,39 @@ public struct ThemeLanguages: Equatable, Sendable, JSONRepresentable {
 }
 
 /// The kind of a theme background; unknown kinds are kept as written.
-public struct ThemeBackgroundKind: RawRepresentable, Hashable, Sendable, JSONRepresentable {
+public struct ThemeBackgroundKind: OpenStringValue {
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
-    public init(json: JSONValue, at path: String) throws { rawValue = try String(json: json, at: path) }
-    public var json: JSONValue { .string(rawValue) }
     public static let color = Self(rawValue: "color"), image = Self(rawValue: "image"), video = Self(rawValue: "video")
 }
 
 /// The horizontal alignment of a slot's text; unknown values are kept as written.
-public struct ThemeAlignment: RawRepresentable, Hashable, Sendable, JSONRepresentable {
+public struct ThemeAlignment: OpenStringValue {
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
-    public init(json: JSONValue, at path: String) throws { rawValue = try String(json: json, at: path) }
-    public var json: JSONValue { .string(rawValue) }
     public static let leading = Self(rawValue: "leading"), center = Self(rawValue: "center"),
                       trailing = Self(rawValue: "trailing")
 }
 
 /// How lines are split to fit a slot; unknown modes are kept as written.
-public struct ThemeWrap: RawRepresentable, Hashable, Sendable, JSONRepresentable {
+public struct ThemeWrap: OpenStringValue {
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
-    public init(json: JSONValue, at path: String) throws { rawValue = try String(json: json, at: path) }
-    public var json: JSONValue { .string(rawValue) }
     public static let balanced = Self(rawValue: "balanced"), natural = Self(rawValue: "natural")
 }
 
 /// How a second language appears; unknown layouts are kept as written.
-public struct ThemeLanguageLayout: RawRepresentable, Hashable, Sendable, JSONRepresentable {
+public struct ThemeLanguageLayout: OpenStringValue {
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
-    public init(json: JSONValue, at path: String) throws { rawValue = try String(json: json, at: path) }
-    public var json: JSONValue { .string(rawValue) }
     public static let primaryOnly = Self(rawValue: "primaryOnly"), stacked = Self(rawValue: "stacked"),
                       alternating = Self(rawValue: "alternating")
 }
 
 /// The weight of a font; unknown weights are kept as written.
-public struct ThemeFontWeight: RawRepresentable, Hashable, Sendable, JSONRepresentable {
+public struct ThemeFontWeight: OpenStringValue {
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
-    public init(json: JSONValue, at path: String) throws { rawValue = try String(json: json, at: path) }
-    public var json: JSONValue { .string(rawValue) }
     public static let regular = Self(rawValue: "regular"), medium = Self(rawValue: "medium"),
                       semibold = Self(rawValue: "semibold"), bold = Self(rawValue: "bold")
 }
