@@ -59,9 +59,9 @@ Check exactly one. See [AI_POLICY.md](https://github.com/global-suite/global-ser
 ## Contributor Checklist
 
 - [ ] The linked issue has `status:approved`
-- [ ] The pull request has exactly one `type:*` label
+- [ ] The pull request has exactly one `type:*` label (a maintainer adds it if you cannot add labels)
 - [ ] Commits and the pull request title follow [Conventional Commits](https://www.conventionalcommits.org/)
-- [ ] Under 400 changed lines (additions plus deletions), or a maintainer granted `size:exception`
+- [ ] Within 400 changed lines (additions plus deletions), or a maintainer granted `size:exception`
 - [ ] Every new or changed user-facing string is localized in English and Spanish
 - [ ] Docs are updated if behavior changed
 - [ ] No `Co-Authored-By` or similar trailers for AI tools

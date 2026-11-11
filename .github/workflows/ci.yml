@@ -26,6 +26,9 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
+      - name: Test pull request policy scripts
+        run: node .github/scripts/test-pr-policy.mjs
+
       - name: Build
         run: swift build
 
