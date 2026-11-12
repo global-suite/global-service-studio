@@ -25,3 +25,8 @@ extension AppMode {
             : "Run the service: what is live, what comes next and the outputs.")
     }
 }
+
+extension LiveSlide {
+    /// The section and the slide's place in it, such as "Chorus · 1 of 2".
+    public var position: String { String(format: Strings.text("%1$@ · %2$ld of %3$ld"), section, part, partCount) }
+}

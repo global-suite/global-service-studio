@@ -24,3 +24,16 @@
 /* Menu title. */ "Window" = "Window";
 /* Window menu item. */ "Minimize" = "Minimize";
 /* Window menu item. */ "Zoom" = "Zoom";
+/* Live mode: label in the red band above the live slide and on the live thumbnail. */ "LIVE" = "LIVE";
+/* Live mode: text next to LIVE in the band above the live slide. */ "On screen now" = "On screen now";
+/* Live mode: label of the panel and thumbnail that go live next. */ "NEXT" = "NEXT";
+/* Live mode: the slide's section and its place in it; %1$@ is the section, %2$ld the slide, %3$ld the slides in the section. */ "%1$@ · %2$ld of %3$ld" = "%1$@ · %2$ld of %3$ld";
+/* Live mode header; %1$@ is the musical key, %2$ld the tempo. */ "Key %1$@ · %2$ld bpm" = "Key %1$@ · %2$ld bpm";
+/* Live mode: shown in the Next panel and button after the last slide. */ "End of song" = "End of song";
+/* Live mode: shown in the Previous button on the first slide. */ "Start of song" = "Start of song";
+/* Live mode button that goes to the previous slide. */ "Previous" = "Previous";
+/* Live mode button that goes to the next slide. */ "Next" = "Next";
+/* Key cap of the space bar in Live mode. */ "Space" = "Space";
+/* Live mode: title of the grid of every slide of the song. */ "All slides" = "All slides";
+/* View menu item. */ "Next Slide" = "Next Slide";
+/* View menu item. */ "Previous Slide" = "Previous Slide";

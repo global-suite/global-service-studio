@@ -21,6 +21,8 @@ enum MainMenu {
             submenu(text("View"), [
                 item(AppMode.prepare.title, #selector(MainWindowController.selectMode(_:)), "1", tag: 0),
                 item(AppMode.live.title, #selector(MainWindowController.selectMode(_:)), "2", tag: 1), .separator(),
+                item(text("Previous Slide"), #selector(MainWindowController.goToPreviousSlide(_:))),
+                item(text("Next Slide"), #selector(MainWindowController.goToNextSlide(_:))), .separator(),
                 item(text("Show or Hide Sidebar"), #selector(NSSplitViewController.toggleSidebar(_:)), "s", [.command, .control]),
             ]),
             windowMenu,
