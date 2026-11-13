@@ -91,3 +91,7 @@
 /* Prepare mode: menu item of a part that moves it one place later in the song order. */ "Move Right" = "Move Right";
 /* Prepare mode: menu item of a part that takes it out of the song order. */ "Remove from Order" = "Remove from Order";
 /* Prepare mode: tooltip and accessibility label of the … button on a part of the song order. */ "Part Actions" = "Part Actions";
+/* Live mode: a slide of a repeated part; %1$@ is the section, %2$ld which time of the run of repeats, %3$ld the times in the run, %4$ld the slide, %5$ld the slides in the section. */ "%1$@ · repetition %2$ld of %3$ld · %4$ld of %5$ld" = "%1$@ · repetition %2$ld of %3$ld · %4$ld of %5$ld";
+/* Stage output: the section of a repeated part; %1$@ is the section, %2$ld which time of the run of repeats, %3$ld the times in the run. */ "%1$@ · repetition %2$ld of %3$ld" = "%1$@ · repetition %2$ld of %3$ld";
+/* Slide thumbnails and song order: short mark of a repeated part; %1$ld is which time of the run of repeats, %2$ld the times in the run. */ "%1$ld/%2$ld" = "%1$ld/%2$ld";
+/* Prepare mode: on the first part of a run of repeats in the song order; %ld is the times the part is sung in a row. */ "×%ld" = "×%ld";

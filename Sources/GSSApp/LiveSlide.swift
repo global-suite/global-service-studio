@@ -5,6 +5,8 @@ public struct LiveSlide: Equatable, Sendable {
     public let section: String
     public let part, partCount: Int
     public let lines: [String]
+    /// Which time of its run of repeats the slide's part is, and how many times the run sings it; 1 and 1 when not repeated.
+    public var repetition = 1, repetitionCount = 1
 
     /// Splits a song into slides of two lines, in the order of its default arrangement.
     public static func slides(of song: Song) -> [LiveSlide] { SongPart.parts(of: song).flatMap(\.slides) }
@@ -16,19 +18,40 @@ public struct SongPart: Equatable, Sendable {
     public let slides: [LiveSlide]
     public let firstSlide: Int
     public let isRepeat: Bool
+    /// Which time of its run of consecutive repeats this part is, from 1, and the length of the run.
+    public let repetition, repetitionCount: Int
     public var name: String { Strings.sectionName(section) }
     public var slideRange: Range<Int> { firstSlide..<firstSlide + slides.count }
 
     /// The parts in the order of the default arrangement; a part is a repeat when its section was sung before.
     public static func parts(of song: Song) -> [SongPart] {
         let order = song.arrangements?.first { $0.id == song.defaultArrangement }?.sequence ?? song.sections.map(\.id)
-        return order.compactMap { id in song.sections.first { $0.id == id } }.reduce(into: []) { parts, section in
+        let sections = order.compactMap { id in song.sections.first { $0.id == id } }
+        let runs = repetitions(of: sections.map(\.id))
+        return zip(sections, runs).reduce(into: []) { parts, item in
+            let (section, run) = item
             let texts = section.lines.map { $0.text[song.language] ?? "" }
             let groups = stride(from: 0, to: texts.count, by: 2).map { Array(texts[$0..<min($0 + 2, texts.count)]) }
             let name = Strings.sectionName(section)
-            let slides = groups.enumerated().map { LiveSlide(section: name, part: $0.offset + 1, partCount: groups.count, lines: $0.element) }
-            parts.append(SongPart(section: section, slides: slides, firstSlide: parts.last?.slideRange.upperBound ?? 0, isRepeat: parts.contains { $0.section.id == section.id }))
+            let slides = groups.enumerated().map {
+                LiveSlide(section: name, part: $0.offset + 1, partCount: groups.count, lines: $0.element, repetition: run.repetition, repetitionCount: run.count)
+            }
+            parts.append(SongPart(section: section, slides: slides, firstSlide: parts.last?.slideRange.upperBound ?? 0, isRepeat: parts.contains { $0.section.id == section.id },
+                                  repetition: run.repetition, repetitionCount: run.count))
         }
+    }
+
+    /// For each entry of a song order, its place in its run (consecutive entries of the same section) and the run's length.
+    /// A section sung again after another part starts a new run.
+    static func repetitions(of order: [String]) -> [(repetition: Int, count: Int)] {
+        var result: [(repetition: Int, count: Int)] = []
+        var start = 0
+        while start < order.count {
+            let end = order[start...].firstIndex { $0 != order[start] } ?? order.count
+            result += (1...(end - start)).map { ($0, end - start) }
+            start = end
+        }
+        return result
     }
 }
 

@@ -40,7 +40,31 @@ extension AppMode {
     public var title: String { Strings.text(self == .prepare ? "Prepare" : "Live") }
 }
 
+extension Strings {
+    /// The short mark of a repetition, such as "2/3", on slide thumbnails and song order chips; nil when the part is not repeated.
+    static func repetitionMark(_ repetition: Int, of count: Int, language: String = language) -> String? {
+        count > 1 ? String(format: text("%1$ld/%2$ld", language: language), repetition, count) : nil
+    }
+    /// The mark under a part of the song order: "×3" on the first part of a run of repeats, "2/3" and "3/3" on the others,
+    /// "repeat" on a part sung earlier but not right before, or nil.
+    static func orderMark(_ part: SongPart, language: String = language) -> String? {
+        if part.repetitionCount > 1 && part.repetition == 1 { return String(format: text("×%ld", language: language), part.repetitionCount) }
+        return repetitionMark(part.repetition, of: part.repetitionCount, language: language) ?? (part.isRepeat ? text("repeat", language: language) : nil)
+    }
+}
+
 extension LiveSlide {
-    /// The section and the slide's place in it, such as "Chorus · 1 of 2".
-    public var position: String { String(format: Strings.text("%1$@ · %2$ld of %3$ld"), section, part, partCount) }
+    /// The section, the repetition when the part repeats, and the slide's place in it, such as "Chorus · repetition 2 of 3 · 1 of 2".
+    public var position: String { position() }
+    func position(language: String = Strings.language) -> String {
+        repetitionCount > 1
+            ? String(format: Strings.text("%1$@ · repetition %2$ld of %3$ld · %4$ld of %5$ld", language: language), section, repetition, repetitionCount, part, partCount)
+            : String(format: Strings.text("%1$@ · %2$ld of %3$ld", language: language), section, part, partCount)
+    }
+    /// The section, with the repetition when the part repeats, such as "Chorus · repetition 2 of 3"; on the stage output.
+    func heading(language: String = Strings.language) -> String {
+        repetitionCount > 1 ? String(format: Strings.text("%1$@ · repetition %2$ld of %3$ld", language: language), section, repetition, repetitionCount) : section
+    }
+    /// The short repetition mark of the slide's part, such as "2/3", or nil when it is not repeated.
+    var repetitionMark: String? { Strings.repetitionMark(repetition, of: repetitionCount) }
 }

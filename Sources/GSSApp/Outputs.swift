@@ -68,7 +68,7 @@ struct OutputMonitor: View {
         case .stage:
             VStack(alignment: .leading, spacing: width / 60) {
                 HStack {
-                    Text(state.isCleared ? "" : state.liveSlide.section)
+                    Text(state.isCleared ? "" : state.liveSlide.heading())
                     Spacer()
                     TimelineView(.everyMinute) { Text($0.date, style: .time).font(.system(size: width / 20, weight: .semibold)).monospacedDigit().foregroundColor(.white) }
                 }
