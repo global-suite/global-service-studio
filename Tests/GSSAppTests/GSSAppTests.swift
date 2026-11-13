@@ -503,4 +503,60 @@ final class GSSAppTests: XCTestCase {
         XCTAssertEqual(controller.state.parts.map(\.section.id), ["v1", "v2", "c", "b", "c"])
         XCTAssertEqual(controller.state.liveIndex, 0)
     }
+
+    private func settings() -> (AppSettings, UserDefaults) {
+        let name = "GSSAppTests.\(UUID().uuidString)", defaults = UserDefaults(suiteName: name)!
+        addTeardownBlock { defaults.removePersistentDomain(forName: name) }
+        return (AppSettings(defaults: defaults), defaults)
+    }
+
+    func testSettingsAreStoredAndUnknownValuesFallBackToDefaults() {
+        let (settings, defaults) = settings()
+        XCTAssertEqual(settings.language, .system)
+        XCTAssertEqual(settings.repetitionMode, .separateSlides)
+        settings.language = .es
+        settings.repetitionMode = .oncePerRun
+        XCTAssertEqual(AppSettings(defaults: defaults).language, .es)
+        XCTAssertEqual(AppSettings(defaults: defaults).repetitionMode, .oncePerRun)
+        defaults.set("fr", forKey: "language")
+        defaults.set("twice", forKey: "repetitionMode")
+        XCTAssertEqual(settings.language, .system)
+        XCTAssertEqual(settings.repetitionMode, .separateSlides)
+    }
+
+    func testInterfaceLanguageFollowsTheSettingOrTheSystem() {
+        XCTAssertEqual(Strings.language(for: .system, system: ["es-AR"]), "es")
+        XCTAssertEqual(Strings.language(for: .system, system: ["fr-FR"]), "en")
+        XCTAssertEqual(Strings.language(for: .en, system: ["es-AR"]), "en")
+        XCTAssertEqual(Strings.language(for: .es, system: ["en-US"]), "es")
+        XCTAssertEqual(InterfaceLanguage.allCases.map { Strings.languageName($0, language: "es") }, ["Sistema", "English", "Español"])
+        XCTAssertEqual(InterfaceLanguage.allCases.map { Strings.languageName($0, language: "en") }, ["System", "English", "Español"])
+        XCTAssertEqual(RepetitionMode.allCases.map { Strings.text($0.title, language: "es") },
+                       ["Diapositivas separadas en cada repetición", "Mostrar las partes repetidas una sola vez"])
+    }
+
+    func testRepeatedPartsShownOnceCollapseEachRunIntoOnePass() {
+        let (settings, _) = settings()
+        let state = AppState(settings: settings)
+        state.perform(.insertArrangementItem(sectionID: "c", at: 2))
+        state.perform(.insertArrangementItem(sectionID: "c", at: 2))
+        state.perform(.goToSlide(7))
+        XCTAssertEqual(state.slides.count, 15)
+        state.perform(.setRepetitionMode(.oncePerRun))
+        XCTAssertEqual(settings.repetitionMode, .oncePerRun)
+        XCTAssertEqual(state.repetitionMode, .oncePerRun)
+        XCTAssertEqual(state.parts.count, 8, "the song order is unchanged")
+        XCTAssertEqual(state.parts.map(\.slides.count), [2, 2, 0, 0, 2, 2, 1, 2])
+        XCTAssertEqual(state.slides.count, 11)
+        XCTAssertEqual(state.slides[2].position(language: "en"), String(format: "%@ ×3 · 1 of 2", Strings.text("Chorus")))
+        XCTAssertTrue(state.slides.allSatisfy { $0.repetitionCount == 1 })
+        XCTAssertEqual(state.liveIndex, 3, "the live slide stays on the second slide of the chorus")
+        XCTAssertEqual(state.livePart, 1)
+        state.perform(.goToSlide(5))
+        state.perform(.setRepetitionMode(.separateSlides))
+        XCTAssertEqual(state.slides.count, 15)
+        XCTAssertEqual(state.liveIndex, 9, "the live slide stays on the second verse")
+        XCTAssertEqual(String(format: Strings.text("%1$@ ×%2$ld", language: "es"), "Coro", 3), "Coro ×3")
+        XCTAssertEqual(AppState().repetitionMode, .separateSlides)
+    }
 }

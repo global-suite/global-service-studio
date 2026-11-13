@@ -24,7 +24,8 @@ public struct SongPart: Equatable, Sendable {
     public var slideRange: Range<Int> { firstSlide..<firstSlide + slides.count }
 
     /// The parts in the order of the default arrangement; a part is a repeat when its section was sung before.
-    public static func parts(of song: Song) -> [SongPart] {
+    /// Shown once per run, a run's first part takes the slides, named "Chorus ×3", and the others have none.
+    public static func parts(of song: Song, mode: RepetitionMode = .separateSlides) -> [SongPart] {
         let order = song.arrangements?.first { $0.id == song.defaultArrangement }?.sequence ?? song.sections.map(\.id)
         let sections = order.compactMap { id in song.sections.first { $0.id == id } }
         let runs = repetitions(of: sections.map(\.id))
@@ -32,9 +33,10 @@ public struct SongPart: Equatable, Sendable {
             let (section, run) = item
             let texts = section.lines.map { $0.text[song.language] ?? "" }
             let groups = stride(from: 0, to: texts.count, by: 2).map { Array(texts[$0..<min($0 + 2, texts.count)]) }
-            let name = Strings.sectionName(section)
-            let slides = groups.enumerated().map {
-                LiveSlide(section: name, part: $0.offset + 1, partCount: groups.count, lines: $0.element, repetition: run.repetition, repetitionCount: run.count)
+            let once = mode == .oncePerRun, base = Strings.sectionName(section)
+            let name = once && run.count > 1 ? String(format: Strings.text("%1$@ ×%2$ld"), base, run.count) : base
+            let slides = once && run.repetition > 1 ? [] : groups.enumerated().map {
+                LiveSlide(section: name, part: $0.offset + 1, partCount: groups.count, lines: $0.element, repetition: once ? 1 : run.repetition, repetitionCount: once ? 1 : run.count)
             }
             parts.append(SongPart(section: section, slides: slides, firstSlide: parts.last?.slideRange.upperBound ?? 0, isRepeat: parts.contains { $0.section.id == section.id },
                                   repetition: run.repetition, repetitionCount: run.count))

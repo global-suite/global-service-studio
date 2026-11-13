@@ -13,6 +13,7 @@ enum MainMenu {
         [
             submenu(name, [
                 item(String(format: text("About %@"), name), #selector(NSApplication.orderFrontStandardAboutPanel(_:))), .separator(),
+                item(text("Settings…"), #selector(AppDelegate.showSettings(_:)), ","), .separator(),
                 item(String(format: text("Hide %@"), name), #selector(NSApplication.hide(_:)), "h"), .separator(),
                 item(String(format: text("Quit %@"), name), #selector(NSApplication.terminate(_:)), "q"),
             ]),

@@ -25,6 +25,8 @@ public enum AppCommand: Equatable, Sendable {
     case insertArrangementItem(sectionID: String, at: Int)
     case removeArrangementItem(at: Int)
     case addSection(kind: SongSectionKind, at: Int)
+    /// Chooses how Live shows repeated parts, saved in the settings; the live slide stays on the same part.
+    case setRepetitionMode(RepetitionMode)
 }
 
 /// A display, by its Core Graphics display ID.
@@ -44,10 +46,14 @@ public final class AppState: ObservableObject {
     @Published public private(set) var isAudienceOutputShown = false
     /// The display chosen for the audience output.
     @Published public private(set) var outputScreen: ScreenID?
+    /// How Live shows repeated parts.
+    @Published public private(set) var repetitionMode: RepetitionMode
+    /// Where settings changes are saved; nil keeps them in memory.
+    private let settings: AppSettings?
 
-    public init() {
-        let parts = SongPart.parts(of: SampleSong.song)
-        (song, self.parts, slides) = (SampleSong.song, parts, parts.flatMap(\.slides))
+    public init(settings: AppSettings? = nil) {
+        let mode = settings?.repetitionMode ?? .separateSlides, parts = SongPart.parts(of: SampleSong.song, mode: mode)
+        (song, self.parts, slides, repetitionMode, self.settings) = (SampleSong.song, parts, parts.flatMap(\.slides), mode, settings)
         selectedPart = livePart
     }
 
@@ -97,6 +103,7 @@ public final class AppState: ObservableObject {
                 return min(index, order.count - 1)
             }
         case .addSection(let kind, let index): addSection(kind, at: index)
+        case .setRepetitionMode(let mode): setRepetitionMode(mode)
         }
     }
 
@@ -113,7 +120,7 @@ public final class AppState: ObservableObject {
             return line
         }
         song = edited
-        parts = SongPart.parts(of: song)
+        parts = SongPart.parts(of: song, mode: repetitionMode)
         slides = parts.flatMap(\.slides)
         if liveIndex >= slides.count { liveIndex = slides.count - 1 }
     }
@@ -135,11 +142,11 @@ public final class AppState: ObservableObject {
         edited.arrangements = arrangements
         let unused = Set(parts.map(\.section.id)).subtracting(arrangements.flatMap(\.sequence))
         edited.sections.removeAll { unused.contains($0.id) && !hasWords($0) }
-        let newParts = SongPart.parts(of: edited), newSlides = newParts.flatMap(\.slides)
+        let newParts = SongPart.parts(of: edited, mode: repetitionMode), newSlides = newParts.flatMap(\.slides)
         guard !newSlides.isEmpty else { return }
         let live = order.firstIndex { $0.part == livePart }.map { newParts[$0].firstSlide + liveIndex - parts[livePart].firstSlide }
         (song, parts, slides) = (edited, newParts, newSlides)
-        let index = live ?? min(liveIndex, slides.count - 1)
+        let index = min(live ?? liveIndex, slides.count - 1)
         if index != liveIndex { liveIndex = index }
         if selected != selectedPart { selectedPart = selected }
     }
@@ -167,8 +174,19 @@ public final class AppState: ObservableObject {
         }
     }
 
+    /// Rebuilds the parts for a repetition mode; the live slide keeps its place in its part, or in the run's first part when its part has no slides.
+    private func setRepetitionMode(_ mode: RepetitionMode) {
+        settings?.repetitionMode = mode
+        guard mode != repetitionMode else { return }
+        let newParts = SongPart.parts(of: song, mode: mode), offset = liveIndex - parts[livePart].firstSlide
+        let part = newParts[...livePart].lastIndex { !$0.slides.isEmpty } ?? 0
+        let index = newParts[part].firstSlide + min(offset, max(newParts[part].slides.count - 1, 0))
+        (repetitionMode, parts, slides) = (mode, newParts, newParts.flatMap(\.slides))
+        if index != liveIndex { liveIndex = index }
+    }
+
     private func load(_ song: Song) {
-        let parts = SongPart.parts(of: song), slides = parts.flatMap(\.slides)
+        let parts = SongPart.parts(of: song, mode: repetitionMode), slides = parts.flatMap(\.slides)
         guard !slides.isEmpty else { return }
         (self.song, self.parts, self.slides) = (song, parts, slides)
         if liveIndex != 0 { liveIndex = 0 }

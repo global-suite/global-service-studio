@@ -95,3 +95,12 @@
 /* Stage output: the section of a repeated part; %1$@ is the section, %2$ld which time of the run of repeats, %3$ld the times in the run. */ "%1$@ · repetition %2$ld of %3$ld" = "%1$@ · repetition %2$ld of %3$ld";
 /* Slide thumbnails and song order: short mark of a repeated part; %1$ld is which time of the run of repeats, %2$ld the times in the run. */ "%1$ld/%2$ld" = "%1$ld/%2$ld";
 /* Prepare mode: on the first part of a run of repeats in the song order; %ld is the times the part is sung in a row. */ "×%ld" = "×%ld";
+/* App menu: opens the Settings window. */ "Settings…" = "Settings…";
+/* Settings window title. */ "Settings" = "Settings";
+/* Settings: label of the interface language choice. */ "Language" = "Language";
+/* Settings: interface language that follows the system. */ "System" = "System";
+/* Settings: note under the language choice. */ "Changes apply the next time you open the app." = "Changes apply the next time you open the app.";
+/* Settings: label of how Live shows parts sung several times in a row. */ "Repeated parts" = "Repeated parts";
+/* Settings: every repetition of a part has its own slides. */ "Separate slides for each repetition" = "Separate slides for each repetition";
+/* Settings: a part sung several times in a row is shown once. */ "Show repeated parts once" = "Show repeated parts once";
+/* Live mode: a part shown once for a run of repeats; %1$@ is the section, %2$ld the times it is sung in a row. */ "%1$@ ×%2$ld" = "%1$@ ×%2$ld";
