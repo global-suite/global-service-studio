@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the intended structure. Only `GSSCore` exists today; the other modules are added as the [roadmap](roadmap.md) reaches them. The reasons behind the choices are in the [decision records](adr/README.md).
+This document describes the intended structure. `GSSCore`, `GSSLibrary` and `GSSApp` exist today; the other modules are added as the [roadmap](roadmap.md) reaches them. The reasons behind the choices are in the [decision records](adr/README.md).
 
 ## Modules
 
@@ -19,7 +19,7 @@ GSSRender  GSSLibrary  GSSRemote   GSSIntegrations
 | Module | Responsibility | May import |
 |---|---|---|
 | `GSSCore` | Data model, file formats, migrations, layer rules | Foundation only |
-| `GSSLibrary` | Library folder, search index, importers and exporters; see [ADR 0007](adr/0007-library-storage-and-sync.md) | Foundation, SQLite |
+| `GSSLibrary` | Library folder, search index, importers and exporters; see [ADR 0007](adr/0007-library-storage-and-sync.md) and [the library folder](library-folder.md) | Foundation, SQLite |
 | `GSSRender` | Compositing and output to displays | Metal, AVFoundation, Core Text, Core Animation |
 | `GSSRemote` | Local HTTP and WebSocket API, device discovery | Network.framework |
 | `GSSIntegrations` | Optional outputs and devices: NDI, Syphon, SDI, MIDI | Vendor SDKs |

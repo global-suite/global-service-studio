@@ -21,6 +21,8 @@ public enum RepetitionMode: String, CaseIterable, Sendable {
 public struct AppSettings {
     let defaults: UserDefaults
     public init(defaults: UserDefaults = .standard) { self.defaults = defaults }
+    /// `~/Documents/Global Service Studio Library`; created only when a song is first saved.
+    public static let defaultLibraryFolder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Global Service Studio Library")
 
     public var language: InterfaceLanguage {
         get { defaults.string(forKey: "language").flatMap(InterfaceLanguage.init(rawValue:)) ?? .system }
@@ -29,6 +31,10 @@ public struct AppSettings {
     public var repetitionMode: RepetitionMode {
         get { defaults.string(forKey: "repetitionMode").flatMap(RepetitionMode.init(rawValue:)) ?? .separateSlides }
         nonmutating set { defaults.set(newValue.rawValue, forKey: "repetitionMode") }
+    }
+    public var libraryFolder: URL {
+        get { defaults.url(forKey: "libraryFolder") ?? Self.defaultLibraryFolder }
+        nonmutating set { defaults.set(newValue, forKey: "libraryFolder") }
     }
 }
 

@@ -1,5 +1,6 @@
 import Foundation
 import GSSCore
+import GSSLibrary
 
 /// Looks up user-facing strings in this module's `Localizable.strings`, in the language chosen in Settings or else the system's.
 enum Strings {
@@ -41,6 +42,18 @@ enum Strings {
     /// The words a new section starts with: its menu title, or its name for other kinds.
     static func newSectionText(_ section: SongSection, language: String = language) -> String {
         newSectionKinds.first { $0.kind == section.kind }.map { text($0.title, language: language) } ?? sectionName(section, language: language)
+    }
+}
+
+extension Strings {
+    /// Why a library folder could not be opened or a song saved.
+    static func libraryMessage(for error: Error, language: String = language) -> String {
+        switch error {
+        case LibraryError.folderNotEmpty: return text("This folder is not empty and is not a library. Choose an empty folder or an existing library.", language: language)
+        case FormatError.wrongFormat: return text("The library.json file in this folder belongs to another app.", language: language)
+        case FormatError.unsupportedVersion: return text("This library was made by a newer version of Global Service Studio.", language: language)
+        default: return text("The folder could not be read or written. Check that it exists and that you can change it.", language: language)
+        }
     }
 }
 

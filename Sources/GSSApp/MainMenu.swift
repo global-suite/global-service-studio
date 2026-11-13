@@ -17,7 +17,10 @@ enum MainMenu {
                 item(String(format: text("Hide %@"), name), #selector(NSApplication.hide(_:)), "h"), .separator(),
                 item(String(format: text("Quit %@"), name), #selector(NSApplication.terminate(_:)), "q"),
             ]),
-            submenu(text("File"), [item(text("Open Song…"), #selector(MainWindowController.openSong(_:)), "o")]),
+            submenu(text("File"), [
+                item(text("Open Song…"), #selector(MainWindowController.openSong(_:)), "o"), item(text("Save Song"), #selector(MainWindowController.saveSong(_:)), "s"),
+                item(text("Choose Library Folder…"), #selector(MainWindowController.chooseLibraryFolder(_:))),
+            ]),
             submenu(text("Edit"), [
                 item(text("Undo"), Selector(("undo:")), "z"), item(text("Redo"), Selector(("redo:")), "Z"), .separator(),
                 item(text("Cut"), #selector(NSText.cut(_:)), "x"), item(text("Copy"), #selector(NSText.copy(_:)), "c"),

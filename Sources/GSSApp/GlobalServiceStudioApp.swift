@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.appearance = NSAppearance(named: .darkAqua)
         NSApp.mainMenu = MainMenu.make(output: audienceOutput.menu)
         windowController.showWindow(nil)
+        state.perform(.openMostRecentSong)
         NSApp.activate(ignoringOtherApps: true)
     }
 

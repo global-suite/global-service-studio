@@ -12,9 +12,11 @@ let package = Package(
     ],
     targets: [
         .target(name: "GSSCore"),
-        .target(name: "GSSApp", dependencies: ["GSSCore"], resources: [.process("Resources")]),
+        .target(name: "GSSLibrary", dependencies: ["GSSCore"]),
+        .target(name: "GSSApp", dependencies: ["GSSCore", "GSSLibrary"], resources: [.process("Resources")]),
         .executableTarget(name: "GlobalServiceStudio", dependencies: ["GSSApp"]),
         .testTarget(name: "GSSCoreTests", dependencies: ["GSSCore"]),
-        .testTarget(name: "GSSAppTests", dependencies: ["GSSApp"]),
+        .testTarget(name: "GSSLibraryTests", dependencies: ["GSSLibrary"]),
+        .testTarget(name: "GSSAppTests", dependencies: ["GSSApp", "GSSLibrary"]),
     ]
 )
