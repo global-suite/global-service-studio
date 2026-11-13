@@ -76,7 +76,7 @@ struct PrepareView: View {
                 .padding(.trailing, 18)
                 HStack(spacing: 4) {
                     Text(Strings.slideCount(item.slides.count))
-                    if item.isRepeat { Text("·"); Text(Strings.text("repeat")) }
+                    if let mark = Strings.orderMark(item) { Text("·"); Text(mark) }
                 }
                 HStack(spacing: 6) {
                     if isSelected { Text(Strings.text("Editing")).fontWeight(.semibold).foregroundColor(Appearance.label.color) }

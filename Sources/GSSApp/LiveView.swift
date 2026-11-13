@@ -209,6 +209,7 @@ struct SlideThumbnail: View {
                 HStack(spacing: 6) {
                     Text(String(number)).monospacedDigit()
                     Text(slide.section)
+                    if let mark = slide.repetitionMark { Text(mark).monospacedDigit() }
                     Spacer(minLength: 0)
                     if let badge { Text(Strings.text(badge)).fontWeight(.semibold).foregroundColor(ring.color) }
                 }
