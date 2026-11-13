@@ -53,10 +53,14 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
     @objc func goToNextSlide(_ sender: Any?) { state.perform(.nextSlide) }
     @objc func goToPreviousSlide(_ sender: Any?) { state.perform(.previousSlide) }
 
-    /// In Live mode, Space and Right arrow go to the next slide, Left arrow to the previous one, F1 clears the slide and F3 clears all; returns nil when the key was used.
+    /// In Live mode, Space and Right arrow go to the next slide, Left arrow to the previous one, F1 clears the slide and F3 clears all.
+    /// In Prepare mode, outside the words editor, Left and Right arrows select the previous or next part and Delete removes it from the order.
+    /// Returns nil when the key was used.
     func handleKey(_ event: NSEvent) -> NSEvent? {
-        let commands: [UInt16: AppCommand] = [49: .nextSlide, 124: .nextSlide, 123: .previousSlide, 122: .clearSlide, 99: .clearAll]
-        guard state.mode == .live, event.window === window, !(window?.firstResponder is NSText),
+        let part = state.selectedPart
+        let commands: [UInt16: AppCommand] = state.mode == .live ? [49: .nextSlide, 124: .nextSlide, 123: .previousSlide, 122: .clearSlide, 99: .clearAll]
+            : [123: .selectPart(part - 1), 124: .selectPart(part + 1), 51: .removeArrangementItem(at: part), 117: .removeArrangementItem(at: part)]
+        guard event.window === window, !(window?.firstResponder is NSText),
               event.modifierFlags.isDisjoint(with: [.command, .control, .option]), let command = commands[event.keyCode] else { return event }
         state.perform(command)
         return nil
