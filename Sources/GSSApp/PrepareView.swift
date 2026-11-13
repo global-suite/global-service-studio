@@ -75,8 +75,8 @@ struct PrepareView: View {
                 }
                 .padding(.trailing, 18)
                 HStack(spacing: 4) {
-                    Text(Strings.slideCount(item.slides.count))
-                    if let mark = Strings.orderMark(item) { Text("·"); Text(mark) }
+                    if !item.slides.isEmpty { Text(Strings.slideCount(item.slides.count)) }
+                    if let mark = Strings.orderMark(item) { if !item.slides.isEmpty { Text("·") }; Text(mark) }
                 }
                 HStack(spacing: 6) {
                     if isSelected { Text(Strings.text("Editing")).fontWeight(.semibold).foregroundColor(Appearance.label.color) }

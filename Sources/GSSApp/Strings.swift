@@ -1,12 +1,21 @@
 import Foundation
 import GSSCore
 
-/// Looks up user-facing strings in this module's `Localizable.strings`, in the system language.
+/// Looks up user-facing strings in this module's `Localizable.strings`, in the language chosen in Settings or else the system's.
 enum Strings {
     static let bundle = Bundle.module
     /// Chosen explicitly: without an app bundle, Foundation follows the executable, which has no localizations.
-    static let language = language(for: Locale.preferredLanguages)
+    static let language = language(for: AppSettings().language, system: Locale.preferredLanguages)
     static func language(for preferences: [String]) -> String { Bundle.preferredLocalizations(from: bundle.localizations, forPreferences: preferences).first ?? "en" }
+    static func language(for setting: InterfaceLanguage, system: [String]) -> String { language(for: setting == .system ? system : [setting.rawValue]) }
+    /// A language's name in that language, such as "Español"; the system choice in the interface language.
+    static func languageName(_ choice: InterfaceLanguage, language: String = language) -> String {
+        switch choice {
+        case .system: return text("System", language: language)
+        case .en: return "English"
+        case .es: return "Español"
+        }
+    }
 
     static func text(_ key: String, language: String = language) -> String {
         let localized = bundle.path(forResource: language, ofType: "lproj").flatMap(Bundle.init(path:)) ?? bundle

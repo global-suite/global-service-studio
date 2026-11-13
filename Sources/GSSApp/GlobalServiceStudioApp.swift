@@ -13,7 +13,9 @@ public enum GlobalServiceStudioApp {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let state = AppState()
+    private let settings = AppSettings()
+    private lazy var state = AppState(settings: settings)
+    private lazy var settingsWindow = SettingsWindowController(state: state, settings: settings)
     private lazy var windowController = MainWindowController(state: state)
     private lazy var audienceOutput = AudienceOutputController(state: state, operatorWindow: windowController.window)
 
@@ -23,6 +25,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowController.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
+
+    @objc func showSettings(_ sender: Any?) { settingsWindow.show() }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }

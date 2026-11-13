@@ -16,7 +16,7 @@ Everything in the repository is in English: code, comments, documentation, commi
 
 ## How it works
 
-Strings live in `Localizable.strings` files inside `en.lproj` and `es.lproj`, under the `Resources` folder of each module (for example `Sources/GSSApp/Resources/`). The key is the English text, with a comment saying where the string appears. String Catalogs (`.xcstrings`) are not used because the command line build (`swift build`) copies them without compiling them, so lookups return the key; they can return when an Xcode project exists. The interface follows the system language.
+Strings live in `Localizable.strings` files inside `en.lproj` and `es.lproj`, under the `Resources` folder of each module (for example `Sources/GSSApp/Resources/`). The key is the English text, with a comment saying where the string appears. String Catalogs (`.xcstrings`) are not used because the command line build (`swift build`) copies them without compiling them, so lookups return the key; they can return when an Xcode project exists. The interface language is chosen in Settings (⌘,): System, English or Español; System, the default, follows the system language. A change applies the next time the app opens.
 
 `GSSCore` contains no user-facing text. It reports errors as typed values, and the interface turns them into localized messages.
 
