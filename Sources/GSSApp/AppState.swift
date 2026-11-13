@@ -17,6 +17,8 @@ public enum AppCommand: Equatable, Sendable {
     case setLines(sectionID: String, lines: [String])
     case showAudienceOutput(Bool)
     case selectOutputScreen(ScreenID?)
+    /// Makes a song the current one, from its first slide; a song without slides is ignored.
+    case loadSong(Song)
 }
 
 /// A display, by its Core Graphics display ID.
@@ -69,6 +71,7 @@ public final class AppState: ObservableObject {
         case .selectOutputScreen(let screen):
             if screen == nil, isAudienceOutputShown { isAudienceOutputShown = false }
             if screen != outputScreen { outputScreen = screen }
+        case .loadSong(let song): load(song)
         }
     }
 
@@ -88,6 +91,15 @@ public final class AppState: ObservableObject {
         parts = SongPart.parts(of: song)
         slides = parts.flatMap(\.slides)
         if liveIndex >= slides.count { liveIndex = slides.count - 1 }
+    }
+
+    private func load(_ song: Song) {
+        let parts = SongPart.parts(of: song), slides = parts.flatMap(\.slides)
+        guard !slides.isEmpty else { return }
+        (self.song, self.parts, self.slides) = (song, parts, slides)
+        if liveIndex != 0 { liveIndex = 0 }
+        if selectedPart != 0 { selectedPart = 0 }
+        if isCleared { isCleared = false }
     }
 
     private func goToSlide(_ index: Int) {
