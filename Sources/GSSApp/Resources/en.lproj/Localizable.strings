@@ -1,6 +1,6 @@
 /* Application name: window title and application menu. */ "Global Service Studio" = "Global Service Studio";
 /* Mode switch in the toolbar and View menu item. */ "Prepare" = "Prepare";
-/* Mode switch in the toolbar and View menu item. */ "Live" = "Live";
+/* Mode switch in the toolbar and View menu item; status of an output in Live mode. */ "Live" = "Live";
 /* Placeholder text in Prepare mode. */ "Build the service: songs, words, slides and themes." = "Build the service: songs, words, slides and themes.";
 /* Placeholder text in Live mode. */ "Run the service: what is live, what comes next and the outputs." = "Run the service: what is live, what comes next and the outputs.";
 /* Sidebar section header. */ "Service" = "Service";
@@ -37,3 +37,16 @@
 /* Live mode: title of the grid of every slide of the song. */ "All slides" = "All slides";
 /* View menu item. */ "Next Slide" = "Next Slide";
 /* View menu item. */ "Previous Slide" = "Previous Slide";
+/* Live mode: title of the output monitors. */ "Outputs" = "Outputs";
+/* Live mode: name of the center audience output. */ "Center" = "Center";
+/* Live mode: name of the side audience output. */ "Sides" = "Sides";
+/* Live mode: name of the stage output. */ "Stage" = "Stage";
+/* Live mode: name of the key output sent to the video switcher; kept in English in Spanish. */ "Key" = "Key";
+/* Live mode: role of an output the audience sees. */ "Audience" = "Audience";
+/* Live mode: role of the stage output. */ "Teleprompter" = "Teleprompter";
+/* Live mode: role of the key output, a lower third for the video switcher. */ "Lower third · switcher" = "Lower third · switcher";
+/* Live mode button (F1) that takes the slide off the outputs. */ "Clear Slide" = "Clear Slide";
+/* Live mode button (F2) that takes the background off the outputs. */ "Clear Background" = "Clear Background";
+/* Live mode button (F3) that clears every layer of the outputs. */ "Clear All" = "Clear All";
+/* Live mode: tooltip of the disabled Clear Background button. */ "Available when backgrounds exist" = "Available when backgrounds exist";
+/* Live mode: shown next to LIVE while the outputs show nothing. */ "Cleared" = "Cleared";
