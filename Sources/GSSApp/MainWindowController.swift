@@ -109,15 +109,6 @@ struct ModeContent: View {
     let appearance: Appearance
 
     var body: some View {
-        if state.mode == .live { LiveView(state: state, appearance: appearance) } else { placeholder }
-    }
-
-    private var placeholder: some View {
-        VStack(spacing: 8) {
-            Text(state.mode.title).font(.system(size: 22, weight: .bold)).foregroundColor(Color(nsColor: Appearance.label.nsColor))
-            Text(state.mode.explanation).font(.system(size: 13)).foregroundColor(Color(nsColor: Appearance.labelSecondary.nsColor))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: appearance.window.nsColor))
+        if state.mode == .live { LiveView(state: state, appearance: appearance) } else { PrepareView(state: state, appearance: appearance) }
     }
 }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Prepare mode: the slides of a part of the song, on its chip and next to step 3. -->
+<plist version="1.0"><dict><key>%ld slides</key><dict>
+	<key>NSStringLocalizedFormatKey</key><string>%#@slides@</string>
+	<key>slides</key><dict><key>NSStringFormatSpecTypeKey</key><string>NSStringPluralRuleType</string><key>NSStringFormatValueTypeKey</key><string>ld</string>
+		<key>one</key><string>%ld diapositiva</string><key>other</key><string>%ld diapositivas</string></dict>
+</dict></dict></plist>

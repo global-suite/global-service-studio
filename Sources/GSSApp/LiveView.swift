@@ -34,12 +34,7 @@ struct LiveView: View {
 
     private func content(_ size: SizeClass, width: CGFloat, height: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
-                Text(state.song.title).font(.system(size: 15, weight: .semibold)).foregroundColor(Appearance.label.color)
-                if let key = state.song.key, let tempo = state.song.tempo {
-                    Text(String(format: Strings.text("Key %1$@ · %2$ld bpm"), key, Int(tempo))).foregroundColor(Appearance.labelSecondary.color)
-                }
-            }
+            SongHeader(song: state.song)
             // Live and the Next column fill the width and end at the same height:
             // Next's slide plus its label (28) and the buttons (68) match Live's slide plus its band (28).
             // When the height caps Live, Regular and Wide give the width left over to Next, up to Live's width.
@@ -194,18 +189,28 @@ struct LiveView: View {
 
     private func thumbnail(_ index: Int, textSize: CGFloat) -> some View {
         let isLive = index == state.liveIndex, isNext = index == state.liveIndex + 1
-        let ring = isLive ? Appearance.live : isNext ? Appearance.next : appearance.separator
-        return Button { state.perform(.goToSlide(index)) } label: {
+        return SlideThumbnail(number: index + 1, slide: state.slides[index], textSize: textSize, ring: isLive ? Appearance.live : isNext ? Appearance.next : appearance.separator,
+                              ringWidth: isLive ? 3 : isNext ? 2 : 1, badge: isLive ? "LIVE" : isNext ? "NEXT" : nil, dimmed: index < state.liveIndex) { state.perform(.goToSlide(index)) }
+    }
+}
+
+/// A slide in a grid: its face with a ring, its number and section, and an optional label in the ring color.
+struct SlideThumbnail: View {
+    let number: Int, slide: LiveSlide, textSize: CGFloat, ring: RGBA, ringWidth: CGFloat, badge: String?, dimmed: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
             VStack(alignment: .leading, spacing: 6) {
-                SlideFace(lines: state.slides[index].lines, size: textSize)
+                SlideFace(lines: slide.lines, size: textSize)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .opacity(index < state.liveIndex ? 0.6 : 1)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(ring.color, lineWidth: isLive ? 3 : isNext ? 2 : 1))
+                    .opacity(dimmed ? 0.6 : 1)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(ring.color, lineWidth: ringWidth))
                 HStack(spacing: 6) {
-                    Text(String(index + 1)).monospacedDigit()
-                    Text(state.slides[index].section)
+                    Text(String(number)).monospacedDigit()
+                    Text(slide.section)
                     Spacer(minLength: 0)
-                    if isLive || isNext { Text(Strings.text(isLive ? "LIVE" : "NEXT")).fontWeight(.semibold).foregroundColor(ring.color) }
+                    if let badge { Text(Strings.text(badge)).fontWeight(.semibold).foregroundColor(ring.color) }
                 }
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(Appearance.labelSecondary.color)

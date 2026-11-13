@@ -13,17 +13,15 @@ enum Strings {
     }
 
     static var appName: String { text("Global Service Studio") }
+    /// A slide count such as "1 slide" or "2 slides", with the plural rules of the language (Localizable.stringsdict).
+    static func slideCount(_ count: Int, language: String = language) -> String {
+        String(format: text("%ld slides", language: language), locale: Locale(identifier: language), count)
+    }
 }
 
 extension AppMode {
     /// The localized name of the mode.
     public var title: String { Strings.text(self == .prepare ? "Prepare" : "Live") }
-
-    var explanation: String {
-        Strings.text(self == .prepare
-            ? "Build the service: songs, words, slides and themes."
-            : "Run the service: what is live, what comes next and the outputs.")
-    }
 }
 
 extension LiveSlide {

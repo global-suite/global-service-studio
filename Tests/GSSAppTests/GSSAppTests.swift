@@ -169,4 +169,62 @@ final class GSSAppTests: XCTestCase {
         view.layoutSubtreeIfNeeded()
         XCTAssertGreaterThan(view.fittingSize.height, 0)
     }
+
+    func testPartsFollowTheSungOrderAndMarkRepeats() {
+        let state = AppState()
+        XCTAssertEqual(state.parts.map(\.section.id), ["v1", "c", "v2", "c", "b", "c"])
+        XCTAssertEqual(state.parts.map(\.isRepeat), [false, false, false, true, false, true])
+        XCTAssertEqual(state.parts.map(\.slideRange), [0..<2, 2..<4, 4..<6, 6..<8, 8..<9, 9..<11])
+        XCTAssertEqual(state.parts.flatMap(\.slides), state.slides)
+    }
+
+    func testSelectPartChangesTheSelectionAndIgnoresPartsOutsideTheSong() {
+        let state = AppState()
+        XCTAssertEqual([state.selectedPart, state.livePart], [0, 0])
+        state.perform(.selectPart(3))
+        state.perform(.selectPart(6))
+        state.perform(.selectPart(-1))
+        XCTAssertEqual(state.selectedPart, 3)
+        state.perform(.goToSlide(9))
+        XCTAssertEqual([state.selectedPart, state.livePart, state.part(containing: 4)], [3, 5, 2])
+    }
+
+    func testSetLinesReplacesTheWordsAndRebuildsTheSlides() {
+        let state = AppState()
+        state.perform(.setLines(sectionID: "c", lines: ["  Placeholder one ", "", "Placeholder two", "   "]))
+        XCTAssertEqual(state.song.sections[1].lines.map { $0.text["en"] }, ["Placeholder one", "Placeholder two"])
+        XCTAssertEqual(state.song.sections[1].kind, .chorus)
+        XCTAssertEqual(state.slides.count, 8)
+        XCTAssertEqual(state.slides[2].lines, ["Placeholder one", "Placeholder two"])
+        XCTAssertEqual(state.parts.map(\.slides.count), [2, 1, 2, 1, 1, 1])
+        state.perform(.setLines(sectionID: "c", lines: ["A", "B", "C"]))
+        XCTAssertEqual(state.slides.count, 11)
+    }
+
+    func testSetLinesIgnoresWordsThatWouldLeaveThePartEmpty() {
+        let state = AppState()
+        let song = state.song
+        state.perform(.setLines(sectionID: "b", lines: [" ", "\t", ""]))
+        state.perform(.setLines(sectionID: "missing", lines: ["Placeholder"]))
+        XCTAssertEqual(state.song, song)
+        XCTAssertEqual(state.slides.count, 11)
+    }
+
+    func testSetLinesKeepsTheLiveSlideInsideAShorterSong() {
+        let state = AppState()
+        state.perform(.goToSlide(10))
+        state.perform(.setLines(sectionID: "c", lines: ["Placeholder one", "Placeholder two"]))
+        XCTAssertEqual(state.liveIndex, 7)
+        XCTAssertEqual(state.liveSlide.lines, ["Placeholder one", "Placeholder two"])
+    }
+
+    func testSlideCountsUseThePluralOfEachLanguage() {
+        XCTAssertEqual([1, 2].map { Strings.slideCount($0, language: "en") }, ["1 slide", "2 slides"])
+        XCTAssertEqual([1, 2].map { Strings.slideCount($0, language: "es") }, ["1 diapositiva", "2 diapositivas"])
+        XCTAssertEqual([Strings.text("Editing", language: "es"), Strings.text("Whole song", language: "es")], ["Editando", "Toda la canción"])
+        let view = NSHostingView(rootView: PrepareView(state: AppState(), appearance: .standard))
+        view.frame = NSRect(x: 0, y: 0, width: 1180, height: 830)
+        view.layoutSubtreeIfNeeded()
+        XCTAssertGreaterThan(view.fittingSize.height, 0)
+    }
 }

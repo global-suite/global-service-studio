@@ -7,12 +7,27 @@ public struct LiveSlide: Equatable, Sendable {
     public let lines: [String]
 
     /// Splits a song into slides of two lines, in the order of its default arrangement.
-    public static func slides(of song: Song) -> [LiveSlide] {
+    public static func slides(of song: Song) -> [LiveSlide] { SongPart.parts(of: song).flatMap(\.slides) }
+}
+
+/// One part of the song as sung: a section, its slides and where they start among the song's slides.
+public struct SongPart: Equatable, Sendable {
+    public let section: SongSection
+    public let slides: [LiveSlide]
+    public let firstSlide: Int
+    public let isRepeat: Bool
+    public var name: String { section.label ?? section.kind.rawValue }
+    public var slideRange: Range<Int> { firstSlide..<firstSlide + slides.count }
+
+    /// The parts in the order of the default arrangement; a part is a repeat when its section was sung before.
+    public static func parts(of song: Song) -> [SongPart] {
         let order = song.arrangements?.first { $0.id == song.defaultArrangement }?.sequence ?? song.sections.map(\.id)
-        return order.compactMap { id in song.sections.first { $0.id == id } }.flatMap { section -> [LiveSlide] in
+        return order.compactMap { id in song.sections.first { $0.id == id } }.reduce(into: []) { parts, section in
             let texts = section.lines.map { $0.text[song.language] ?? "" }
-            let parts = stride(from: 0, to: texts.count, by: 2).map { Array(texts[$0..<min($0 + 2, texts.count)]) }
-            return parts.enumerated().map { LiveSlide(section: section.label ?? section.kind.rawValue, part: $0.offset + 1, partCount: parts.count, lines: $0.element) }
+            let groups = stride(from: 0, to: texts.count, by: 2).map { Array(texts[$0..<min($0 + 2, texts.count)]) }
+            let name = section.label ?? section.kind.rawValue
+            let slides = groups.enumerated().map { LiveSlide(section: name, part: $0.offset + 1, partCount: groups.count, lines: $0.element) }
+            parts.append(SongPart(section: section, slides: slides, firstSlide: parts.last?.slideRange.upperBound ?? 0, isRepeat: parts.contains { $0.section.id == section.id }))
         }
     }
 }
