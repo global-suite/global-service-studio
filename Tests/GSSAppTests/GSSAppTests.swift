@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import GSSCore
 import SwiftUI
 import XCTest
 @testable import GSSApp
@@ -304,5 +305,45 @@ final class GSSAppTests: XCTestCase {
         controller.screensChanged()
         XCTAssertNil(state.outputScreen)
         XCTAssertFalse(state.isAudienceOutputShown)
+    }
+
+    func testLoadSongReplacesTheSongAndStartsAtTheFirstSlide() throws {
+        let state = AppState()
+        state.perform(.goToSlide(9))
+        state.perform(.selectPart(4))
+        state.perform(.clearSlide)
+        let song = try PlainTextSongImporter.song(from: "First words\nSecond words\nThird words\n\nChorus\nRefrain words\n\nChorus", fallbackTitle: "Placeholder")
+        state.perform(.loadSong(song))
+        XCTAssertEqual(state.song, song)
+        XCTAssertEqual(state.parts.map(\.section.id), ["v1", "c1", "c1"])
+        XCTAssertEqual(state.slides.map(\.lines), [["First words", "Second words"], ["Third words"], ["Refrain words"], ["Refrain words"]])
+        XCTAssertEqual([state.liveIndex, state.selectedPart], [0, 0])
+        XCTAssertFalse(state.isCleared)
+        state.perform(.loadSong(Song(title: "Empty", language: "en", sections: [])))
+        XCTAssertEqual(state.song, song, "a song without slides is ignored")
+    }
+
+    func testSectionsWithoutALabelGetALocalizedName() {
+        let verse = SongSection(id: "v3", kind: .verse, number: 3, lines: []), chorus = SongSection(id: "c1", kind: .chorus, lines: [])
+        XCTAssertEqual([verse, chorus].map { Strings.sectionName($0, language: "en") }, ["Verse 3", "Chorus"])
+        XCTAssertEqual([verse, chorus].map { Strings.sectionName($0, language: "es") }, ["Verso 3", "Coro"])
+        XCTAssertEqual(Strings.sectionName(SongSection(id: "x", kind: SongSectionKind(rawValue: "rap"), label: "Rap", lines: []), language: "es"), "Rap")
+    }
+
+    func testOpenSongReadsPlainTextFilesAndExplainsFailures() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let utf16 = folder.appendingPathComponent("Placeholder Hymn.txt"), empty = folder.appendingPathComponent("Empty.txt")
+        try "Coro\nPalabras de ejemplo".write(to: utf16, atomically: true, encoding: .utf16)
+        try "\n\n".write(to: empty, atomically: true, encoding: .utf8)
+        let song = try SongFile.read(utf16)
+        XCTAssertEqual([song.title, song.sections[0].lines[0].text["en"]], ["Placeholder Hymn", "Palabras de ejemplo"])
+        XCTAssertThrowsError(try SongFile.read(empty)) { XCTAssertEqual(SongFile.message(for: $0), Strings.text("This file has no lyrics.")) }
+        XCTAssertThrowsError(try SongFile.read(folder.appendingPathComponent("Missing.txt"))) { XCTAssertEqual(SongFile.message(for: $0), Strings.text("This file could not be read.")) }
+        XCTAssertEqual(Strings.text("This file has no lyrics.", language: "es"), "Este archivo no tiene letra.")
+        let file = try XCTUnwrap(MainMenu.make(output: NSMenu()).items.first { $0.title == Strings.text("File") }?.submenu?.items.first)
+        XCTAssertEqual([file.title, file.keyEquivalent, Strings.text("File", language: "es"), Strings.text("Open Song…", language: "es")], [Strings.text("Open Song…"), "o", "Archivo", "Abrir canción…"])
+        XCTAssertEqual(file.action, #selector(MainWindowController.openSong(_:)))
     }
 }

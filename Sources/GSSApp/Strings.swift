@@ -1,4 +1,5 @@
 import Foundation
+import GSSCore
 
 /// Looks up user-facing strings in this module's `Localizable.strings`, in the system language.
 enum Strings {
@@ -16,6 +17,14 @@ enum Strings {
     /// A slide count such as "1 slide" or "2 slides", with the plural rules of the language (Localizable.stringsdict).
     static func slideCount(_ count: Int, language: String = language) -> String {
         String(format: text("%ld slides", language: language), locale: Locale(identifier: language), count)
+    }
+    /// The name of a section: its label as written, or its kind and number in the interface language, such as "Verse 2".
+    static func sectionName(_ section: SongSection, language: String = language) -> String {
+        let kinds = ["verse": "Verse", "chorus": "Chorus", "prechorus": "Pre-Chorus", "bridge": "Bridge", "intro": "Intro",
+                     "outro": "Outro", "tag": "Tag", "interlude": "Interlude", "ending": "Ending"]
+        if let label = section.label { return label }
+        let kind = kinds[section.kind.rawValue].map { text($0, language: language) } ?? section.kind.rawValue
+        return section.number.map { String(format: text("%1$@ %2$ld", language: language), kind, $0) } ?? kind
     }
 }
 
