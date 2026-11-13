@@ -69,6 +69,35 @@ System font only: `-apple-system, "SF Pro Text", "Helvetica Neue", sans-serif`. 
 | Spacing scale | 4, 8, 12, 16, 20, 24 |
 | Focus ring | 3px `accent` at 50% opacity, outside the control |
 
+## Window sizes
+
+The layout follows the width of the main window's content area (the window minus the sidebar), not the display. Design and review every new screen at least at compact (1440×900) and wide (3440×1440).
+
+| Class | Content width | Typical display | Live view |
+|---|---|---|---|
+| Compact | 1100–1599 | 13" and 14" MacBook | `04-native-live`: live panel, Next column with Previous \| Next under it, slide grid of 5 per row below, outputs strip and clear actions in the bottom bar |
+| Regular | 1600–2399 | 1920×1080, 2560×1440 | Same structure; panels grow up to their maximum; the slide grid shows 6 per row |
+| Wide | 2400 and wider | 3440×1440, 5120×1440 | `06-native-live-ultrawide`: outputs leave the bottom bar and become a right column of large monitors (Center, Sides, Stage, Key) with the clear actions under them; live and Next stay top left, with a stage message panel under them; the slide grid takes the full height between them and the outputs, 5 to 6 per row of large thumbnails. The stage message and timers panel under Next is a Phase 2 feature, drawn as a reference |
+
+What has a maximum size:
+
+- Sidebar 240 and inspector 280: fixed in every class; the order of service always stays.
+- Live panel: at most 1280×720, and never taller than about half the content height. In Wide it is about 910 wide, so the grid keeps large thumbnails.
+- Next panel: at most 760 wide. Previous \| Next sit beside or under it and match its height.
+- Outputs column (Wide only): 440 wide; four 16:9 monitors stacked, clear actions pinned to its bottom.
+- Slide thumbnails: about 220 to 380 wide; slide text inside them is 11 to 16 px. Interface text, controls and row heights never scale with the window.
+
+What absorbs extra space: the slide grid, by adding columns and rows, never by growing its thumbnails past their maximum.
+
+Order in which width is given:
+
+1. The live panel, up to its maximum (in Wide, up to about 910).
+2. The Next column, up to its maximum.
+3. At 2400 and wider, the outputs move from the bottom bar to the right column, which gives the grid the full height.
+4. Everything left goes to the slide grid.
+
+No empty regions: when the current item's slides do not fill the grid, it continues with the next items of the order of service as previews, each under its own header. Live stays top left in every class, and the reading and keyboard order is sidebar, live, Next, slides, outputs.
+
 ## Components
 
 - **Window**: traffic lights at the left of a unified title bar and toolbar; the title sits next to them; toolbar items are borderless icon buttons that show a rounded fill on hover.
