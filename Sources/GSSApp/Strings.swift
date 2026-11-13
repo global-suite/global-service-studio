@@ -18,12 +18,13 @@ enum Strings {
     static func slideCount(_ count: Int, language: String = language) -> String {
         String(format: text("%ld slides", language: language), locale: Locale(identifier: language), count)
     }
-    /// The name of a section: its label as written, or its kind and number in the interface language, such as "Verse 2".
+    /// The name of a section: for a known kind, its kind and number in the interface language, such as "Verse 2",
+    /// whatever label the file wrote; otherwise its label as written, or its kind.
     static func sectionName(_ section: SongSection, language: String = language) -> String {
         let kinds = ["verse": "Verse", "chorus": "Chorus", "prechorus": "Pre-Chorus", "bridge": "Bridge", "intro": "Intro",
                      "outro": "Outro", "tag": "Tag", "interlude": "Interlude", "ending": "Ending"]
-        if let label = section.label { return label }
-        let kind = kinds[section.kind.rawValue].map { text($0, language: language) } ?? section.kind.rawValue
+        guard let key = kinds[section.kind.rawValue] else { return section.label ?? section.kind.rawValue }
+        let kind = text(key, language: language)
         return section.number.map { String(format: text("%1$@ %2$ld", language: language), kind, $0) } ?? kind
     }
 }

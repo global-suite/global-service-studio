@@ -63,7 +63,8 @@ final class GSSAppTests: XCTestCase {
 
     func testSampleSongHasElevenSlidesInArrangementOrder() {
         let slides = AppState().slides
-        XCTAssertEqual(slides.map(\.section), ["Verse 1", "Verse 1", "Chorus", "Chorus", "Verse 2", "Verse 2", "Chorus", "Chorus", "Bridge", "Chorus", "Chorus"])
+        let verse = { String(format: Strings.text("%1$@ %2$ld"), Strings.text("Verse"), $0) }, (c, b) = (Strings.text("Chorus"), Strings.text("Bridge"))
+        XCTAssertEqual(slides.map(\.section), [verse(1), verse(1), c, c, verse(2), verse(2), c, c, b, c, c])
         XCTAssertEqual(slides[2].lines, ["We lift our voice", "We lift our eyes"])
         XCTAssertEqual([slides[2].part, slides[2].partCount, slides[3].part, slides[8].partCount], [1, 2, 2, 1])
     }
@@ -328,6 +329,15 @@ final class GSSAppTests: XCTestCase {
         XCTAssertEqual([verse, chorus].map { Strings.sectionName($0, language: "en") }, ["Verse 3", "Chorus"])
         XCTAssertEqual([verse, chorus].map { Strings.sectionName($0, language: "es") }, ["Verso 3", "Coro"])
         XCTAssertEqual(Strings.sectionName(SongSection(id: "x", kind: SongSectionKind(rawValue: "rap"), label: "Rap", lines: []), language: "es"), "Rap")
+    }
+
+    func testRecognizedKindsIgnoreTheCaseWrittenInTheFile() {
+        let verse = SongSection(id: "v1", kind: .verse, number: 1, label: "VERSO 1", lines: [])
+        let chorus = SongSection(id: "c1", kind: .chorus, label: "coro", lines: []), bridge = SongSection(id: "b1", kind: .bridge, label: "PUENTE", lines: [])
+        XCTAssertEqual([verse, chorus, bridge].map { Strings.sectionName($0, language: "en") }, ["Verse 1", "Chorus", "Bridge"])
+        XCTAssertEqual([verse, chorus, bridge].map { Strings.sectionName($0, language: "es") }, ["Verso 1", "Coro", "Puente"])
+        XCTAssertEqual(Strings.sectionName(SongSection(id: "x", kind: SongSectionKind(rawValue: "rap"), label: "RAP Break", lines: []), language: "en"), "RAP Break")
+        XCTAssertEqual(Strings.sectionName(SongSection(id: "x", kind: SongSectionKind(rawValue: "rap"), lines: []), language: "en"), "rap")
     }
 
     func testOpenSongReadsPlainTextFilesAndExplainsFailures() throws {

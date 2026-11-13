@@ -36,7 +36,7 @@ public struct SongPart: Equatable, Sendable {
 enum SampleSong {
     static let song: Song = {
         func section(_ id: String, _ kind: SongSectionKind, _ label: String, _ lines: [String]) -> SongSection {
-            SongSection(id: id, kind: kind, label: label, lines: lines.map { SongLine(text: ["en": $0]) })
+            SongSection(id: id, kind: kind, number: Int(label.filter(\.isNumber)), label: label, lines: lines.map { SongLine(text: ["en": $0]) })
         }
         var song = Song(title: "Morning Light", language: "en", sections: [
             section("v1", .verse, "Verse 1", ["Morning light is rising", "Over all the earth", "Every shadow fading", "Hope is being born"]),
