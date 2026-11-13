@@ -1,8 +1,6 @@
 /* Application name: window title and application menu. */ "Global Service Studio" = "Global Service Studio";
 /* Mode switch in the toolbar and View menu item. */ "Prepare" = "Preparar";
 /* Mode switch in the toolbar and View menu item; status of an output in Live mode. */ "Live" = "En vivo";
-/* Placeholder text in Prepare mode. */ "Build the service: songs, words, slides and themes." = "Arma el servicio: canciones, letras, diapositivas y temas.";
-/* Placeholder text in Live mode. */ "Run the service: what is live, what comes next and the outputs." = "Dirige el servicio: lo que está en vivo, lo que sigue y las salidas.";
 /* Sidebar section header. */ "Service" = "Servicio";
 /* Sidebar section header. */ "Library" = "Biblioteca";
 /* Sidebar row shown while a section is empty. */ "Nothing here yet" = "Aún no hay nada aquí";
@@ -50,3 +48,15 @@
 /* Live mode button (F3) that clears every layer of the outputs. */ "Clear All" = "Borrar todo";
 /* Live mode: tooltip of the disabled Clear Background button. */ "Available when backgrounds exist" = "Disponible cuando haya fondos";
 /* Live mode: shown next to LIVE while the outputs show nothing. */ "Cleared" = "Borrado";
+/* Prepare mode: title of step 1, the parts of the song in the order they are sung. */ "Song order" = "Orden de la canción";
+/* Prepare mode: hint next to the title of step 1. */ "The parts of the song, in the order they are sung. Click a part to work on it." = "Las partes de la canción, en el orden en que se cantan. Haz clic en una parte para trabajar en ella.";
+/* Prepare mode: on a part of the song order whose section was already sung earlier. */ "repeat" = "repetición";
+/* Prepare mode: on the part of the song order whose words are being edited. */ "Editing" = "Editando";
+/* Prepare mode: title of step 2; %@ is the section name, such as Chorus. */ "Words of %@" = "Letra de %@";
+/* Prepare mode: hint next to the title of step 2. */ "Type or paste the words, one line per row." = "Escribe o pega la letra, una línea por fila.";
+/* Prepare mode: help under the words editor. */ "Slides are made for you: a new slide starts every 2 lines." = "Las diapositivas se crean solas: cada 2 líneas empieza una nueva.";
+/* Prepare mode: title of step 3; %@ is the section name, such as Chorus. */ "Slides of %@" = "Diapositivas de %@";
+/* Prepare mode: help under the slides of step 3. */ "This is how the audience will see them." = "Así las verá el público.";
+/* Prepare mode: button that opens the theme editor, disabled for now. */ "Edit the look…" = "Editar el aspecto…";
+/* Prepare mode: tooltip of the disabled Edit the look button. */ "Available with the theme editor" = "Disponible con el editor de temas";
+/* Prepare mode: title of the grid of every slide of the song, next to or under the steps. */ "Whole song" = "Toda la canción";
