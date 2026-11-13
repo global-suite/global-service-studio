@@ -113,4 +113,60 @@ final class GSSAppTests: XCTestCase {
         view.layoutSubtreeIfNeeded()
         XCTAssertGreaterThan(view.fittingSize.height, 0)
     }
+    func testSizeClassAndGridColumnsFollowTheContentWidth() {
+        XCTAssertEqual([1100, 1599, 1600, 2399, 2400, 3440].map { SizeClass(contentWidth: $0) }, [.compact, .compact, .regular, .regular, .wide, .wide])
+        XCTAssertEqual(SizeClass.compact.gridColumns(slides: 11, width: 1100, height: 200), 5)
+        XCTAssertEqual([420, 480, 900].map { SizeClass.regular.gridColumns(slides: 11, width: 1200, height: $0) }, [6, 5, 4])
+        XCTAssertEqual(SizeClass.wide.gridColumns(slides: 40, width: 2600, height: 500), 6)
+        XCTAssertEqual(SizeClass.wide.gridColumns(slides: 3, width: 2600, height: 2000), 4)
+    }
+
+    func testClearCommandsBlankTheLiveSlideUntilTheOperatorMoves() {
+        let state = AppState()
+        var published: [Bool] = []
+        let subscription = state.$isCleared.dropFirst().sink { published.append($0) }
+        XCTAssertEqual(state.shownLines, state.slides[0].lines)
+        state.perform(.clearSlide)
+        XCTAssertTrue(state.isCleared)
+        XCTAssertEqual(state.shownLines, [])
+        state.perform(.nextSlide)
+        XCTAssertEqual([state.liveIndex, state.shownLines.count], [1, 2])
+        state.perform(.clearAll)
+        state.perform(.goToSlide(1))
+        XCTAssertFalse(state.isCleared)
+        state.perform(.clearSlide)
+        state.perform(.previousSlide)
+        XCTAssertEqual(state.liveIndex, 0)
+        XCTAssertEqual(published, [true, false, true, false, true, false])
+        subscription.cancel()
+    }
+
+    func testFunctionKeysClearOnlyInLiveMode() throws {
+        let controller = MainWindowController(state: AppState())
+        let window = try XCTUnwrap(controller.window)
+        func key(_ code: UInt16) -> NSEvent? {
+            let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [.function], timestamp: 0, windowNumber: window.windowNumber, context: nil, characters: "", charactersIgnoringModifiers: "", isARepeat: false, keyCode: code)
+            return controller.handleKey(try! XCTUnwrap(event))
+        }
+        XCTAssertNotNil(key(122))
+        XCTAssertFalse(controller.state.isCleared)
+        controller.state.perform(.setMode(.live))
+        XCTAssertNil(key(122))
+        XCTAssertTrue(controller.state.isCleared)
+        controller.state.perform(.nextSlide)
+        XCTAssertNil(key(99))
+        XCTAssertTrue(controller.state.isCleared)
+        XCTAssertNotNil(key(120))
+    }
+
+    func testSampleOutputsAreLocalizedAndTheWideLiveViewLaysOut() {
+        XCTAssertEqual(LiveOutput.samples.map(\.kind), [.audience, .audience, .stage, .key])
+        XCTAssertEqual(LiveOutput.samples.map { Strings.text($0.name, language: "es") }, ["Centro", "Laterales", "Escenario", "Key"])
+        XCTAssertEqual(Strings.text("Cleared", language: "es"), "Borrado")
+        XCTAssertEqual(Strings.text("Available when backgrounds exist", language: "es"), "Disponible cuando haya fondos")
+        let view = NSHostingView(rootView: LiveView(state: AppState(), appearance: .standard))
+        view.frame = NSRect(x: 0, y: 0, width: 3200, height: 1340)
+        view.layoutSubtreeIfNeeded()
+        XCTAssertGreaterThan(view.fittingSize.height, 0)
+    }
 }
