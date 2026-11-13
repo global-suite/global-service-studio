@@ -91,6 +91,35 @@ final class PlainTextSongImporterTests: XCTestCase {
         XCTAssertEqual(lines(song.sections[0]), ["Sample one", "Sample two"])
     }
 
+    func testLabelLinesInsideABlockStartNewSections() throws {
+        let song = try song("Verse 1\nPlaceholder one\nPlaceholder two\nCHORUS:\nSample refrain\nVerso 2\nSecond words\nChorus\nPlain line\nCoro\n")
+        XCTAssertEqual(song.sections.map(\.id), ["v1", "c1", "v2", "c2"])
+        XCTAssertEqual(lines(song.sections[0]), ["Placeholder one", "Placeholder two"])
+        XCTAssertEqual(lines(song.sections[3]), ["Plain line"])
+        XCTAssertEqual(order(song), ["v1", "c1", "v2", "c2", "c1"])
+    }
+
+    func testRepeatMarkersRepeatTheSectionInTheArrangement() throws {
+        let text = "Verse 1 x2\nVerse words\nChorus (x2)\nRefrain words\n\nPuente X3:\nBridge words\n\ncoro ×2\n\nEnding( x 2 )\nLast words\n\nVerse 1: x1"
+        let song = try song(text)
+        XCTAssertEqual(song.sections.map(\.id), ["v1", "c1", "b1", "e1"])
+        XCTAssertEqual(song.sections.map(\.number), [1, nil, nil, nil])
+        XCTAssertEqual(song.sections.map(\.label), ["Verse 1", "Chorus", "Puente", "Ending"])
+        XCTAssertEqual(order(song), ["v1", "v1", "c1", "c1", "b1", "b1", "b1", "c1", "c1", "e1", "e1", "v1"])
+        XCTAssertEqual(lines(song.sections[2]), ["Bridge words"])
+    }
+
+    func testLinesThatOnlyLookLikeMarkersStayLyrics() throws {
+        let song = try song("Verse 1\nSing it x2\nChorus x\nOver (x3)")
+        XCTAssertEqual(song.sections.map(\.id), ["v1"])
+        XCTAssertEqual(lines(song.sections[0]), ["Sing it x2", "Chorus x", "Over (x3)"])
+    }
+
+    func testFallbackTitleUsesSpacesForUnderscores() throws {
+        let song = try PlainTextSongImporter.song(from: "Sample words", fallbackTitle: " Placeholder_Song_Name_ ")
+        XCTAssertEqual(song.title, "Placeholder Song Name")
+    }
+
     func testTextWithoutLyricsIsAnError() {
         for text in ["", "\n \r\n\t\n", "Title: Only A Title", "Verse 1\n\nChorus:"] {
             XCTAssertThrowsError(try song(text), text) { XCTAssertEqual($0 as? PlainTextSongImporter.ImportError, .noLyrics) }
