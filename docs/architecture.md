@@ -19,7 +19,7 @@ GSSRender  GSSLibrary  GSSRemote   GSSIntegrations
 | Module | Responsibility | May import |
 |---|---|---|
 | `GSSCore` | Data model, file formats, migrations, layer rules | Foundation only |
-| `GSSLibrary` | Library folder, search index, importers and exporters | Foundation, SQLite |
+| `GSSLibrary` | Library folder, search index, importers and exporters; see [ADR 0007](adr/0007-library-storage-and-sync.md) | Foundation, SQLite |
 | `GSSRender` | Compositing and output to displays | Metal, AVFoundation, Core Text, Core Animation |
 | `GSSRemote` | Local HTTP and WebSocket API, device discovery | Network.framework |
 | `GSSIntegrations` | Optional outputs and devices: NDI, Syphon, SDI, MIDI | Vendor SDKs |
@@ -65,6 +65,8 @@ Performance is judged on the slower supported machine, an Intel Mac from 2017, n
 ## Data
 
 User content is stored as versioned JSON files in a library folder, with a rebuildable SQLite index for search. See [ADR 0004](adr/0004-open-file-formats.md). The files themselves are designed in [ADR 0005](adr/0005-file-format-design.md): songs store sections and lines without slide breaks, and themes decide how they are split and styled.
+
+The library folder layout, the GRDB and FTS5 search index, how it stays consistent with the files and how the library is prepared for sync are decided in [ADR 0007](adr/0007-library-storage-and-sync.md).
 
 ## Localization
 

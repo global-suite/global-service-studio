@@ -10,6 +10,7 @@ An ADR records one significant decision: what was decided, why, and what it cost
 | [0004](0004-open-file-formats.md) | Store user content in open, versioned files | Accepted |
 | [0005](0005-file-format-design.md) | Design of the song, theme, presentation and service plan formats | Accepted |
 | [0006](0006-extensibility-and-live-performance.md) | Extensibility without cost to the live output | Accepted |
+| [0007](0007-library-storage-and-sync.md) | Library storage, search index and the path to sync | Accepted |
 
 ## Adding one
 
