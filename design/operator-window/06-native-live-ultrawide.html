@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=3440, initial-scale=1">
+<title>Operator window — Native Live, ultrawide</title>
+<style>
+/* Tokens: design/system.md. Layout: the Wide size class in design/system.md "Window sizes". Derived from 04-native-live.html. */
+:root{
+  --window:#1C1C1C; --raised:#242424; --desk:#0B0B0B;
+  --sidebar:rgba(22,22,22,0.90); --titlebar:rgba(28,28,28,0.92);
+  --separator:rgba(255,255,255,.10); --control:rgba(255,255,255,.08); --control-hover:rgba(255,255,255,.13);
+  --label:rgba(255,255,255,.85); --label-2:rgba(255,255,255,.55);
+  --accent:#0A84FF; --live:#FF453A; --next:#FF9F0A; --ok:#32D74B; --key-green:#00B140;
+  --focus:rgba(10,132,255,.5); --selection:rgba(10,132,255,.55);
+  --font:-apple-system,"SF Pro Text","Helvetica Neue",sans-serif;
+  --material:blur(30px) saturate(180%);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--desk);font:400 13px/1.35 var(--font);color:var(--label);display:grid;place-items:center;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit;border:0;background:none}
+button{cursor:default}
+ol,ul{list-style:none}
+:focus-visible{outline:3px solid var(--focus);outline-offset:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ico{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.tnum{font-variant-numeric:tabular-nums}
+kbd{display:inline-grid;place-items:center;min-width:20px;height:18px;padding:0 5px;border-radius:4px;background:var(--control);
+  box-shadow:inset 0 -1px 0 var(--separator);font:500 11px/1 var(--font);color:var(--label)}
+
+/* Window: 3392 x 1392 on a 3440 x 1440 display; content area 3152 wide = Wide class */
+.window{width:3392px;height:1392px;border-radius:10px;overflow:hidden;display:grid;grid-template-columns:240px 1fr;
+  box-shadow:0 0 0 1px var(--separator),0 24px 64px rgba(0,0,0,.55),0 4px 14px rgba(0,0,0,.35)}
+
+/* Sidebar (source list): unchanged from Compact */
+.sidebar{background:var(--sidebar);-webkit-backdrop-filter:var(--material);backdrop-filter:var(--material);
+  border-right:1px solid var(--separator);display:flex;flex-direction:column;min-height:0}
+.sb-top{height:52px;flex:none;display:flex;align-items:center;padding:0 10px 0 20px}
+.lights{display:flex;gap:8px}
+.lights i{width:12px;height:12px;border-radius:50%;background:var(--live)}
+.lights i:nth-child(2){background:var(--next)} .lights i:nth-child(3){background:var(--ok)}
+.sb-top .tb-btn{margin-left:auto}
+.source{padding:0 10px 16px;overflow:auto;flex:1}
+.source h2{font:500 11px/1 var(--font);color:var(--label-2);padding:14px 10px 6px}
+.row{display:flex;align-items:center;gap:8px;width:100%;height:28px;padding:0 10px;border-radius:6px;text-align:left;white-space:nowrap}
+.row:hover{background:var(--control)}
+.row .ico{color:var(--accent)}
+.row .meta{margin-left:auto;color:var(--label-2)}
+.row .disc{width:10px;height:10px;margin-left:-6px;color:var(--label-2);stroke-width:2}
+.row[aria-current="true"]{background:var(--selection);color:var(--label);font-weight:600}
+.row[aria-current="true"] .ico,.row[aria-current="true"] .disc,.row[aria-current="true"] .meta{color:var(--label)}
+.children .row{padding-left:44px}
+.children .row .meta{font-variant-numeric:tabular-nums}
+.liveflag{margin-left:auto;display:inline-flex;align-items:center;gap:5px;color:var(--label);font:600 11px/1 var(--font);letter-spacing:.02em}
+.liveflag::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--live)}
+.children .row.is-live{color:var(--label);font-weight:600}
+
+/* Right of the sidebar: toolbar over [main | outputs column]; no bottom bar in Wide */
+.content{background:var(--window);display:grid;grid-template-rows:52px 1fr;grid-template-columns:1fr 440px;min-width:0;min-height:0}
+.toolbar{grid-column:1/-1;background:var(--titlebar);-webkit-backdrop-filter:var(--material);backdrop-filter:var(--material);
+  border-bottom:1px solid var(--separator);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 12px 0 20px}
+.tb-left,.tb-right{display:flex;align-items:center;gap:6px}
+.tb-right{justify-content:flex-end}
+.title{display:flex;flex-direction:column;margin-right:10px}
+.title h1{font:600 15px/1.15 var(--font);color:var(--label)}
+.title span{font-size:11px;font-weight:500;color:var(--label-2)}
+.tb-btn{width:32px;height:28px;display:grid;place-items:center;border-radius:6px;color:var(--label-2)}
+.tb-btn:hover{background:var(--control);color:var(--label)}
+.tb-btn .ico{width:18px;height:18px}
+.clock{font:600 13px/1 var(--font);color:var(--label);padding:0 8px;font-variant-numeric:tabular-nums}
+.seg{display:inline-flex;padding:2px;border-radius:7px;background:var(--control);gap:2px}
+.seg button{height:24px;min-width:76px;padding:0 14px;border-radius:5px;font-weight:500;color:var(--label-2)}
+.seg button:hover{color:var(--label)}
+.seg button[aria-pressed="true"]{background:var(--control-hover);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.35)}
+.search{display:flex;align-items:center;gap:6px;width:240px;height:28px;padding:0 8px;border-radius:7px;background:var(--control);color:var(--label-2)}
+.search:focus-within{outline:3px solid var(--focus)}
+.search input{flex:1;min-width:0;outline:0;color:var(--label)}
+.search input::placeholder{color:var(--label-2)}
+.search .ico{width:14px;height:14px}
+
+/* Main: [stage column 910 | slide grid of large thumbnails, 5 per row]. In Wide the live panel yields width to the grid. */
+main{padding:18px 24px 16px;display:grid;grid-template-columns:910px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:16px 24px;min-height:0;min-width:0}
+.songhead{grid-column:1/-1;display:flex;align-items:center;gap:12px;height:24px}
+.songhead h2{font:600 15px/1.2 var(--font)}
+.songhead p{color:var(--label-2)}
+.songhead .spacer{flex:1}
+.popup{display:inline-flex;align-items:center;gap:8px;height:24px;padding:0 6px 0 10px;border-radius:6px;background:var(--control)}
+.popup:hover{background:var(--control-hover)}
+.popup .ico{width:10px;height:12px;color:var(--label-2);stroke-width:1.75}
+.fieldlabel{color:var(--label-2)}
+
+.stagecol{display:flex;flex-direction:column;gap:20px;min-height:0}
+.slide{aspect-ratio:16/9;width:100%;border-radius:6px;display:grid;place-items:center;text-align:center;overflow:hidden;color:#FFF;
+  background:radial-gradient(70% 90% at 28% 22%,rgba(10,132,255,.42),transparent 70%),radial-gradient(60% 70% at 82% 92%,rgba(255,159,10,.26),transparent 70%),#000}
+.slide p{font-weight:600;line-height:1.28;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.pane h3{display:flex;align-items:center;gap:10px;height:20px;margin-bottom:8px;font:600 15px/1 var(--font);white-space:nowrap}
+.flag{display:inline-flex;align-items:center;gap:6px;font:600 11px/1 var(--font);letter-spacing:.04em}
+.flag::before{content:"";width:8px;height:8px;border-radius:50%;box-shadow:inset 0 0 0 2px currentColor}
+.flag.next{color:var(--next)}
+.where{margin-left:auto;font:400 11px/1 var(--font);color:var(--label-2);overflow:hidden;text-overflow:ellipsis}
+.where b{font-weight:600;color:var(--label)}
+/* Live panel: 910 x 512 here */
+.pane.now{border-radius:8px;overflow:hidden;box-shadow:0 0 0 3px var(--live),0 0 48px rgba(255,69,58,.24)}
+.pane.now h3{margin:0;height:28px;padding:0 12px;gap:8px;background:var(--live);color:var(--window);font:700 13px/1 var(--font)}
+.pane.now h3 .flag{color:var(--window);font-weight:800;letter-spacing:.06em}
+.pane.now h3 .flag::before{background:var(--window);box-shadow:none}
+.pane.now .where,.pane.now .where b{color:var(--window)}
+.pane.now .slide{border-radius:0}
+.pane.now .slide p{font-size:46px}
+/* Next panel (520 wide) and Previous | Next beside it */
+.lower{display:grid;grid-template-columns:520px 1fr;gap:20px}
+.pane.next{opacity:.92}
+.pane.next .slide{box-shadow:0 0 0 2px var(--next)}
+.pane.next .slide p{font-size:26px}
+.go{display:flex;flex-direction:column;gap:8px;min-width:0}
+.after{display:flex;align-items:center;justify-content:flex-end;gap:6px;height:20px;font-size:11px;color:var(--label-2)}
+.after b{font-weight:600;color:var(--label)}
+.gobtns{flex:1;display:grid;grid-template-columns:1fr 1.6fr;gap:12px}
+.go .t{display:flex;flex-direction:column;gap:6px;min-width:0}
+.go .dest{font:500 11px/1.2 var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.go-next{display:grid;grid-template-columns:1fr auto;align-content:space-between;padding:16px;border-radius:10px;background:var(--accent);color:#FFF;text-align:left}
+.go-next strong{font:700 28px/1 var(--font)}
+.go-next .dest{color:#FFF;font-size:13px}
+.go-next .arrow{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round}
+.go-next .keys{grid-column:1/-1;display:inline-flex;gap:4px}
+.go-next kbd,.go-prev kbd{background:var(--window);color:var(--label)}
+.go-next:hover{box-shadow:inset 0 0 0 100px var(--control)}
+.go-next:focus-visible{outline-offset:2px}
+.go-prev{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:16px;border-radius:10px;background:var(--control);text-align:left}
+.go-prev:hover{background:var(--control-hover)}
+.go-prev strong{font:600 17px/1 var(--font);color:var(--label)}
+.go-prev .dest{color:var(--label-2);font-size:13px}
+.go button:disabled{opacity:.45}
+/* Stage message and timers: fills the stage column under Next */
+.stagemsg{flex:1;display:flex;flex-direction:column;gap:16px;padding:16px 18px 18px;border-radius:8px;background:var(--raised);box-shadow:0 0 0 1px var(--separator);min-height:0}
+.stagemsg h3{margin:0}
+.msgrow{display:grid;grid-template-columns:1fr auto auto;gap:8px}
+.msgrow .push{height:36px}
+.field{display:flex;align-items:center;height:36px;font-size:15px;padding:0 10px;border-radius:6px;background:var(--control)}
+.field:focus-within{outline:3px solid var(--focus)}
+.field input{flex:1;min-width:0;outline:0;color:var(--label)}
+.push.primary{background:var(--accent);color:#FFF;min-width:76px}
+.push.primary:hover{box-shadow:inset 0 0 0 100px var(--control)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{height:30px;padding:0 14px;border-radius:15px;background:var(--control);font-weight:500;color:var(--label)}
+.chip:hover{background:var(--control-hover)}
+.plan{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+.plan p{display:flex;justify-content:space-between;color:var(--label-2)}
+.plan p b{color:var(--label);font-weight:600}
+.bar{height:6px;border-radius:3px;background:var(--control);overflow:hidden}
+.bar i{display:block;height:100%;width:70%;border-radius:3px;background:var(--accent)}
+.timers{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.timers div{padding:14px 16px;border-radius:6px;background:var(--control)}
+.timers dt{font:500 11px/1 var(--font);color:var(--label-2)}
+.timers dd{margin-top:10px;font:600 34px/1 var(--font);font-variant-numeric:tabular-nums}
+
+/* Slide grid: full height; thumbnails 300 to 380 wide (5 per row here, about 330), count follows width; continues with the next items */
+.film{display:flex;flex-direction:column;min-height:0;min-width:0}
+.film>h3{display:flex;align-items:center;gap:10px;height:20px;margin-bottom:8px;font:600 13px/1 var(--font)}
+.film>h3 span{font:400 11px/1 var(--font);color:var(--label-2)}
+.film .follow{margin-left:auto;display:inline-flex;align-items:center;gap:5px}
+.film .follow .ico{width:12px;height:12px}
+.scroll{flex:1;min-height:0;overflow-y:auto;padding:3px;margin:-3px}
+.grp h4{display:flex;align-items:baseline;gap:8px;font:600 13px/1 var(--font);margin:32px 0 12px}
+.scroll>.grp:first-child h4{margin-top:4px}
+.grp h4 span{font:400 11px/1 var(--font);color:var(--label-2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px 16px}
+.grid li{min-width:0}
+.thumb{display:block;width:100%;text-align:left;border-radius:6px}
+.thumb .slide{box-shadow:0 0 0 1px var(--separator)}
+.thumb .slide p{font-size:16px;line-height:1.3;text-shadow:none;padding:0 14px}
+.thumb small{display:flex;gap:6px;margin-top:8px;height:12px;font:500 11px/1 var(--font);color:var(--label-2);font-variant-numeric:tabular-nums}
+.thumb small .sec{margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.thumb:hover .slide{box-shadow:0 0 0 2px var(--accent)}
+.thumb.done .slide{opacity:.6}
+.thumb.is-live .slide{box-shadow:0 0 0 3px var(--live)}
+.thumb.is-live small b{color:var(--live);font-weight:600}
+.thumb.is-next .slide{box-shadow:0 0 0 2px var(--next)}
+.thumb.is-next small b{color:var(--next);font-weight:600}
+.ahead .slide{opacity:.8}
+.slide.media{background:radial-gradient(80% 90% at 70% 30%,rgba(255,159,10,.30),transparent 70%),#000}
+.slide.page{background:#000}
+.slide .play{width:40px;height:40px;fill:none;stroke:#FFF;stroke-width:1.5}
+
+/* Outputs column: replaces the bottom bar; larger monitors, clear actions under them */
+.outcol{border-left:1px solid var(--separator);padding:18px 22px 16px;display:flex;flex-direction:column;min-height:0}
+.outcol h2{font:500 11px/1 var(--font);color:var(--label-2);margin-bottom:8px}
+.mons{display:flex;flex-direction:column;gap:18px}
+.scr{aspect-ratio:16/9;border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px var(--separator);color:#FFF;text-align:center}
+.scr.slide p{font-size:19px;text-shadow:none}
+.mon .name{display:flex;align-items:center;gap:8px;margin-top:8px;height:18px}
+.mon .name b{font-weight:600}
+.mon .role{font-size:11px;color:var(--label-2)}
+.status{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--live)}
+.status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.tele{background:#000;display:grid;grid-template-rows:auto 1fr auto auto;text-align:left;padding:12px 16px;gap:6px;font-size:13px}
+.tele .clk{display:flex;justify-content:space-between;align-items:baseline;color:var(--label-2)}
+.tele .clk b{color:#FFF;font-size:20px;font-variant-numeric:tabular-nums}
+.tele .cur{font-size:22px;font-weight:700;line-height:1.15;align-self:center}
+.tele .nx{color:var(--label-2)}
+.tele .msg{background:var(--control-hover);border-radius:4px;padding:4px 8px}
+.keyout{background:var(--key-green);display:grid;align-content:end;padding:0 24px 18px}
+.keyout div{background:rgba(0,0,0,.72);border-radius:4px;padding:8px 12px;font-size:15px;font-weight:600;line-height:1.3;text-align:left}
+.clear{margin-top:auto;padding-top:16px;display:flex;flex-direction:column;gap:10px}
+.bgline{display:flex;align-items:center;gap:6px;color:var(--label-2)}
+.bgline b{color:var(--label);font-weight:500}
+.bgline .ico{width:14px;height:14px;color:var(--label)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btns .danger{grid-column:1/-1}
+.push{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:32px;padding:0 10px;border-radius:6px;background:var(--control);font-weight:500;white-space:nowrap}
+.push:hover{background:var(--control-hover)}
+.push.danger{background:rgba(255,69,58,.16);box-shadow:inset 0 0 0 1px rgba(255,69,58,.24)}
+.push.danger:hover{background:rgba(255,69,58,.24)}
+
+@media (prefers-reduced-motion:no-preference){
+  .row,.tb-btn,.push,.seg button,.popup{transition:background-color .12s ease,color .12s ease}
+  .scroll{scroll-behavior:smooth}
+  .pane.now h3 .flag::before{animation:livepulse 1.6s ease-in-out infinite}
+  @keyframes livepulse{50%{opacity:.35}}
+}
+
+/* Appearances (design/system.md); Midnight is the default */
+html[data-appearance="graphite"]{--window:#1E1E1E;--raised:#2A2A2C;--desk:#2A2A2C;--sidebar:rgba(40,40,42,0.72);--titlebar:rgba(46,46,48,0.86)}
+html[data-appearance="black"]{--window:#000000;--raised:#1C1C1C;--desk:#000000;--sidebar:rgba(10,10,10,0.94);--titlebar:rgba(10,10,10,0.94);--separator:rgba(255,255,255,0.14)}
+.appearance{position:fixed;left:36px;bottom:32px;z-index:10;display:flex;flex-direction:column;align-items:flex-start;gap:6px;font:500 11px/1 var(--font);color:var(--label-2)}
+.appearance div{display:flex;padding:2px;border-radius:6px;background:var(--control)}
+.appearance button{height:20px;padding:0 9px;border-radius:5px;font:500 11px/1 var(--font);color:var(--label-2)}
+.appearance button[aria-pressed="true"]{background:var(--control-hover);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,0.35)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sidebar" viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M7.5 3.5v13M4.5 6.5h1M4.5 9h1"/></symbol>
+  <symbol id="i-inspector" viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M12.5 3.5v13M14.5 6.5h1M14.5 9h1"/></symbol>
+  <symbol id="i-note" viewBox="0 0 16 16"><path d="M6 12V3.2l7-1.4V10.5"/><circle cx="4.2" cy="12" r="1.8"/><circle cx="11.2" cy="10.5" r="1.8"/></symbol>
+  <symbol id="i-film" viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="2"/><path d="m6.5 6 3.5 2-3.5 2z"/></symbol>
+  <symbol id="i-present" viewBox="0 0 16 16"><rect x="1.5" y="2" width="13" height="9" rx="1.5"/><path d="M8 11v3M5.5 14.5h5"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 16 16"><path d="M4 1.5h5L12.5 5v9.5h-8.5z"/><path d="M9 1.5V5h3.5M6.5 8.5h3.5M6.5 11h3.5"/></symbol>
+  <symbol id="i-timer" viewBox="0 0 16 16"><circle cx="8" cy="9" r="5.5"/><path d="M8 9V6.2M6.5 1.5h3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3.5 3.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 10 10"><path d="m3.5 2 3 3-3 3"/></symbol>
+  <symbol id="i-updown" viewBox="0 0 10 12"><path d="m2.5 4.5 2.5-2.5 2.5 2.5M2.5 7.5 5 10l2.5-2.5"/></symbol>
+  <symbol id="i-loop" viewBox="0 0 16 16"><path d="M2.5 8a5 5 0 0 1 9-3M13.5 8a5 5 0 0 1-9 3"/><path d="M11.8 1.8v3.4H8.4M4.2 14.2v-3.4h3.4"/></symbol>
+  <symbol id="i-displays" viewBox="0 0 20 20"><rect x="2" y="4" width="11" height="8" rx="1.5"/><path d="M6 15h3M7.5 12v3M15 7h1.5A1.5 1.5 0 0 1 18 8.5v5a1.5 1.5 0 0 1-1.5 1.5H12"/></symbol>
+  <symbol id="i-bubble" viewBox="0 0 20 20"><path d="M4.5 4h11A2 2 0 0 1 17.5 6v6a2 2 0 0 1-2 2H9l-3.5 3v-3h-1a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M7 8h6M7 10.5h4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4z"/></symbol>
+</svg>
+
+<div class="window" role="application" aria-label="Global Service Studio — Sunday Service">
+  <nav class="sidebar" aria-label="Order of service">
+    <div class="sb-top">
+      <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+      <button class="tb-btn" type="button" aria-label="Hide sidebar" aria-pressed="true"><svg class="ico"><use href="#i-sidebar"/></svg></button>
+    </div>
+    <div class="source">
+      <h2 id="h-pre">Pre-service</h2>
+      <ul aria-labelledby="h-pre">
+        <li><button class="row" type="button"><svg class="ico"><use href="#i-timer"/></svg>Countdown<span class="meta tnum">5:00</span></button></li>
+      </ul>
+      <h2 id="h-wor">Worship</h2>
+      <ul aria-labelledby="h-wor">
+        <li>
+          <button class="row" type="button" aria-current="true" aria-expanded="true"><svg class="ico disc" viewBox="0 0 10 10" style="transform:rotate(90deg)"><use href="#i-chev"/></svg><svg class="ico"><use href="#i-note"/></svg>Morning Light<span class="meta tnum">11</span></button>
+          <ol class="children" aria-label="Morning Light sections">
+            <li><button class="row" type="button">Verse 1</button></li><li><button class="row" type="button">Chorus</button></li>
+            <li><button class="row" type="button">Verse 2</button></li><li><button class="row" type="button">Chorus</button></li>
+            <li><button class="row" type="button">Bridge</button></li><li><button class="row" type="button">Chorus</button></li>
+          </ol>
+        </li>
+        <li><button class="row" type="button"><svg class="ico"><use href="#i-note"/></svg>We Lift Our Voice</button></li>
+        <li><button class="row" type="button"><svg class="ico"><use href="#i-note"/></svg>Great Is the Light</button></li>
+      </ul>
+      <h2 id="h-wel">Welcome</h2>
+      <ul aria-labelledby="h-wel">
+        <li><button class="row" type="button"><svg class="ico"><use href="#i-present"/></svg>Welcome<span class="meta">3 slides</span></button></li>
+        <li><button class="row" type="button"><svg class="ico"><use href="#i-film"/></svg>Announcements<span class="meta tnum">2:10</span></button></li>
+      </ul>
+      <h2 id="h-msg">Message</h2>
+      <ul aria-labelledby="h-msg">
+        <li><button class="row" type="button"><svg class="ico"><use href="#i-doc"/></svg>Hope That Holds.pdf<span class="meta">24 pages</span></button></li>
+      </ul>
+      <h2 id="h-res">Response</h2>
+      <ul aria-labelledby="h-res">
+        <li><button class="row" type="button"><svg class="ico"><use href="#i-note"/></svg>Morning Light (short)</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="content">
+    <header class="toolbar" aria-label="Toolbar">
+      <div class="tb-left">
+        <div class="title"><h1>Sunday Service</h1><span class="tnum">Nov 15 · 10:00</span></div>
+        <button class="tb-btn" type="button" aria-label="Outputs"><svg class="ico"><use href="#i-displays"/></svg></button>
+        <button class="tb-btn" type="button" aria-label="Stage message"><svg class="ico"><use href="#i-bubble"/></svg></button>
+      </div>
+      <div class="seg" role="group" aria-label="Mode">
+        <button type="button" aria-pressed="false">Prepare</button><button type="button" aria-pressed="true">Live</button>
+      </div>
+      <div class="tb-right">
+        <span class="clock" aria-label="Time 10:14">10:14</span>
+        <label class="search"><svg class="ico"><use href="#i-search"/></svg><span class="sr">Search</span><input type="search" placeholder="Search"></label>
+        <button class="tb-btn" type="button" aria-label="Show inspector" aria-pressed="false"><svg class="ico"><use href="#i-inspector"/></svg></button>
+      </div>
+    </header>
+
+    <main aria-labelledby="song">
+      <div class="songhead">
+        <h2 id="song">Morning Light</h2>
+        <p>Key G · 72 bpm</p>
+        <span class="spacer"></span>
+        <span class="fieldlabel" id="arr-l">Arrangement</span>
+        <button class="popup" type="button" aria-haspopup="listbox" aria-labelledby="arr-l arr-v"><span id="arr-v">Default</span><svg class="ico" viewBox="0 0 10 12"><use href="#i-updown"/></svg></button>
+      </div>
+
+      <div class="stagecol">
+        <section class="pane now" aria-labelledby="h-now">
+          <h3><span class="flag">LIVE</span><span id="h-now">On screen now</span><span class="where"><b id="now-sec"></b> <span id="now-pos"></span></span></h3>
+          <div class="slide" id="now-slide" role="img"><p></p></div>
+        </section>
+        <div class="lower">
+          <section class="pane next" aria-labelledby="h-next">
+            <h3><span id="h-next">Next</span><span class="flag next">NEXT</span><span class="where"><b id="next-sec"></b> <span id="next-pos"></span></span></h3>
+            <div class="slide" id="next-slide" role="img"><p></p></div>
+          </section>
+          <div class="go" role="group" aria-label="Move through the slides">
+            <p class="after">After this song <b>We Lift Our Voice</b></p>
+            <div class="gobtns">
+              <button class="go-prev" id="go-prev" type="button" aria-keyshortcuts="ArrowLeft">
+                <span class="t"><strong>Previous</strong><span class="dest" id="prev-dest"></span></span><kbd>←</kbd>
+              </button>
+              <button class="go-next" id="go-next" type="button" aria-keyshortcuts="Space ArrowRight">
+                <span class="t"><strong>Next</strong><span class="dest" id="next-dest"></span></span>
+                <svg class="arrow" viewBox="0 0 28 28" aria-hidden="true"><path d="M5 14h17M15 7l7 7-7 7"/></svg>
+                <span class="keys"><kbd>Space</kbd><kbd>→</kbd></span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <section class="pane stagemsg" aria-labelledby="h-stage">
+          <h3><span id="h-stage">Stage message</span><span class="where">Shown on <b>Stage</b></span></h3>
+          <div class="msgrow">
+            <label class="field"><span class="sr">Message to the stage</span><input type="text" value="Two more songs"></label>
+            <button class="push primary" type="button">Show</button>
+            <button class="push" type="button">Hide</button>
+          </div>
+          <div class="chips" role="group" aria-label="Quick messages">
+            <button class="chip" type="button">Two more songs</button><button class="chip" type="button">Repeat the chorus</button>
+            <button class="chip" type="button">Wrap up</button><button class="chip" type="button">Speaker to the stage</button>
+          </div>
+          <div class="plan">
+            <p><span><b>Worship</b> · 10:00 to 10:20</span><span class="tnum">6:00 left</span></p>
+            <div class="bar" role="img" aria-label="Worship set 70 percent done"><i></i></div>
+          </div>
+          <dl class="timers">
+            <div><dt>Service</dt><dd>14:02</dd></div>
+            <div><dt>This song</dt><dd>2:31</dd></div>
+            <div><dt>Message starts</dt><dd>10:35</dd></div>
+          </dl>
+        </section>
+      </div>
+
+      <section class="film" aria-labelledby="h-film">
+        <h3 id="h-film">All slides<span>Morning Light, then the rest of the service</span><span class="follow"><svg class="ico" aria-hidden="true"><use href="#i-loop"/></svg>Follows the live slide</span></h3>
+        <div class="scroll" id="scroll">
+          <section class="grp" aria-labelledby="g-cur"><h4 id="g-cur">Morning Light<span id="film-count"></span></h4>
+            <ol class="grid" id="film" tabindex="0" aria-label="All slides of Morning Light"></ol></section>
+          <div id="ahead"></div>
+        </div>
+      </section>
+      <p class="sr" aria-live="polite" id="announce"></p>
+    </main>
+
+    <aside class="outcol" aria-label="Outputs and clear actions">
+      <h2 id="h-out">Outputs</h2>
+      <ul class="mons" aria-labelledby="h-out">
+        <li class="mon">
+          <div class="scr slide" aria-hidden="true"><p></p></div>
+          <div class="name"><b>Center</b><span class="role">Audience · 1920×1080</span><span class="status">Live</span></div>
+        </li>
+        <li class="mon">
+          <div class="scr slide" aria-hidden="true"><p></p></div>
+          <div class="name"><b>Sides</b><span class="role">Audience · 2 displays</span><span class="status">Live</span></div>
+        </li>
+        <li class="mon">
+          <div class="scr tele" aria-hidden="true">
+            <div class="clk"><span>Chorus</span><b>10:14</b></div>
+            <div class="cur"></div><div class="nx"></div>
+            <div class="msg">Message: Two more songs</div>
+          </div>
+          <div class="name"><b>Stage</b><span class="role">Teleprompter</span><span class="status">Live</span></div>
+        </li>
+        <li class="mon">
+          <div class="scr keyout" aria-hidden="true"><div></div></div>
+          <div class="name"><b>Key</b><span class="role">Lower third · switcher</span><span class="status">Live</span></div>
+        </li>
+      </ul>
+      <section class="clear" aria-labelledby="h-clear">
+        <h2 id="h-clear" class="sr">Clear</h2>
+        <p class="bgline"><svg class="ico"><use href="#i-loop"/></svg>Background <b>Soft Light Loop</b></p>
+        <div class="btns">
+          <button class="push" type="button" aria-keyshortcuts="F1">Clear Slide<kbd>F1</kbd></button>
+          <button class="push" type="button" aria-keyshortcuts="F2">Clear Background<kbd>F2</kbd></button>
+          <button class="push danger" type="button" aria-keyshortcuts="F3">Clear All<kbd>F3</kbd></button>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<aside class="appearance" aria-label="Appearance, design preview only">
+  <span>Appearance</span>
+  <div role="group" aria-label="Appearance">
+    <button type="button" aria-pressed="true" data-a="midnight">Midnight</button>
+    <button type="button" aria-pressed="false" data-a="graphite">Graphite</button>
+    <button type="button" aria-pressed="false" data-a="black">Black</button>
+  </div>
+</aside>
+<script>
+document.querySelectorAll('.appearance button').forEach(function(b){b.addEventListener('click',function(){
+  document.documentElement.dataset.appearance=b.dataset.a;
+  document.querySelectorAll('.appearance button').forEach(function(o){o.setAttribute('aria-pressed',String(o===b))});
+});});
+</script>
+<script>
+(function(){
+  /* Invented placeholder content only. */
+  var S=[["Verse 1",["Morning light is rising","Over all the earth"]],["Verse 1",["Every shadow fading","Hope is being born"]],
+    ["Chorus",["We lift our voice","We lift our eyes"]],["Chorus",["You are the light","That never dies"]],
+    ["Verse 2",["Mercy like a river","Running through the night"]],["Verse 2",["Every heart awakened","Every wrong made right"]],
+    ["Chorus",["We lift our voice","We lift our eyes"]],["Chorus",["You are the light","That never dies"]],
+    ["Bridge",["Shine on us","Shine through us"]],
+    ["Chorus",["We lift our voice","We lift our eyes"]],["Chorus",["You are the light","That never dies"]]];
+  /* The rest of the order of service fills the grid: previews, they go live when their item does */
+  var A=[["We Lift Our Voice","Key D · 8 slides","",[["Verse 1","Out of the quiet|A song begins"],["Verse 1","Every heart open|Every door wide"],["Chorus","We lift our voice|Over the morning"],["Chorus","Steady and sure|You lead us home"],["Verse 2","When the road is long|And the night is cold"],["Verse 2","You are the fire|That keeps us warm"],["Chorus","We lift our voice|Over the morning"],["Chorus","Steady and sure|You lead us home"]]],
+    ["Great Is the Light","Key A · 8 slides","",[["Verse 1","Great is the light|Upon the hills"],["Verse 1","Wide is the sky|Your kindness fills"],["Chorus","Shine on|Every waiting face"],["Chorus","Morning star|Full of grace"],["Verse 2","Into the valley|Down to the sea"],["Verse 2","Your light is falling|Over me"],["Bridge","Great is the light|Great is the light"],["Chorus","Shine on|Every waiting face"]]],
+    ["Welcome","3 slides","",[["Slide","Welcome home|Sunday Service"],["Slide","Coffee and conversation|After the service"],["Slide","Kids check-in|East entrance"]]],
+    ["Announcements","Video · 2:10","media",[["Video","play"]]],
+    ["Hope That Holds.pdf","24 pages","page",["Hope That Holds","1. Hope waits","Reading|Part one","When waiting is hard","A seed in winter","2. Hope speaks","Reading|Part two","Words that build","A letter to a friend","3. Hope stays","Reading|Part three","An anchor, not a wish","Three questions","Hope waits","Hope speaks","Hope stays","For this week","Small groups","Questions for the week","Pray with us","Serve with us","Next steps","Thank you","See you next Sunday"].map(function(t){return ["Page",t]})],
+    ["Morning Light (short)","Response · 4 slides","",[["Chorus","We lift our voice|We lift our eyes"],["Chorus","You are the light|That never dies"],["Bridge","Shine on us|Shine through us"],["Chorus","We lift our voice|We lift our eyes"]]]];
+  var groups=[],cur=2,$=function(i){return document.getElementById(i)};
+  S.forEach(function(x,i){var g=groups[groups.length-1];if(!g||g.name!==x[0]||(i&&S[i-1][0]!==x[0])){g={name:x[0],items:[]};groups.push(g)}g.items.push(i);x.g=groups.length-1;x.k=g.items.length});
+  var film=$("film");
+  film.innerHTML=S.map(function(x,i){return '<li><button class="thumb" type="button" data-i="'+i+'"><span class="slide"><p>'+x[1].join("<br>")+'</p></span><small><span>'+(i+1)+'</span><span class="sec">'+x[0]+'</span><b></b></small></button></li>'}).join("");
+  $("film-count").textContent=S.length+" slides · live";
+  $("ahead").innerHTML=A.map(function(it,a){return '<section class="grp ahead" aria-labelledby="g'+a+'"><h4 id="g'+a+'">'+it[0]+'<span>'+it[1]+'</span></h4><ol class="grid">'+
+    it[3].map(function(s,i){var body=s[1]==="play"?'<svg class="play"><use href="#i-play"/></svg>':'<p>'+s[1].replace("|","<br>")+'</p>';
+      return '<li><div class="thumb"><span class="slide '+it[2]+'">'+body+'</span><small><span>'+(i+1)+'</span><span class="sec">'+s[0]+'</span></small></div></li>'}).join("")+'</ol></section>'}).join("");
+  function follow(){var t=film.querySelector(".is-live"),sc=$("scroll");if(!t)return;var top=t.offsetTop-sc.offsetTop,h=t.offsetHeight;
+    if(top<sc.scrollTop||top+h>sc.scrollTop+sc.clientHeight)sc.scrollTop=Math.max(0,top-40)}
+  var rows=[].slice.call(document.querySelectorAll(".children .row"));
+  function where(i){return S[i][0]+" · "+S[i].k+" of "+groups[S[i].g].items.length}
+  function show(){
+    var n=S[cur],x=S[cur+1],p=S[cur-1];
+    $("now-slide").firstElementChild.innerHTML=n[1].join("<br>");$("now-slide").setAttribute("aria-label","Live slide: "+n[1].join(" / "));
+    $("now-sec").textContent=n[0];$("now-pos").textContent="Slide "+n.k+" of "+groups[n.g].items.length+" · "+(cur+1)+" of "+S.length;
+    $("next-slide").firstElementChild.innerHTML=x?x[1].join("<br>"):"End of song";$("next-slide").setAttribute("aria-label",x?"Next slide: "+x[1].join(" / "):"End of song");
+    $("next-sec").textContent=x?x[0]:"Next item";$("next-pos").textContent=x?"Slide "+x.k+" of "+groups[x.g].items.length+" · "+(cur+2)+" of "+S.length:"We Lift Our Voice";
+    $("next-dest").textContent=x?where(cur+1):"We Lift Our Voice";$("prev-dest").textContent=p?where(cur-1):"Start of song";$("go-prev").disabled=!p;
+    [].forEach.call(film.querySelectorAll(".thumb"),function(t){var i=+t.dataset.i;t.className="thumb"+(i<cur?" done":"")+(i===cur?" is-live":"")+(i===cur+1?" is-next":"");
+      t.lastElementChild.lastElementChild.textContent=i===cur?"LIVE":i===cur+1?"NEXT":"";t.setAttribute("aria-label",where(i)+(i===cur?", live":i===cur+1?", next":""));if(i===cur)t.setAttribute("aria-current","true");else t.removeAttribute("aria-current")});
+    rows.forEach(function(r,g){var live=g===n.g;r.className="row"+(live?" is-live":"");if(live)r.setAttribute("aria-current","step");else r.removeAttribute("aria-current");
+      r.innerHTML=groups[g].name+(live?'<span class="liveflag">LIVE</span>':'<span class="meta">'+groups[g].items.length+"</span>")});
+    [].forEach.call(document.querySelectorAll(".scr.slide p,.keyout div,.tele .cur"),function(e){e.innerHTML=n[1].join("<br>")});
+    document.querySelector(".tele .nx").textContent=x?x[1].join(" / "):"End of song";document.querySelector(".tele .clk span").textContent=n[0];
+    $("announce").textContent="Live: "+where(cur);follow();
+  }
+  function go(i){if(i<0||i>=S.length)return;cur=i;show()}
+  $("go-next").addEventListener("click",function(){go(cur+1)});$("go-prev").addEventListener("click",function(){go(cur-1)});
+  film.addEventListener("click",function(e){var t=e.target.closest(".thumb");if(t)go(+t.dataset.i)});
+  rows.forEach(function(r,g){r.addEventListener("click",function(){go(groups[g].items[0])})});
+  document.addEventListener("keydown",function(e){if(e.target.matches("input"))return;
+    if(e.key==="ArrowRight"||(e.key===" "&&!e.target.matches("button"))){e.preventDefault();go(cur+1)}else if(e.key==="ArrowLeft"){e.preventDefault();go(cur-1)}});
+  show();
+})();
+</script>
+</body>
+</html>

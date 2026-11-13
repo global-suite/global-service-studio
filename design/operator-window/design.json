@@ -36,6 +36,13 @@
       "tradeoff": "Guided song builder for a beginner: pick a part of the song, type its words, see its slides; shows one part at a time instead of the whole song",
       "width": 1440,
       "height": 900
+    },
+    {
+      "file": "06-native-live-ultrawide.html",
+      "title": "Native · Live (ultrawide)",
+      "tradeoff": "Uses the whole ultrawide width with output monitors and a full-height grid of large slides, 5 per row, that continues into the rest of the service; the live panel gives up width to the grid (about 910 by 512), so it is less dominant than the width would allow",
+      "width": 3440,
+      "height": 1440
     }
   ]
 }
