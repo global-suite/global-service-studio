@@ -1,5 +1,6 @@
 import GSSCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Prepare mode: the guided song builder (song order, words of the selected part, its slides) and the whole song.
 struct PrepareView: View {
@@ -7,6 +8,10 @@ struct PrepareView: View {
     let appearance: Appearance
     /// The editor keeps its own text so that a line being typed is not trimmed away; changes are committed with `setLines`.
     @State private var words = ""
+    /// The part being dragged to a new place in the song order.
+    @State private var dragged: Int?
+    /// Parts are dragged as a private type, so a part dropped on the words editor or another app inserts nothing.
+    private static let partType = UTType(exportedAs: "org.globalsuite.gss.song-part")
 
     private var part: SongPart { state.parts[state.selectedPart] }
 
@@ -18,7 +23,7 @@ struct PrepareView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     step(1, Strings.text("Song order"), hint: Strings.text("The parts of the song, in the order they are sung. Click a part to work on it."))
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) { ForEach(state.parts.indices, id: \.self) { chip($0) } }.padding(4)
+                        HStack(spacing: 6) { ForEach(state.parts.indices, id: \.self) { chip($0) }; addPartMenu }.padding(4)
                     }
                 }
                 if size == .compact {
@@ -68,6 +73,7 @@ struct PrepareView: View {
                     Circle().fill(item.section.kind == .verse ? Appearance.accent.color : item.section.kind == .chorus ? Appearance.label.color : Appearance.labelSecondary.color).frame(width: 8, height: 8)
                     Text(item.name).font(.system(size: 13, weight: .semibold)).foregroundColor(Appearance.label.color)
                 }
+                .padding(.trailing, 18)
                 HStack(spacing: 4) {
                     Text(Strings.slideCount(item.slides.count))
                     if item.isRepeat { Text("·"); Text(Strings.text("repeat")) }
@@ -90,6 +96,48 @@ struct PrepareView: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .overlay(alignment: .topTrailing) {
+            Menu { partActions(index) } label: { Image(systemName: "ellipsis") }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().padding(.top, 6).padding(.trailing, 6)
+                .help(Strings.text("Part Actions")).accessibilityLabel(Strings.text("Part Actions"))
+        }
+        .contextMenu { partActions(index) }
+        .onDrag {
+            dragged = index
+            return NSItemProvider(item: Data() as NSData, typeIdentifier: Self.partType.identifier)
+        }
+        .onDrop(of: [Self.partType], isTargeted: nil) { _ in
+            defer { dragged = nil }
+            guard let from = dragged else { return false }
+            state.perform(.moveArrangementItem(from: from, to: index))
+            return true
+        }
+    }
+
+    /// The actions of a part, in its context menu and its … button.
+    @ViewBuilder private func partActions(_ index: Int) -> some View {
+        Button(Strings.text("Repeat After This")) { state.perform(.insertArrangementItem(sectionID: state.parts[index].section.id, at: index + 1)) }
+        Button(Strings.text("Move Left")) { state.perform(.moveArrangementItem(from: index, to: index - 1)) }.disabled(index == 0)
+        Button(Strings.text("Move Right")) { state.perform(.moveArrangementItem(from: index, to: index + 1)) }.disabled(index == state.parts.count - 1)
+        Divider()
+        Button(Strings.text("Remove from Order")) { state.perform(.removeArrangementItem(at: index)) }.disabled(state.parts.count < 2)
+    }
+
+    /// The button at the end of the song order: a new section of a kind, or one more time of an existing section.
+    private var addPartMenu: some View {
+        Menu {
+            ForEach(Strings.newSectionKinds, id: \.title) { item in
+                Button(Strings.text(item.title)) { state.perform(.addSection(kind: item.kind, at: state.parts.count)) }
+            }
+            Divider()
+            ForEach(state.song.sections, id: \.id) { section in
+                Button(String(format: Strings.text("Repeat %@"), Strings.sectionName(section))) { state.perform(.insertArrangementItem(sectionID: section.id, at: state.parts.count)) }
+            }
+        } label: { Label(Strings.text("Add Part"), systemImage: "plus") }
+        .menuStyle(.borderlessButton).fixedSize()
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Appearance.control.color))
+        .padding(.leading, 6)
     }
 
     private var wordsStep: some View {

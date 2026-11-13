@@ -356,4 +356,110 @@ final class GSSAppTests: XCTestCase {
         XCTAssertEqual([file.title, file.keyEquivalent, Strings.text("File", language: "es"), Strings.text("Open Song…", language: "es")], [Strings.text("Open Song…"), "o", "Archivo", "Abrir canción…"])
         XCTAssertEqual(file.action, #selector(MainWindowController.openSong(_:)))
     }
+    private func order(_ state: AppState) -> [String] { state.parts.map(\.section.id) }
+
+    func testMoveArrangementItemReordersThePartsKeepsTheLiveSlideAndIgnoresInvalidMoves() {
+        let state = AppState()
+        state.perform(.setMode(.live))
+        state.perform(.goToSlide(1))
+        let live = state.liveSlide
+        state.perform(.moveArrangementItem(from: 0, to: 2))
+        XCTAssertEqual(order(state), ["c", "v2", "v1", "c", "b", "c"])
+        XCTAssertEqual(state.song.arrangements?.first?.sequence, order(state))
+        XCTAssertEqual([state.selectedPart, state.liveIndex], [2, 5])
+        XCTAssertEqual(state.liveSlide, live)
+        XCTAssertEqual(state.slides[0].lines, ["We lift our voice", "We lift our eyes"], "Live sees the new order")
+        let song = state.song
+        for (from, to) in [(1, 1), (-1, 0), (0, 6), (6, 0)] { state.perform(.moveArrangementItem(from: from, to: to)) }
+        XCTAssertEqual(state.song, song)
+    }
+
+    func testInsertArrangementItemRepeatsASectionAndIgnoresInvalidOnes() {
+        let state = AppState()
+        state.perform(.goToSlide(9))
+        state.perform(.insertArrangementItem(sectionID: "v1", at: 0))
+        XCTAssertEqual(order(state), ["v1", "v1", "c", "v2", "c", "b", "c"])
+        XCTAssertEqual(state.parts.map(\.isRepeat).prefix(2), [false, true])
+        XCTAssertEqual([state.selectedPart, state.liveIndex, state.slides.count], [0, 11, 13])
+        state.perform(.insertArrangementItem(sectionID: "b", at: 7))
+        XCTAssertEqual(order(state).last, "b")
+        XCTAssertEqual(state.selectedPart, 7)
+        let song = state.song
+        state.perform(.insertArrangementItem(sectionID: "missing", at: 0))
+        state.perform(.insertArrangementItem(sectionID: "c", at: -1))
+        state.perform(.insertArrangementItem(sectionID: "c", at: 9))
+        XCTAssertEqual(state.song, song)
+    }
+
+    func testRemoveArrangementItemKeepsSectionsWithWordsAndNeverEmptiesTheOrder() throws {
+        let state = AppState()
+        state.perform(.goToSlide(10))
+        state.perform(.removeArrangementItem(at: 4))
+        XCTAssertEqual(order(state), ["v1", "c", "v2", "c", "c"])
+        XCTAssertEqual(state.song.sections.map(\.id), ["v1", "c", "v2", "b"], "an unused section with words stays")
+        XCTAssertEqual([state.liveIndex, state.selectedPart], [9, 4])
+        state.perform(.removeArrangementItem(at: 4))
+        XCTAssertEqual([state.liveIndex, state.selectedPart, state.slides.count], [7, 3, 8])
+        state.perform(.removeArrangementItem(at: 4))
+        state.perform(.removeArrangementItem(at: -1))
+        XCTAssertEqual(state.parts.count, 4)
+        let single = try PlainTextSongImporter.song(from: "Only words", fallbackTitle: "Placeholder")
+        state.perform(.loadSong(single))
+        state.perform(.removeArrangementItem(at: 0))
+        XCTAssertEqual(state.song, single)
+    }
+
+    func testAddSectionCreatesUniqueValidSectionsAndRemovingAnUnusedEmptyOneDeletesIt() throws {
+        let state = AppState()
+        state.perform(.goToSlide(2))
+        state.perform(.addSection(kind: .verse, at: 2))
+        XCTAssertEqual(order(state), ["v1", "c", "v3", "v2", "c", "b", "c"])
+        XCTAssertEqual([state.selectedPart, state.liveIndex], [2, 2])
+        let verse = try XCTUnwrap(state.song.sections.last)
+        XCTAssertEqual([verse.number, verse.lines.count], [3, 1])
+        XCTAssertEqual(verse.lines[0].text["en"], Strings.text("New Verse"))
+        for kind in [SongSectionKind.chorus, .bridge, .ending, .prechorus] { state.perform(.addSection(kind: kind, at: state.parts.count)) }
+        XCTAssertEqual(state.song.sections.suffix(4).map(\.id), ["c2", "b2", "e1", "p1"])
+        XCTAssertEqual(state.song.sections.suffix(4).map(\.number), [2, 2, nil, nil])
+        XCTAssertNoThrow(try state.song.validate())
+        let song = state.song
+        state.perform(.addSection(kind: .verse, at: -1))
+        state.perform(.addSection(kind: .verse, at: 12))
+        XCTAssertEqual(state.song, song)
+        state.perform(.setLines(sectionID: "c2", lines: ["Invented words"]))
+        state.perform(.removeArrangementItem(at: 7))
+        state.perform(.removeArrangementItem(at: 2))
+        XCTAssertFalse(state.song.sections.contains { $0.id == "v3" }, "an unused section without words is removed")
+        XCTAssertTrue(state.song.sections.contains { $0.id == "c2" })
+        XCTAssertNoThrow(try state.song.validate())
+        XCTAssertEqual([Strings.text("New Verse", language: "es"), Strings.text("Remove from Order", language: "es")], ["Nuevo verso", "Quitar del orden"])
+    }
+
+    func testEditingTheOrderOfASongWithoutArrangementsCreatesADefaultOne() throws {
+        let state = AppState()
+        var song = Song(title: "Placeholder", language: "en", sections: [SongSection(id: "v1", kind: .verse, number: 1, lines: [SongLine(text: ["en": "Invented line"])])])
+        state.perform(.loadSong(song))
+        state.perform(.insertArrangementItem(sectionID: "v1", at: 1))
+        XCTAssertEqual(order(state), ["v1", "v1"])
+        XCTAssertNoThrow(try state.song.validate())
+        song.arrangements = [SongArrangement(id: "default", name: "Default", sequence: ["v1", "v1"])]
+        song.defaultArrangement = "default"
+        XCTAssertEqual(state.song, song)
+    }
+
+    func testPrepareKeysSelectAndRemovePartsOutsideTheEditor() throws {
+        let controller = MainWindowController(state: AppState())
+        let window = try XCTUnwrap(controller.window)
+        func key(_ code: UInt16) -> NSEvent? {
+            let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: window.windowNumber, context: nil, characters: "", charactersIgnoringModifiers: "", isARepeat: false, keyCode: code)
+            return controller.handleKey(try! XCTUnwrap(event))
+        }
+        XCTAssertNil(key(124))
+        XCTAssertNil(key(124))
+        XCTAssertNil(key(123))
+        XCTAssertEqual(controller.state.selectedPart, 1)
+        XCTAssertNil(key(51))
+        XCTAssertEqual(controller.state.parts.map(\.section.id), ["v1", "v2", "c", "b", "c"])
+        XCTAssertEqual(controller.state.liveIndex, 0)
+    }
 }

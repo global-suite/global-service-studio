@@ -19,6 +19,12 @@ public enum AppCommand: Equatable, Sendable {
     case selectOutputScreen(ScreenID?)
     /// Makes a song the current one, from its first slide; a song without slides is ignored.
     case loadSong(Song)
+    /// Edits the order of the default arrangement: a part moves to a final position, a section is inserted (repeated) at a position,
+    /// a part leaves the order (never the last one), or a new section of a kind is created at a position. Invalid indexes are ignored.
+    case moveArrangementItem(from: Int, to: Int)
+    case insertArrangementItem(sectionID: String, at: Int)
+    case removeArrangementItem(at: Int)
+    case addSection(kind: SongSectionKind, at: Int)
 }
 
 /// A display, by its Core Graphics display ID.
@@ -72,6 +78,25 @@ public final class AppState: ObservableObject {
             if screen == nil, isAudienceOutputShown { isAudienceOutputShown = false }
             if screen != outputScreen { outputScreen = screen }
         case .loadSong(let song): load(song)
+        case .moveArrangementItem(let from, let to):
+            editOrder { order in
+                guard order.indices.contains(from), order.indices.contains(to), from != to else { return nil }
+                order.insert(order.remove(at: from), at: to)
+                return to
+            }
+        case .insertArrangementItem(let id, let index):
+            editOrder { order in
+                guard (0...order.count).contains(index), song.sections.contains(where: { $0.id == id }) else { return nil }
+                order.insert((id, nil), at: index)
+                return index
+            }
+        case .removeArrangementItem(let index):
+            editOrder { order in
+                guard order.indices.contains(index), order.count > 1 else { return nil }
+                order.remove(at: index)
+                return min(index, order.count - 1)
+            }
+        case .addSection(let kind, let index): addSection(kind, at: index)
         }
     }
 
@@ -91,6 +116,55 @@ public final class AppState: ObservableObject {
         parts = SongPart.parts(of: song)
         slides = parts.flatMap(\.slides)
         if liveIndex >= slides.count { liveIndex = slides.count - 1 }
+    }
+
+    /// Changes the order of the default arrangement, creating one when the song has none; `edit` returns the part to select, or nil to ignore the command.
+    /// Each entry keeps the index of the part it was, so the live slide stays on the same part; a section that leaves every order and has no words leaves the song.
+    private func editOrder(adding section: SongSection? = nil, _ edit: (inout [(id: String, part: Int?)]) -> Int?) {
+        var order: [(id: String, part: Int?)] = parts.enumerated().map { ($0.element.section.id, $0.offset) }
+        guard let selected = edit(&order) else { return }
+        var edited = song, arrangements = song.arrangements ?? []
+        if let section { edited.sections.append(section) }
+        if let index = arrangements.firstIndex(where: { $0.id == song.defaultArrangement }) {
+            arrangements[index].sequence = order.map(\.id)
+        } else {
+            let id = (0...).lazy.map { $0 == 0 ? "default" : "default\($0 + 1)" }.first { id in !arrangements.contains { $0.id == id } }!
+            arrangements.append(SongArrangement(id: id, name: "Default", sequence: order.map(\.id)))
+            edited.defaultArrangement = id
+        }
+        edited.arrangements = arrangements
+        let unused = Set(parts.map(\.section.id)).subtracting(arrangements.flatMap(\.sequence))
+        edited.sections.removeAll { unused.contains($0.id) && !hasWords($0) }
+        let newParts = SongPart.parts(of: edited), newSlides = newParts.flatMap(\.slides)
+        guard !newSlides.isEmpty else { return }
+        let live = order.firstIndex { $0.part == livePart }.map { newParts[$0].firstSlide + liveIndex - parts[livePart].firstSlide }
+        (song, parts, slides) = (edited, newParts, newSlides)
+        let index = live ?? min(liveIndex, slides.count - 1)
+        if index != liveIndex { liveIndex = index }
+        if selected != selectedPart { selectedPart = selected }
+    }
+
+    /// Whether a section has words other than the placeholder a new section starts with.
+    private func hasWords(_ section: SongSection) -> Bool {
+        section.lines.contains { line in
+            let text = (line.text[song.language] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            return !text.isEmpty && text != Strings.newSectionText(section)
+        }
+    }
+
+    /// Adds a section of a kind with the next free number and id, one placeholder line, and inserts it in the order.
+    private func addSection(_ kind: SongSectionKind, at index: Int) {
+        let numbers = song.sections.filter { $0.kind == kind }.map { $0.number ?? 1 }
+        let number = numbers.max().map { $0 + 1 } ?? (kind == .verse ? 1 : nil)
+        let prefix = kind == .prechorus ? "p" : String(kind.rawValue.prefix(1))
+        let id = ((number ?? 1)...).lazy.map { "\(prefix)\($0)" }.first { id in !song.sections.contains { $0.id == id } }!
+        var section = SongSection(id: id, kind: kind, number: number, lines: [])
+        section.lines = [SongLine(text: [song.language: Strings.newSectionText(section)])]
+        editOrder(adding: section) { order in
+            guard (0...order.count).contains(index) else { return nil }
+            order.insert((id, nil), at: index)
+            return index
+        }
     }
 
     private func load(_ song: Song) {

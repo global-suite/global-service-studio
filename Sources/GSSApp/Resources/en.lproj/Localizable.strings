@@ -79,3 +79,15 @@
 /* Name of a song section without a label. */ "Tag" = "Tag";
 /* Name of a song section without a label. */ "Interlude" = "Interlude";
 /* Name of a song section without a label. */ "Ending" = "Ending";
+/* Prepare mode: button at the end of the song order that opens the menu of parts to add. */ "Add Part" = "Add Part";
+/* Prepare mode: Add Part menu item that creates a verse; also the words a new verse starts with. */ "New Verse" = "New Verse";
+/* Prepare mode: Add Part menu item that creates a chorus; also the words a new chorus starts with. */ "New Chorus" = "New Chorus";
+/* Prepare mode: Add Part menu item that creates a pre-chorus; also the words a new pre-chorus starts with. */ "New Pre-Chorus" = "New Pre-Chorus";
+/* Prepare mode: Add Part menu item that creates a bridge; also the words a new bridge starts with. */ "New Bridge" = "New Bridge";
+/* Prepare mode: Add Part menu item that creates an ending; also the words a new ending starts with. */ "New Ending" = "New Ending";
+/* Prepare mode: Add Part menu item that sings a section once more at the end; %@ is the section name, such as Chorus. */ "Repeat %@" = "Repeat %@";
+/* Prepare mode: menu item of a part that sings it once more right after it. */ "Repeat After This" = "Repeat After This";
+/* Prepare mode: menu item of a part that moves it one place earlier in the song order. */ "Move Left" = "Move Left";
+/* Prepare mode: menu item of a part that moves it one place later in the song order. */ "Move Right" = "Move Right";
+/* Prepare mode: menu item of a part that takes it out of the song order. */ "Remove from Order" = "Remove from Order";
+/* Prepare mode: tooltip and accessibility label of the … button on a part of the song order. */ "Part Actions" = "Part Actions";

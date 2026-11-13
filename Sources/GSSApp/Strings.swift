@@ -27,6 +27,12 @@ enum Strings {
         let kind = text(key, language: language)
         return section.number.map { String(format: text("%1$@ %2$ld", language: language), kind, $0) } ?? kind
     }
+    /// The kinds the Add Part menu creates, with their menu title, which is also the placeholder words of the new section.
+    static let newSectionKinds: [(kind: SongSectionKind, title: String)] = [(.verse, "New Verse"), (.chorus, "New Chorus"), (.prechorus, "New Pre-Chorus"), (.bridge, "New Bridge"), (.ending, "New Ending")]
+    /// The words a new section starts with: its menu title, or its name for other kinds.
+    static func newSectionText(_ section: SongSection, language: String = language) -> String {
+        newSectionKinds.first { $0.kind == section.kind }.map { text($0.title, language: language) } ?? sectionName(section, language: language)
+    }
 }
 
 extension AppMode {
