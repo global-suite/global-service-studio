@@ -2,10 +2,13 @@ import AppKit
 
 /// The main menu, built in code.
 enum MainMenu {
-    static func make() -> NSMenu {
+    /// `output` is the Output menu, kept up to date by its owner.
+    static func make(output: NSMenu) -> NSMenu {
         let text = { (key: String) in Strings.text(key) }, name = Strings.appName
         let windowMenu = submenu(text("Window"), [item(text("Minimize"), #selector(NSWindow.performMiniaturize(_:)), "m"), item(text("Zoom"), #selector(NSWindow.performZoom(_:)))])
         NSApp.windowsMenu = windowMenu.submenu
+        let outputMenu = NSMenuItem(title: output.title, action: nil, keyEquivalent: "")
+        outputMenu.submenu = output
         let menu = NSMenu()
         [
             submenu(name, [
@@ -25,6 +28,7 @@ enum MainMenu {
                 item(text("Next Slide"), #selector(MainWindowController.goToNextSlide(_:))), .separator(),
                 item(text("Show or Hide Sidebar"), #selector(NSSplitViewController.toggleSidebar(_:)), "s", [.command, .control]),
             ]),
+            outputMenu,
             windowMenu,
         ].forEach(menu.addItem)
         return menu
