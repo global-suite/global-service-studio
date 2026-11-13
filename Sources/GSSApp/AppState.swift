@@ -15,7 +15,12 @@ public enum AppCommand: Equatable, Sendable {
     case clearSlide, clearAll
     case selectPart(Int)
     case setLines(sectionID: String, lines: [String])
+    case showAudienceOutput(Bool)
+    case selectOutputScreen(ScreenID?)
 }
+
+/// A display, by its Core Graphics display ID.
+public typealias ScreenID = UInt32
 
 /// The state the interface shows, changed only by `perform(_:)`.
 public final class AppState: ObservableObject {
@@ -27,6 +32,10 @@ public final class AppState: ObservableObject {
     @Published public private(set) var slides: [LiveSlide]
     /// The part being edited in Prepare mode, as an index into `parts`.
     @Published public private(set) var selectedPart = 0
+    /// Whether the audience output covers its display; only with a display chosen.
+    @Published public private(set) var isAudienceOutputShown = false
+    /// The display chosen for the audience output.
+    @Published public private(set) var outputScreen: ScreenID?
 
     public init() {
         let parts = SongPart.parts(of: SampleSong.song)
@@ -46,6 +55,7 @@ public final class AppState: ObservableObject {
     public var shownLines: [String] { isCleared ? [] : liveSlide.lines }
 
     /// Applies a command; moves outside the song and words that leave a part empty are ignored, other moves end a clear. Clear All has no background to clear yet.
+    /// The audience output shows only with a display chosen, and clearing the display hides it.
     public func perform(_ command: AppCommand) {
         switch command {
         case .setMode(let mode): if mode != self.mode { self.mode = mode }
@@ -55,6 +65,10 @@ public final class AppState: ObservableObject {
         case .clearSlide, .clearAll: if !isCleared { isCleared = true }
         case .selectPart(let index): if parts.indices.contains(index), index != selectedPart { selectedPart = index }
         case .setLines(let sectionID, let lines): setLines(sectionID, lines)
+        case .showAudienceOutput(let shown): if shown != isAudienceOutputShown, !shown || outputScreen != nil { isAudienceOutputShown = shown }
+        case .selectOutputScreen(let screen):
+            if screen == nil, isAudienceOutputShown { isAudienceOutputShown = false }
+            if screen != outputScreen { outputScreen = screen }
         }
     }
 

@@ -13,11 +13,13 @@ public enum GlobalServiceStudioApp {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private lazy var windowController = MainWindowController(state: AppState())
+    private let state = AppState()
+    private lazy var windowController = MainWindowController(state: state)
+    private lazy var audienceOutput = AudienceOutputController(state: state, operatorWindow: windowController.window)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = NSAppearance(named: .darkAqua)
-        NSApp.mainMenu = MainMenu.make()
+        NSApp.mainMenu = MainMenu.make(output: audienceOutput.menu)
         windowController.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

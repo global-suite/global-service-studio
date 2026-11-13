@@ -60,3 +60,7 @@
 /* Prepare mode: button that opens the theme editor, disabled for now. */ "Edit the look…" = "Edit the look…";
 /* Prepare mode: tooltip of the disabled Edit the look button. */ "Available with the theme editor" = "Available with the theme editor";
 /* Prepare mode: title of the grid of every slide of the song, next to or under the steps. */ "Whole song" = "Whole song";
+/* Menu title: the displays and the audience output. */ "Output" = "Output";
+/* Output menu item (Cmd-Shift-O) that shows the live slide full screen on the chosen display. */ "Show Audience Output" = "Show Audience Output";
+/* Output menu item (Cmd-Shift-O) that takes the audience output off its display. */ "Hide Audience Output" = "Hide Audience Output";
+/* Output menu: disabled item and tooltip shown when only one display is connected. */ "Connect a second display to show the audience output." = "Connect a second display to show the audience output.";

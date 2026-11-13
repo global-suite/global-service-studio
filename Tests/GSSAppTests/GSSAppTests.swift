@@ -227,4 +227,82 @@ final class GSSAppTests: XCTestCase {
         view.layoutSubtreeIfNeeded()
         XCTAssertGreaterThan(view.fittingSize.height, 0)
     }
+
+    func testDefaultOutputScreenIsADisplayOtherThanTheOperators() {
+        let (a, b, c) = (ScreenInfo(id: 1, name: "A"), ScreenInfo(id: 2, name: "B"), ScreenInfo(id: 3, name: "C"))
+        XCTAssertEqual(defaultOutputScreen(screens: [a, b], operatorScreenID: 1), b)
+        XCTAssertEqual(defaultOutputScreen(screens: [a, b], operatorScreenID: 2), a)
+        XCTAssertNil(defaultOutputScreen(screens: [a], operatorScreenID: 1))
+        XCTAssertNil(defaultOutputScreen(screens: [], operatorScreenID: nil))
+        XCTAssertEqual(defaultOutputScreen(screens: [a, b, c], operatorScreenID: 1), b)
+        XCTAssertEqual(defaultOutputScreen(screens: [a, b, c], operatorScreenID: 2), a)
+        XCTAssertEqual(defaultOutputScreen(screens: [a, b, c], operatorScreenID: nil), b)
+    }
+
+    func testOutputCommandsShowTheAudienceOutputOnlyWithAChosenDisplay() {
+        let state = AppState()
+        var published: [Bool] = []
+        let subscription = state.$isAudienceOutputShown.dropFirst().sink { published.append($0) }
+        XCTAssertNil(state.outputScreen)
+        state.perform(.showAudienceOutput(true))
+        XCTAssertFalse(state.isAudienceOutputShown)
+        state.perform(.selectOutputScreen(7))
+        state.perform(.showAudienceOutput(true))
+        state.perform(.showAudienceOutput(true))
+        XCTAssertEqual(state.outputScreen, 7)
+        state.perform(.selectOutputScreen(8))
+        XCTAssertTrue(state.isAudienceOutputShown)
+        state.perform(.showAudienceOutput(false))
+        state.perform(.showAudienceOutput(true))
+        state.perform(.selectOutputScreen(nil))
+        XCTAssertNil(state.outputScreen)
+        XCTAssertEqual(published, [true, false, true, false])
+        subscription.cancel()
+    }
+
+    func testAudienceOutputShowsTheLiveLinesAndNothingWhenCleared() {
+        let state = AppState()
+        XCTAssertEqual(AudienceOutputView.lines(state), ["Morning light is rising", "Over all the earth"])
+        state.perform(.clearSlide)
+        XCTAssertEqual(AudienceOutputView.lines(state), [])
+        state.perform(.goToSlide(10))
+        state.perform(.nextSlide)
+        XCTAssertEqual(AudienceOutputView.lines(state), state.slides[10].lines, "at the end of the song the last slide stays")
+        state.perform(.clearAll)
+        XCTAssertEqual(AudienceOutputView.lines(state), [])
+        let view = NSHostingView(rootView: AudienceOutputView(state: state))
+        view.frame = NSRect(x: 0, y: 0, width: 1920, height: 1080)
+        view.layoutSubtreeIfNeeded()
+        XCTAssertGreaterThan(view.fittingSize.height, 0)
+    }
+
+    func testOutputMenuListsDisplaysAndNeedsASecondOne() throws {
+        var screens = [ScreenInfo(id: 900_001, name: "Built-in")]
+        let state = AppState(), controller = AudienceOutputController(state: state, operatorWindow: nil) { screens }
+        let menu = controller.menu
+        func toggle() throws -> NSMenuItem { try XCTUnwrap(menu.items.last) }
+        XCTAssertEqual(try toggle().keyEquivalent, "o")
+        XCTAssertEqual(try toggle().keyEquivalentModifierMask, [.command, .shift])
+        XCTAssertFalse(controller.validateMenuItem(try toggle()))
+        XCTAssertTrue(menu.items.contains { $0.title == Strings.text("Connect a second display to show the audience output.") })
+        XCTAssertEqual(Strings.text("Output", language: "es"), "Salida")
+        screens.append(ScreenInfo(id: 900_002, name: "Projector"))
+        controller.menuNeedsUpdate(menu)
+        XCTAssertEqual(menu.items.prefix(2).map(\.title), ["Built-in", "Projector"])
+        XCTAssertTrue(controller.validateMenuItem(try toggle()))
+        XCTAssertEqual(try toggle().title, Strings.text("Show Audience Output"))
+        controller.toggleAudienceOutput(nil)
+        XCTAssertEqual([state.outputScreen, state.isAudienceOutputShown ? 1 : 0], [900_002, 1])
+        XCTAssertNil(controller.window, "no window opens for a display that is not connected")
+        XCTAssertTrue(controller.validateMenuItem(try toggle()))
+        XCTAssertEqual(try toggle().title, Strings.text("Hide Audience Output"))
+        controller.selectScreen(menu.items[0])
+        XCTAssertEqual(menu.items.prefix(2).map(controller.validateMenuItem), [true, true])
+        XCTAssertEqual(menu.items.prefix(2).map(\.state), [.on, .off])
+        XCTAssertEqual(state.outputScreen, 900_001)
+        screens.removeFirst()
+        controller.screensChanged()
+        XCTAssertNil(state.outputScreen)
+        XCTAssertFalse(state.isAudienceOutputShown)
+    }
 }
