@@ -447,6 +447,47 @@ final class GSSAppTests: XCTestCase {
         XCTAssertEqual(state.song, song)
     }
 
+    func testRepetitionsAreRunsOfTheSameSectionInTheSungOrder() {
+        let runs = SongPart.repetitions(of: ["v1", "c", "c", "c", "b", "b", "v1", "c", "v1"])
+        XCTAssertEqual(runs.map { [$0.repetition, $0.count] }, [[1, 1], [1, 3], [2, 3], [3, 3], [1, 2], [2, 2], [1, 1], [1, 1], [1, 1]])
+        XCTAssertTrue(SongPart.repetitions(of: []).isEmpty)
+    }
+
+    func testPartsAndTheirSlidesCarryTheRepetitionOfTheirRun() {
+        let state = AppState()
+        state.perform(.insertArrangementItem(sectionID: "c", at: 2))
+        state.perform(.insertArrangementItem(sectionID: "c", at: 2))
+        XCTAssertEqual(order(state), ["v1", "c", "c", "c", "v2", "c", "b", "c"])
+        XCTAssertEqual(state.parts.map(\.repetition), [1, 1, 2, 3, 1, 1, 1, 1])
+        XCTAssertEqual(state.parts.map(\.repetitionCount), [1, 3, 3, 3, 1, 1, 1, 1], "a chorus after a verse starts a new count")
+        XCTAssertEqual(state.slides.map(\.repetition), state.parts.flatMap { part in part.slides.map { _ in part.repetition } })
+        XCTAssertEqual([state.slides[4].repetition, state.slides[4].repetitionCount, state.slides[4].part], [2, 3, 1])
+        XCTAssertEqual(state.slides[4].position(language: "en"), String(format: "%@ · repetition 2 of 3 · 1 of 2", Strings.text("Chorus")))
+        XCTAssertEqual(state.parts.map { Strings.orderMark($0, language: "en") }, [nil, "×3", "2/3", "3/3", nil, "repeat", nil, "repeat"])
+        XCTAssertEqual(state.slides.map(\.repetitionMark), [nil, nil, "1/3", "1/3", "2/3", "2/3", "3/3", "3/3"] + Array(repeating: nil, count: 7))
+        let view = NSHostingView(rootView: LiveView(state: state, appearance: .standard))
+        view.frame = NSRect(x: 0, y: 0, width: 1200, height: 850)
+        view.layoutSubtreeIfNeeded()
+        XCTAssertGreaterThan(view.fittingSize.height, 0)
+    }
+
+    func testRepetitionTextIsLocalizedAndOnlyShownForRepeatedParts() {
+        let repeated = LiveSlide(section: "Coro", part: 1, partCount: 2, lines: [], repetition: 2, repetitionCount: 3)
+        XCTAssertEqual(repeated.position(language: "es"), "Coro · repetición 2 de 3 · 1 de 2")
+        XCTAssertEqual(repeated.heading(language: "es"), "Coro · repetición 2 de 3")
+        XCTAssertEqual(LiveSlide(section: "Chorus", part: 2, partCount: 2, lines: [], repetition: 3, repetitionCount: 3).position(language: "en"), "Chorus · repetition 3 of 3 · 2 of 2")
+        XCTAssertEqual(LiveSlide(section: "Chorus", part: 1, partCount: 1, lines: [], repetition: 1, repetitionCount: 2).heading(language: "en"), "Chorus · repetition 1 of 2")
+        XCTAssertEqual(LiveSlide(section: "Coro", part: 1, partCount: 2, lines: []).position(language: "es"), "Coro · 1 de 2")
+        XCTAssertEqual(["en", "es"].map { Strings.repetitionMark(2, of: 3, language: $0) }, ["2/3", "2/3"])
+        XCTAssertNil(Strings.repetitionMark(1, of: 1))
+        let state = AppState()
+        XCTAssertTrue(state.slides.allSatisfy { $0.repetitionCount == 1 && $0.repetitionMark == nil && $0.heading() == $0.section })
+        XCTAssertEqual(state.slides.map { $0.position(language: "en") }, state.slides.map { "\($0.section) · \($0.part) of \($0.partCount)" })
+        XCTAssertEqual(state.parts.map { Strings.orderMark($0, language: "es") }, [nil, nil, nil, "repetición", nil, "repetición"])
+        state.perform(.insertArrangementItem(sectionID: "b", at: 5))
+        XCTAssertEqual(Strings.orderMark(state.parts[4], language: "es"), "×2")
+    }
+
     func testPrepareKeysSelectAndRemovePartsOutsideTheEditor() throws {
         let controller = MainWindowController(state: AppState())
         let window = try XCTUnwrap(controller.window)
