@@ -112,6 +112,12 @@
 /* Alert message: the folder's library.json has another format. */ "The library.json file in this folder belongs to another app." = "El archivo library.json de esta carpeta pertenece a otra app.";
 /* Alert message: the folder's library.json has a newer version. */ "This library was made by a newer version of Global Service Studio." = "Esta biblioteca se creó con una versión más nueva de Global Service Studio.";
 /* Alert message: the library folder or a song file could not be read or written. */ "The folder could not be read or written. Check that it exists and that you can change it." = "No se pudo leer ni escribir en la carpeta. Comprueba que exista y que puedas modificarla.";
+/* Library sidebar: placeholder of the song search field. */ "Search Songs" = "Buscar canciones";
+/* Library sidebar: shown while the library has no songs. */ "Save a song with ⌘S or open a song file with ⌘O." = "Guarda una canción con ⌘S o abre un archivo de canción con ⌘O.";
+/* Library sidebar: shown when no song matches the search. */ "No songs match your search." = "Ninguna canción coincide con tu búsqueda.";
+/* Library sidebar: title of the row listing files that cannot be shown; %ld is how many. */ "Problems (%ld)" = "Problemas (%ld)";
+/* Library sidebar: reason under a song file that cannot be read. */ "This file is not a valid song file." = "Este archivo no es un archivo de canción válido.";
+/* Library sidebar: reason under a song file whose song ID another file also has. */ "Another file has the same song ID." = "Otro archivo tiene el mismo ID de canción.";
 
 /* Output menu: submenu with the displays and the show command of the audience output. */ "Audience Output" = "Salida al público";
 /* Output menu: submenu with the displays and the show command of the key output for a video switcher. */ "Key Output" = "Salida de key";

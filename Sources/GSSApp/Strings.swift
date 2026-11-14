@@ -28,6 +28,14 @@ enum Strings {
     static func slideCount(_ count: Int, language: String = language) -> String {
         String(format: text("%ld slides", language: language), locale: Locale(identifier: language), count)
     }
+    /// A song count such as "1 song" or "2 songs", under the library search field.
+    static func songCount(_ count: Int, language: String = language) -> String {
+        String(format: text("%ld songs", language: language), locale: Locale(identifier: language), count)
+    }
+    /// The title of the library's problems row, such as "Problems (2)".
+    static func problemsTitle(_ count: Int, language: String = language) -> String {
+        String(format: text("Problems (%ld)", language: language), locale: Locale(identifier: language), count)
+    }
     /// The name of a section: for a known kind, its kind and number in the interface language, such as "Verse 2",
     /// whatever label the file wrote; otherwise its label as written, or its kind.
     static func sectionName(_ section: SongSection, language: String = language) -> String {

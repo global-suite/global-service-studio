@@ -25,7 +25,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
         window.toolbarStyle = .unified
         window.appearance = NSAppearance(named: .darkAqua)
         window.backgroundColor = appearance.window.nsColor
-        let sidebar = NSSplitViewItem(sidebarWithViewController: NSHostingController(rootView: SidebarPlaceholder()))
+        let sidebar = NSSplitViewItem(sidebarWithViewController: NSHostingController(rootView: Sidebar(state: state)))
         (sidebar.minimumThickness, sidebar.maximumThickness) = (200, 320)
         splitViewController.addSplitViewItem(sidebar)
         splitViewController.addSplitViewItem(NSSplitViewItem(viewController: NSHostingController(rootView: ModeContent(state: state, appearance: appearance))))
@@ -93,19 +93,6 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
     func toolbarWillAddItem(_ notification: Notification) {
         guard let item = notification.userInfo?["item"] as? NSToolbarItem, item.itemIdentifier == .toggleSidebar else { return }
         item.toolTip = Strings.text("Show or hide the sidebar")
-    }
-}
-
-struct SidebarPlaceholder: View {
-    var body: some View {
-        List {
-            ForEach(["Service", "Library"], id: \.self) { key in
-                Section(Strings.text(key)) {
-                    Text(Strings.text("Nothing here yet")).foregroundColor(Color(nsColor: Appearance.labelTertiary.nsColor))
-                }
-            }
-        }
-        .listStyle(.sidebar)
     }
 }
 

@@ -39,6 +39,17 @@ public enum AppCommand: Equatable, Sendable {
     case saveSong
     /// Opens the most recently modified song of the library when the folder holds one; never creates the library.
     case openMostRecentSong
+    /// Opens the search index of the library folder off the main thread, reconciles it with the files, then lists its songs; never creates the library.
+    case openLibraryIndex
+    /// Filters the library list: songs whose words start with the words of the text, ignoring case and accents; every song when it has none.
+    case setLibrarySearch(String)
+    /// Opens a song file of the library; a file that cannot be read is reported in `alert`.
+    case openLibrarySong(URL)
+}
+
+/// A file of the library the list cannot show, with the localized reason.
+public struct LibraryProblem: Equatable, Sendable {
+    public let file, reason: String
 }
 
 /// A failure the window shows to the operator, already localized.
@@ -73,12 +84,31 @@ public final class AppState: ObservableObject {
     @Published public private(set) var repetitionMode: RepetitionMode
     /// The library folder songs are saved to.
     @Published public private(set) var libraryFolder: URL
+    /// The songs of the library that match `librarySearch`: by title, or best match first while searching.
+    @Published public private(set) var librarySongs: [SongMatch] = []
+    @Published public private(set) var librarySearch = ""
+    /// Invalid files and files that share a song `id`, by file name.
+    @Published public private(set) var libraryProblems: [LibraryProblem] = []
+    /// Whether the index is being opened and reconciled off the main thread.
+    @Published public private(set) var isLibraryLoading = false
     /// The last failure to show, set again for every new one.
     @Published public private(set) var alert: AppAlert?
     /// Where settings changes are saved; nil keeps them in memory.
     private let settings: AppSettings?
+    /// Where the index of a library is kept; nil keeps no index and the list empty.
+    private let indexURL: ((Library) throws -> URL)?
+    /// The serial queue every index load runs on, so two loads never open the same index file at once.
+    private let indexQueue: DispatchQueue
+    private var index: LibraryIndex?
+    private var invalidFiles: [LibraryProblem] = []
+    /// Counts index loads, so a load that finishes after the library changed is dropped.
+    private var libraryLoads = 0
 
-    public init(settings: AppSettings? = nil) {
+    /// The library file the current song was opened from or saved to; nil for a song from elsewhere.
+    @Published public private(set) var openSongFile: URL?
+
+    public init(settings: AppSettings? = nil, indexURL: ((Library) throws -> URL)? = nil, indexQueue: DispatchQueue = DispatchQueue(label: "GSS library index")) {
+        (self.indexURL, self.indexQueue) = (indexURL, indexQueue)
         let mode = settings?.repetitionMode ?? .separateSlides, parts = SongPart.parts(of: SampleSong.song, mode: mode)
         (song, self.parts, slides, repetitionMode, self.settings) = (SampleSong.song, parts, parts.flatMap(\.slides), mode, settings)
         libraryFolder = settings?.libraryFolder ?? AppSettings.defaultLibraryFolder
@@ -122,7 +152,9 @@ public final class AppState: ObservableObject {
             guard let color = KeyColor(hex: value) else { return }
             settings?.keyColor = color.hex
             if color.hex != keyColor { keyColor = color.hex }
-        case .loadSong(let song): load(song)
+        case .loadSong(let song):
+            load(song)
+            if self.song == song { openSongFile = nil }
         case .moveArrangementItem(let from, let to):
             editOrder { order in
                 guard order.indices.contains(from), order.indices.contains(to), from != to else { return nil }
@@ -148,11 +180,65 @@ public final class AppState: ObservableObject {
                 _ = try Library.open(folder)
                 settings?.libraryFolder = folder
                 libraryFolder = folder
+                openLibraryIndex()
             }
-        case .saveSong: library("The song could not be saved.") { try Library.open(libraryFolder).save(song) }
+        case .saveSong:
+            library("The song could not be saved.") {
+                guard let index else { openSongFile = try Library.open(libraryFolder).save(song); return openLibraryIndex() }
+                openSongFile = try index.save(song)
+                showLibrary(problems: true)
+            }
         case .openMostRecentSong:
             guard Library.exists(at: libraryFolder) else { return }
-            library("The library folder could not be opened.") { try Library.open(libraryFolder).songs().mostRecent.map { load($0.song) } }
+            library("The library folder could not be opened.") { try Library.open(libraryFolder).songs().mostRecent.map { open($0.song, from: $0.url) } }
+        case .openLibraryIndex: openLibraryIndex()
+        case .setLibrarySearch(let text):
+            librarySearch = text
+            showLibrary()
+        case .openLibrarySong(let url):
+            do { open(try Song.decode(from: Data(contentsOf: url)), from: url) } catch {
+                alert = AppAlert(title: Strings.text("The song could not be opened."), message: Strings.text("This file could not be read."))
+            }
+        }
+    }
+
+    /// Opens and reconciles the index off the main thread, then shows it on the main thread; until then the list is empty.
+    private func openLibraryIndex() {
+        libraryLoads += 1
+        let load = libraryLoads, folder = libraryFolder
+        (index, invalidFiles) = (nil, [])
+        showLibrary(problems: true)
+        guard let indexURL, Library.exists(at: folder) else { return isLibraryLoading = false }
+        isLibraryLoading = true
+        indexQueue.async {
+            let opened = Result { () throws -> (LibraryIndex, ReconcileReport) in
+                let library = try Library.open(folder)
+                let index = try LibraryIndex(library: library, at: indexURL(library))
+                return (index, try index.reconcile())
+            }
+            DispatchQueue.main.async { [weak self] in
+                guard let self, load == self.libraryLoads else { return }
+                self.isLibraryLoading = false
+                self.library("The library folder could not be opened.") {
+                    let (index, report) = try opened.get()
+                    let reason = Strings.text("This file is not a valid song file.")
+                    self.invalidFiles = report.problems.map { LibraryProblem(file: $0.url.lastPathComponent, reason: reason) }.sorted { $0.file < $1.file }
+                    self.index = index
+                }
+                self.showLibrary(problems: true)
+            }
+        }
+    }
+
+    /// Lists the songs that match the search and, when asked, the problems; a failing index is reported.
+    private func showLibrary(problems: Bool = false) {
+        library("The library folder could not be opened.") {
+            guard let index else { (librarySongs, libraryProblems) = ([], invalidFiles); return }
+            let searching = librarySearch.contains { $0.isLetter || $0.isNumber }
+            librarySongs = try searching ? index.search(librarySearch, limit: 10_000) : index.allSongs()
+            guard problems else { return }
+            let reason = Strings.text("Another file has the same song ID.")
+            libraryProblems = try invalidFiles + index.filesWithDuplicateIDs().map { LibraryProblem(file: $0.lastPathComponent, reason: reason) }
         }
     }
 
@@ -237,6 +323,11 @@ public final class AppState: ObservableObject {
         let index = newParts[part].firstSlide + min(offset, max(newParts[part].slides.count - 1, 0))
         (repetitionMode, parts, slides) = (mode, newParts, newParts.flatMap(\.slides))
         if index != liveIndex { liveIndex = index }
+    }
+
+    private func open(_ song: Song, from file: URL) {
+        load(song)
+        if self.song == song { openSongFile = file }
     }
 
     private func load(_ song: Song) {

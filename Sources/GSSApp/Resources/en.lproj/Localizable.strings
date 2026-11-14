@@ -112,6 +112,12 @@
 /* Alert message: the folder's library.json has another format. */ "The library.json file in this folder belongs to another app." = "The library.json file in this folder belongs to another app.";
 /* Alert message: the folder's library.json has a newer version. */ "This library was made by a newer version of Global Service Studio." = "This library was made by a newer version of Global Service Studio.";
 /* Alert message: the library folder or a song file could not be read or written. */ "The folder could not be read or written. Check that it exists and that you can change it." = "The folder could not be read or written. Check that it exists and that you can change it.";
+/* Library sidebar: placeholder of the song search field. */ "Search Songs" = "Search Songs";
+/* Library sidebar: shown while the library has no songs. */ "Save a song with ⌘S or open a song file with ⌘O." = "Save a song with ⌘S or open a song file with ⌘O.";
+/* Library sidebar: shown when no song matches the search. */ "No songs match your search." = "No songs match your search.";
+/* Library sidebar: title of the row listing files that cannot be shown; %ld is how many. */ "Problems (%ld)" = "Problems (%ld)";
+/* Library sidebar: reason under a song file that cannot be read. */ "This file is not a valid song file." = "This file is not a valid song file.";
+/* Library sidebar: reason under a song file whose song ID another file also has. */ "Another file has the same song ID." = "Another file has the same song ID.";
 
 /* Output menu: submenu with the displays and the show command of the audience output. */ "Audience Output" = "Audience Output";
 /* Output menu: submenu with the displays and the show command of the key output for a video switcher. */ "Key Output" = "Key Output";

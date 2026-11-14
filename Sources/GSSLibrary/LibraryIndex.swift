@@ -36,10 +36,10 @@ public final class LibraryIndex: Sendable {
     public init(library: Library, at url: URL? = nil) throws {
         let url = try url ?? Self.defaultURL(for: library), files = FileManager.default
         try files.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if files.fileExists(atPath: url.path), !Self.isUsable(url) {
+        if files.fileExists(atPath: url.path), try !Self.isUsable(url) {
             for suffix in ["", "-wal", "-shm", "-journal"] where files.fileExists(atPath: url.path + suffix) { try files.removeItem(atPath: url.path + suffix) }
         }
-        (self.library, self.url, database) = (library, url, try DatabaseQueue(path: url.path))
+        (self.library, self.url, database) = (library, url, try DatabaseQueue(path: url.path, configuration: Self.configuration))
         // `song` is also the change journal of ADR 0007: content hash, base server version, dirty flag and deleted-at time.
         try database.write { db in
             try db.execute(sql: """
@@ -52,14 +52,22 @@ public final class LibraryIndex: Sendable {
         }
     }
 
+    /// Another connection that holds the index locked is waited for, up to 5 seconds, instead of failing at once.
+    private static let configuration = { var configuration = Configuration(); configuration.busyMode = .timeout(5); return configuration }()
+
     /// Whether the index at `url` has the current schema version, passes `quick_check` and can open its full-text table.
-    private static func isUsable(_ url: URL) -> Bool {
-        guard let queue = try? DatabaseQueue(path: url.path) else { return false }
-        defer { try? queue.close() }
-        return (try? queue.read { db in
-            _ = try Row.fetchAll(db, sql: "SELECT rowid FROM songText LIMIT 1")
-            return try Int.fetchOne(db, sql: "PRAGMA user_version") == schemaVersion && String.fetchOne(db, sql: "PRAGMA quick_check(1)") == "ok"
-        }) ?? false
+    /// An index still locked by another connection throws instead, so it is never deleted for being busy.
+    private static func isUsable(_ url: URL) throws -> Bool {
+        do {
+            let queue = try DatabaseQueue(path: url.path, configuration: configuration)
+            defer { try? queue.close() }
+            return try queue.read { db in
+                _ = try Row.fetchAll(db, sql: "SELECT rowid FROM songText LIMIT 1")
+                return try Int.fetchOne(db, sql: "PRAGMA user_version") == schemaVersion && String.fetchOne(db, sql: "PRAGMA quick_check(1)") == "ok"
+            }
+        } catch let error as DatabaseError where [.SQLITE_BUSY, .SQLITE_LOCKED].contains(error.resultCode) {
+            throw error
+        } catch { return false }
     }
 
     /// Brings the index in line with `Songs/`. A file is read only when its size or modification time changed, and re-indexed
@@ -124,11 +132,32 @@ public final class LibraryIndex: Sendable {
             try Row.fetchAll(db, sql: """
                 SELECT song.id, song.title, song.file FROM songText JOIN song ON song.rowid = songText.rowid
                 WHERE songText MATCH ? ORDER BY bm25(songText, 10.0, 1.0, 2.0, 2.0), song.title LIMIT ?
-                """, arguments: [terms.joined(separator: " "), limit]).compactMap { row in
-                let id: String = row["id"], file: String = row["file"]
-                return UUID(uuidString: id).map { SongMatch(id: $0, title: row["title"], url: library.songsFolder.appendingPathComponent(file)) }
-            }
+                """, arguments: [terms.joined(separator: " "), limit]).compactMap(match)
         }
+    }
+
+    /// Every indexed song, sorted by title ignoring case and accents.
+    public func allSongs() throws -> [SongMatch] {
+        let songs = try database.read { try Row.fetchAll($0, sql: "SELECT id, title, file FROM song WHERE deletedAt IS NULL") }.compactMap(match)
+        return songs.sorted { first, second in
+            let order = first.title.compare(second.title, options: [.caseInsensitive, .diacriticInsensitive])
+            return order == .orderedSame ? first.url.lastPathComponent < second.url.lastPathComponent : order == .orderedAscending
+        }
+    }
+
+    /// The indexed files whose song `id` another indexed file also holds, in file name order.
+    public func filesWithDuplicateIDs() throws -> [URL] {
+        try database.read { db in
+            try String.fetchAll(db, sql: """
+                SELECT file FROM song WHERE deletedAt IS NULL AND id IN
+                  (SELECT id FROM song WHERE deletedAt IS NULL GROUP BY id HAVING count(*) > 1) ORDER BY file
+                """)
+        }.map { library.songsFolder.appendingPathComponent($0) }
+    }
+
+    private func match(_ row: Row) -> SongMatch? {
+        let id: String = row["id"], file: String = row["file"]
+        return UUID(uuidString: id).map { SongMatch(id: $0, title: row["title"], url: library.songsFolder.appendingPathComponent(file)) }
     }
 
     private struct Stamp: Equatable { let size: Int, modified: Double }

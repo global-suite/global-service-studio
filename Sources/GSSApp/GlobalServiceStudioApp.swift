@@ -1,4 +1,5 @@
 import AppKit
+import GSSLibrary
 
 /// Starts the application.
 public enum GlobalServiceStudioApp {
@@ -14,7 +15,7 @@ public enum GlobalServiceStudioApp {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = AppSettings()
-    private lazy var state = AppState(settings: settings)
+    private lazy var state = AppState(settings: settings, indexURL: LibraryIndex.defaultURL)
     private lazy var settingsWindow = SettingsWindowController(state: state, settings: settings)
     private lazy var windowController = MainWindowController(state: state)
     private lazy var audienceOutput = AudienceOutputController(state: state, operatorWindow: windowController.window)
@@ -25,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = MainMenu.make(output: OutputMenu.make(audience: audienceOutput.menu, key: keyOutput.menu))
         windowController.showWindow(nil)
         state.perform(.openMostRecentSong)
+        state.perform(.openLibraryIndex)
         NSApp.activate(ignoringOtherApps: true)
     }
 

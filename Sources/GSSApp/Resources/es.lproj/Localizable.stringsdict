@@ -5,4 +5,10 @@
 	<key>NSStringLocalizedFormatKey</key><string>%#@slides@</string>
 	<key>slides</key><dict><key>NSStringFormatSpecTypeKey</key><string>NSStringPluralRuleType</string><key>NSStringFormatValueTypeKey</key><string>ld</string>
 		<key>one</key><string>%ld diapositiva</string><key>other</key><string>%ld diapositivas</string></dict>
+</dict>
+<!-- Library sidebar: how many songs are listed, under the search field. -->
+<key>%ld songs</key><dict>
+	<key>NSStringLocalizedFormatKey</key><string>%#@songs@</string>
+	<key>songs</key><dict><key>NSStringFormatSpecTypeKey</key><string>NSStringPluralRuleType</string><key>NSStringFormatValueTypeKey</key><string>ld</string>
+		<key>one</key><string>%ld canción</string><key>other</key><string>%ld canciones</string></dict>
 </dict></dict></plist>
