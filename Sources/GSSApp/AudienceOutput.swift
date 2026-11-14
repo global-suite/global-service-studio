@@ -39,25 +39,28 @@ final class OutputWindow: NSWindow {
     }
 }
 
-/// The slide layer: the live lines in white over transparency, nothing while cleared (ADR 0008).
+/// The slide layer: the live lines in a theme slot over transparency, nothing while cleared (ADR 0008).
+/// Each line shrinks to fit the slot's width, and the font shrinks so every line fits its height.
 struct SlideLayer: View {
     let lines: [String]
-    let alignment: Alignment
+    let slot: ThemeSlot
+    /// A soft shadow under the text, which the key output uses.
+    var shadow = false
 
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 0) {
+            let layout = SlotLayout(slot: slot, size: geometry.size, lineCount: lines.count)
+            VStack(alignment: layout.alignment.horizontal, spacing: 0) {
                 ForEach(Array(lines.enumerated()), id: \.offset) { Text($0.element) }
             }
-            .font(.system(size: geometry.size.height * 0.07, weight: .bold))
-            .foregroundColor(.white)
-            .shadow(color: .black.opacity(alignment == .center ? 0 : 0.6), radius: 2, y: 1)
-            .multilineTextAlignment(.center)
+            .font(Font(layout.font as CTFont))
+            .foregroundColor(layout.color.color)
+            .shadow(color: .black.opacity(shadow ? 0.6 : 0), radius: 2, y: 1)
+            .multilineTextAlignment(layout.textAlignment)
             .lineLimit(1)
             .minimumScaleFactor(0.25)
-            .padding(.horizontal, geometry.size.width * 0.05)
-            .padding(.bottom, alignment == .bottom ? geometry.size.height * 0.08 : 0)
-            .frame(width: geometry.size.width, height: geometry.size.height, alignment: alignment)
+            .frame(width: layout.frame.width, height: layout.frame.height, alignment: layout.alignment)
+            .position(x: layout.frame.midX, y: layout.frame.midY)
         }
     }
 }
@@ -65,6 +68,7 @@ struct SlideLayer: View {
 /// What the audience sees: the screen color layer, the media layer with the background, then the slide layer.
 struct AudienceOutputView: View {
     @ObservedObject var state: AppState
+    var theme = OutputThemes.theme(for: .audience)
     /// The screen color layer, under the background.
     static let background = RGBA(hex: 0x000000)
 
@@ -74,8 +78,8 @@ struct AudienceOutputView: View {
     var body: some View {
         ZStack {
             Self.background.color
-            MediaLayer(fill: state.mediaFill(for: .audience))
-            SlideLayer(lines: Self.lines(state), alignment: .center)
+            MediaLayer(fill: state.mediaFill(for: .audience, theme: theme))
+            SlideLayer(lines: Self.lines(state), slot: OutputThemes.lyricsSlot(of: theme))
         }
     }
 }
@@ -83,6 +87,7 @@ struct AudienceOutputView: View {
 /// What a video switcher receives: the slide layer in the lower third over the key color, never backgrounds (ADR 0008).
 struct KeyOutputView: View {
     @ObservedObject var state: AppState
+    var theme = OutputThemes.theme(for: .key)
 
     static func lines(_ state: AppState) -> [String] { state.shownLines }
     static func background(_ state: AppState) -> RGBA { (KeyColor(hex: state.keyColor) ?? .green).rgba }
@@ -90,7 +95,7 @@ struct KeyOutputView: View {
     var body: some View {
         ZStack {
             Self.background(state).color
-            SlideLayer(lines: Self.lines(state), alignment: .bottom)
+            SlideLayer(lines: Self.lines(state), slot: OutputThemes.lyricsSlot(of: theme), shadow: true)
         }
     }
 }

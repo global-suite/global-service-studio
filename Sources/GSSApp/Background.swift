@@ -44,6 +44,15 @@ extension AppState {
         case .image: return backgroundImage.map { .image($0) }
         }
     }
+
+    /// The media layer with the theme's background at its bottom (ADR 0008): the chosen background, else the theme's color.
+    /// Image and video theme backgrounds are not shown until the media bin exists.
+    func mediaFill(for role: OutputRole, theme: Theme) -> MediaFill? {
+        guard role.shows(.media) else { return nil }
+        if let chosen = mediaFill(for: role) { return chosen }
+        guard theme.background.kind == .color, let hex = theme.background.color else { return nil }
+        return RGBA(themeHex: hex).map { .color($0) }
+    }
 }
 
 /// The media layer: the background color, or the image filling the output (aspect fill); transparent without one.
