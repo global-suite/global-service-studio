@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=3440, initial-scale=1">
+<title>Service plan — C · Keyboard planner · Live (ultrawide)</title>
+<style>
+/*BASE-START*/
+/* Tokens: design/system.md (Midnight appearance by default). Nothing outside this list.
+   --focus and --sel are the accent at 50% and 60% (focus ring and selected row, as in design/operator-window). */
+:root{
+  --window:#1C1C1C; --raised:#242424; --desk:#0B0B0B;
+  --sidebar:rgba(22,22,22,0.90); --titlebar:rgba(28,28,28,0.92);
+  --sep:rgba(255,255,255,0.10); --control:rgba(255,255,255,0.08); --control-hover:rgba(255,255,255,0.13);
+  --label:rgba(255,255,255,0.85); --label-2:rgba(255,255,255,0.55); --label-3:rgba(255,255,255,0.28);
+  --accent:#0A84FF; --live:#FF453A; --next:#FF9F0A; --ok:#32D74B; --key-green:#00B140;
+  --focus:rgba(10,132,255,0.5); --sel:rgba(10,132,255,0.6);
+  --font:-apple-system,"SF Pro Text","Helvetica Neue",sans-serif;
+  --material:blur(30px) saturate(180%);
+}
+html[data-appearance="graphite"]{--window:#1E1E1E;--raised:#2A2A2C;--desk:#2A2A2C;--sidebar:rgba(40,40,42,0.72);--titlebar:rgba(46,46,48,0.86)}
+html[data-appearance="black"]{--window:#000000;--raised:#1C1C1C;--desk:#000000;--sidebar:rgba(10,10,10,0.94);--titlebar:rgba(10,10,10,0.94);--sep:rgba(255,255,255,0.14)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--desk);color:var(--label);font:400 13px/1.3 var(--font);display:grid;place-items:center;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit;background:none;border:0;margin:0;padding:0}
+button{cursor:default}
+ul,ol{list-style:none;margin:0;padding:0}
+h1,h2,h3,h4,p,dl,dd,figure{margin:0}
+:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.num{font-variant-numeric:tabular-nums}
+.l2{color:var(--label-2)}
+.kbd{display:inline-grid;place-items:center;min-width:20px;height:18px;padding:0 5px;border-radius:4px;background:var(--control);
+  box-shadow:inset 0 -1px 0 rgba(0,0,0,0.5);font:600 11px/1 var(--font);color:var(--label-2);white-space:nowrap}
+
+/* Window, sidebar, unified toolbar (design/operator-window 04–06) */
+.win{border-radius:10px;overflow:hidden;display:grid;background:var(--window);
+  box-shadow:inset 0 0 0 1px var(--sep),0 0 0 1px rgba(0,0,0,0.5),0 22px 60px rgba(0,0,0,0.5)}
+.sidebar{background:var(--sidebar);-webkit-backdrop-filter:var(--material);backdrop-filter:var(--material);
+  border-right:1px solid var(--sep);display:flex;flex-direction:column;min-height:0;min-width:0}
+.sb-top{height:52px;flex:none;display:flex;align-items:center;padding:0 12px 0 20px}
+.lights{display:flex;gap:8px}.lights i{width:12px;height:12px;border-radius:50%;background:var(--live)}
+.lights i:nth-child(2){background:var(--next)}.lights i:nth-child(3){background:var(--ok)}
+.sb-top .tb{margin-left:auto}
+.sb-h{display:flex;align-items:center;gap:6px;height:28px;padding:0 8px;font:600 11px/1 var(--font);color:var(--label-2)}
+.sb-h .meta{margin-left:auto;font-weight:500}
+.row{display:flex;align-items:center;gap:7px;width:100%;height:28px;padding:0 8px;border-radius:6px;text-align:left;white-space:nowrap;min-width:0}
+.row:hover{background:var(--control)}
+.row .ic{color:var(--accent)}
+.row .nm{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.row .meta{margin-left:auto;padding-left:6px;font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums;flex:none}
+.row[aria-current="page"],.row[aria-selected="true"]{background:var(--sel);color:#FFFFFF;font-weight:600}
+.row[aria-current="page"] .ic,.row[aria-current="page"] .meta,.row[aria-selected="true"] .ic,.row[aria-selected="true"] .meta{color:#FFFFFF}
+.grp{display:flex;align-items:center;gap:4px;height:28px;padding:0 8px 0 2px;color:var(--label-2);font-weight:600;width:100%;text-align:left;border-radius:6px}
+.grp .meta{margin-left:auto;font-weight:500;font-size:12px;font-variant-numeric:tabular-nums}
+.disc{width:16px;height:16px;display:grid;place-items:center;border-radius:4px;color:var(--label-2);flex:none}
+.disc .ic{width:12px;height:12px;stroke-width:2}
+.disc[aria-expanded="true"] .ic,.grp[aria-expanded="true"] .disc .ic{transform:rotate(90deg)}
+
+.toolbar{height:52px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:0 12px 0 16px;
+  background:var(--titlebar);-webkit-backdrop-filter:var(--material);backdrop-filter:var(--material);border-bottom:1px solid var(--sep)}
+.tl{display:flex;align-items:center;gap:6px;min-width:0}
+.title{margin-right:10px;line-height:1.15;min-width:0}
+.title h1{font-size:15px;font-weight:600;white-space:nowrap}
+.title p{font-size:11px;font-weight:500;color:var(--label-2);white-space:nowrap}
+.tr{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.tb{width:32px;height:28px;display:grid;place-items:center;border-radius:6px;color:var(--label-2);flex:none}
+.tb .ic{width:18px;height:18px}
+.tb:hover{background:var(--control);color:var(--label)}
+.tb[aria-pressed="true"]{color:var(--label)}
+.clock{font-size:13px;font-weight:600;color:var(--label);padding:0 6px}
+.search{display:flex;align-items:center;gap:6px;height:28px;padding:0 8px;border-radius:6px;background:var(--control);color:var(--label-2)}
+.search .ic{width:14px;height:14px}
+.search input{flex:1;min-width:0;outline:0;color:var(--label)}
+.search input::placeholder{color:var(--label-2)}
+.search:focus-within{box-shadow:0 0 0 3px var(--focus)}
+
+/* Controls */
+.seg{display:inline-flex;padding:2px;border-radius:6px;background:var(--control);gap:2px}
+.seg button{height:22px;padding:0 12px;border-radius:5px;color:var(--label-2);font-weight:500;white-space:nowrap}
+.seg button:hover{color:var(--label)}
+.seg button[aria-pressed="true"]{background:var(--control-hover);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,0.5)}
+.seg.mode button{height:24px;min-width:84px}
+.pop{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 6px 0 10px;border-radius:6px;background:var(--control);white-space:nowrap}
+.pop .ud{width:8px;height:12px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;color:var(--label-2);margin-left:auto}
+.push{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:24px;padding:0 10px;border-radius:6px;background:var(--control);font-weight:500;white-space:nowrap}
+.pop:hover,.push:hover{background:var(--control-hover)}
+.push.primary{background:var(--accent);color:#FFFFFF;font-weight:600}
+.push.primary:hover{box-shadow:inset 0 0 0 100px var(--control)}
+.push.primary .kbd{background:var(--window);color:var(--label)}
+.push.danger{background:rgba(255,69,58,0.16);box-shadow:inset 0 0 0 1px rgba(255,69,58,0.24)}
+.push.danger:hover{background:rgba(255,69,58,0.24)}
+.push .ic{width:14px;height:14px}
+.field{display:flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;background:var(--control)}
+.field input{flex:1;min-width:0;outline:0;color:var(--label)}
+.field:focus-within{box-shadow:0 0 0 3px var(--focus)}
+.lbl{color:var(--label-2)}
+
+/* State flags: always text plus a dot, never color only */
+.flag{display:inline-flex;align-items:center;gap:5px;font:700 11px/1 var(--font);letter-spacing:.04em;color:var(--label);flex:none}
+.flag::before{content:"";width:8px;height:8px;border-radius:50%;flex:none}
+.flag.live::before{background:var(--live)}
+.flag.next{color:var(--next)}
+.flag.next::before{box-shadow:inset 0 0 0 2px var(--next)}
+
+/* Slides: 16:9, black, white centered text */
+.slide{aspect-ratio:16/9;width:100%;border-radius:6px;display:grid;place-items:center;text-align:center;overflow:hidden;color:#FFFFFF;
+  background:radial-gradient(70% 90% at 28% 22%,rgba(10,132,255,.42),transparent 70%),radial-gradient(60% 70% at 82% 92%,rgba(255,159,10,.26),transparent 70%),#000000}
+.slide p{font-weight:600;line-height:1.28;text-shadow:0 1px 8px rgba(0,0,0,.6);padding:0 8px}
+.slide.media{background:radial-gradient(80% 90% at 70% 30%,rgba(255,159,10,.30),transparent 70%),#000000}
+.slide.page{background:#000000}
+.slide.blank{background:#000000;box-shadow:inset 0 0 0 1px var(--sep)}
+.slide.blank p{color:var(--label-2);font-weight:500;text-shadow:none}
+.slide .play{width:32px;height:32px;fill:none;stroke:#FFFFFF;stroke-width:1.5}
+
+/* Design preview controls (outside the window, not part of the app) */
+.demo{position:fixed;right:24px;bottom:22px;z-index:20;padding:6px 10px;border-radius:8px;background:var(--raised);box-shadow:0 0 0 1px var(--sep),0 8px 24px rgba(0,0,0,0.5);font:500 11px/1 var(--font);color:var(--label-2)}
+.demo summary{font-weight:600;color:var(--label);padding:2px 0;border-radius:4px}
+.demo details[open] summary{margin-bottom:10px}
+.demo .opts{display:flex;flex-direction:column;gap:10px}
+.demo .opts>div{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.demo .seg button{height:20px;padding:0 9px;font-size:11px}
+
+@media (prefers-reduced-motion:no-preference){
+  .row,.tb,.push,.pop,.seg button{transition:background-color .12s ease,color .12s ease}
+}
+/*BASE-END*/
+
+/* C · Keyboard planner, Live at 3440 × 1440: the plan column stays, with times; the Library drawer only adds to the service */
+.win{width:3392px;height:1392px;grid-template-columns:minmax(0,1fr);grid-template-rows:52px minmax(0,1fr)}
+.toolbar{padding-left:20px}
+.toolbar .lights{margin-right:14px}
+.svcpick{display:flex;align-items:center;gap:8px;height:36px;padding:0 8px;border-radius:6px;text-align:left;line-height:1.15}
+.svcpick:hover{background:var(--control)}
+.svcpick h1{font-size:15px;font-weight:600;white-space:nowrap}
+.svcpick p{font-size:11px;font-weight:500;color:var(--label-2)}
+.svcpick .ud{width:8px;height:12px;fill:none;stroke:currentColor;stroke-width:1.5;color:var(--label-2)}
+.tb.on{background:var(--control-hover);color:var(--label)}
+.body{display:grid;grid-template-columns:400px minmax(0,1fr) 360px 440px;min-height:0}
+.body.closed{grid-template-columns:400px minmax(0,1fr) 0 440px}
+.body.closed .drawer{display:none}
+
+/* Plan column, live */
+.plan{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--sep);background:var(--sidebar);-webkit-backdrop-filter:var(--material);backdrop-filter:var(--material)}
+.plan .phd{flex:none;display:flex;align-items:baseline;gap:8px;padding:16px 16px 4px}
+.plan .phd h2{font:600 13px/1 var(--font)}
+.plan .phd .tot{margin-left:auto;font-size:12px;color:var(--label-2)}
+.plan .phd .tot b{color:var(--label);font-weight:600}
+.plan .sub{flex:none;padding:4px 16px 10px;font-size:11px;color:var(--label-2)}
+.list{flex:1;min-height:0;overflow:auto;padding:0 8px 8px}
+.hd{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;margin-top:6px;font:600 11px/1 var(--font);color:var(--label-2)}
+.hd .ic{width:13px;height:13px}
+.hd .meta{margin-left:auto;font-weight:500;font-variant-numeric:tabular-nums}
+.pi{display:grid;grid-template-columns:44px 16px minmax(0,1fr) auto;align-items:center;gap:8px;width:100%;height:42px;padding:0 10px;border-radius:6px;text-align:left}
+.pi:hover{background:var(--control)}
+.pi .tm{font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums}
+.pi .ic{color:var(--accent)}
+.pi .tt{display:flex;align-items:baseline;gap:6px;min-width:0;white-space:nowrap}
+.pi .tt b{font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.pi .tt small{font-size:11px;color:var(--label-2);overflow:hidden;text-overflow:ellipsis}
+.pi .ln{font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.pi.done .tt b,.pi.done .ic{color:var(--label-2)}
+.pi.is-live{background:var(--control-hover);box-shadow:inset 3px 0 0 var(--live);height:48px}
+.pi.is-live .tt b{font-weight:700;color:var(--label)}
+.pi.is-live .ln{color:var(--label)}
+.pi.is-next .tt b{font-weight:600}
+.pi.ph .ic{color:var(--label-2)}
+.pi.ph small{color:var(--next)}
+.added{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.keys{flex:none;border-top:1px solid var(--sep);padding:12px 16px 14px;display:grid;grid-template-columns:auto 1fr auto 1fr;gap:8px 10px;align-items:center;font-size:12px}
+.keys h3{grid-column:1/-1;font:600 11px/1 var(--font);color:var(--label-2)}
+.keys dt{justify-self:end;display:flex;gap:3px}
+.keys dd{color:var(--label-2)}
+
+main{padding:18px 24px 16px;display:grid;grid-template-columns:910px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:16px 24px;min-height:0;min-width:0}
+.itemhead{grid-column:1/-1;display:flex;align-items:center;gap:12px;height:24px}
+.itemhead h2{font:600 15px/1.2 var(--font)}
+.itemhead .sp{flex:1}
+.itemhead .pos{color:var(--label-2)}
+.itemhead .pos b{color:var(--label);font-weight:600}
+.stagecol{display:flex;flex-direction:column;gap:20px;min-height:0}
+.pane h3{display:flex;align-items:center;gap:10px;height:20px;margin-bottom:8px;font:600 15px/1 var(--font);white-space:nowrap}
+.where{margin-left:auto;font:400 11px/1 var(--font);color:var(--label-2);overflow:hidden;text-overflow:ellipsis}
+.where b{font-weight:600;color:var(--label)}
+.pane.now{border-radius:8px;overflow:hidden;box-shadow:0 0 0 3px var(--live),0 0 48px rgba(255,69,58,.24)}
+.pane.now h3{margin:0;height:28px;padding:0 12px;gap:8px;background:var(--live);color:var(--window);font:700 13px/1 var(--font)}
+.pane.now h3 .flag{color:var(--window);font-weight:800;letter-spacing:.06em}
+.pane.now h3 .flag::before{background:var(--window)}
+.pane.now .where,.pane.now .where b{color:var(--window)}
+.pane.now .slide{border-radius:0}
+.pane.now .slide p{font-size:46px;padding:0 24px}
+.lower{display:grid;grid-template-columns:520px 1fr;gap:20px}
+.pane.next .slide{box-shadow:0 0 0 2px var(--next)}
+.pane.next .slide p{font-size:26px}
+.go{display:flex;flex-direction:column;gap:8px;min-width:0}
+.after{display:flex;align-items:center;justify-content:flex-end;gap:6px;height:20px;font-size:11px;color:var(--label-2)}
+.after b{font-weight:600;color:var(--label)}
+.gobtns{flex:1;display:grid;grid-template-columns:1fr 1.6fr;grid-template-rows:1fr auto;gap:12px}
+.go .t{display:flex;flex-direction:column;gap:6px;min-width:0}
+.go .dest{font:500 13px/1.25 var(--font)}
+.go-next{display:grid;grid-template-columns:1fr auto;align-content:space-between;padding:16px;border-radius:10px;background:var(--accent);color:#FFFFFF;text-align:left}
+.go-next strong{font:700 28px/1 var(--font)}
+.go-next .dest{color:#FFFFFF}
+.go-next .arrow{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round}
+.go-next .keys2{grid-column:1/-1;display:inline-flex;gap:4px}
+.go-next .kbd,.go-prev .kbd{background:var(--window);color:var(--label)}
+.go-next:hover{box-shadow:inset 0 0 0 100px var(--control)}
+.go-next:focus-visible{outline-offset:2px}
+.go-prev{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:16px;border-radius:10px;background:var(--control);text-align:left}
+.go-prev:hover{background:var(--control-hover)}
+.go-prev strong{font:600 17px/1 var(--font)}
+.go-prev .dest{color:var(--label-2)}
+.go button:disabled{opacity:.45}
+.jump{grid-column:1/-1;display:flex;gap:12px}
+.jump .push{flex:1;min-width:0;height:36px;justify-content:space-between}
+.jump .push span:first-child{overflow:hidden;text-overflow:ellipsis}
+.timer{flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto auto 1fr;gap:16px;padding:16px 18px 18px;border-radius:8px;background:var(--raised);box-shadow:0 0 0 1px var(--sep);min-height:0}
+.timer h3{grid-column:1/-1;display:flex;align-items:center;gap:10px;font:600 15px/1 var(--font)}
+.timer h3 span{font:400 11px/1 var(--font);color:var(--label-2)}
+.timer dl{display:contents}
+.timer dl div{padding:14px 16px;border-radius:6px;background:var(--control)}
+.timer dt{font:500 11px/1 var(--font);color:var(--label-2)}
+.timer dd{margin-top:10px;font:600 34px/1 var(--font);font-variant-numeric:tabular-nums}
+.timer dd small{font-size:13px;font-weight:500;color:var(--label-2);margin-left:6px}
+.timer .prog{grid-column:1/-1;align-self:end}
+.tnotes{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-self:start}
+.tnotes div{padding:12px 14px;border-radius:6px;box-shadow:inset 0 0 0 1px var(--sep)}
+.tnotes h4{font:600 11px/1 var(--font);color:var(--label-2);margin-bottom:8px;display:flex;gap:6px;align-items:center}
+.tnotes p{line-height:1.45}
+.tnotes .none{color:var(--label-2)}
+.timer .prog p{display:flex;justify-content:space-between;color:var(--label-2);margin-bottom:8px}
+.timer .prog p b{color:var(--label);font-weight:600}
+.bar{height:6px;border-radius:3px;background:var(--control);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--accent)}
+
+.film{display:flex;flex-direction:column;min-height:0;min-width:0}
+.film>h3{display:flex;align-items:center;gap:10px;height:20px;margin-bottom:8px;font:600 13px/1 var(--font)}
+.film>h3 span{font:400 11px/1 var(--font);color:var(--label-2)}
+.film .follow{margin-left:auto;display:inline-flex;align-items:center;gap:5px}
+.film .follow .ic{width:12px;height:12px}
+.scroll{flex:1;min-height:0;overflow-y:auto;padding:3px;margin:-3px}
+.grp4{display:flex;align-items:center;gap:10px;font:600 13px/1 var(--font);margin:30px 0 12px;padding-top:14px;border-top:1px solid var(--sep)}
+.grp4 .ic{color:var(--accent)}
+.grp4 small{font:400 11px/1 var(--font);color:var(--label-2)}
+.grp4 .hdr{font:600 11px/1 var(--font);color:var(--label-2)}
+.grp4 .flag{margin-left:auto}
+.grp4 .len{font:400 11px/1 var(--font);color:var(--label-2);font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px 16px}
+.grid li{min-width:0}
+.thumb{display:block;width:100%;text-align:left;border-radius:6px}
+.thumb .slide{box-shadow:0 0 0 1px var(--sep)}
+.thumb .slide p{font-size:15px;line-height:1.3;text-shadow:none;padding:0 14px}
+.thumb small{display:flex;gap:6px;margin-top:8px;height:12px;font:500 11px/1 var(--font);color:var(--label-2);font-variant-numeric:tabular-nums}
+.thumb small .sec{margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.thumb:hover .slide{box-shadow:0 0 0 2px var(--accent)}
+.thumb.done .slide{opacity:.6}
+.thumb.is-live .slide{box-shadow:0 0 0 3px var(--live)}
+.thumb.is-live small b{color:var(--label);font-weight:700}
+.thumb.is-next .slide{box-shadow:0 0 0 2px var(--next)}
+.thumb.is-next small b{color:var(--next);font-weight:600}
+.thumb.ph .slide{background:none;box-shadow:inset 0 0 0 1px var(--label-3)}
+.thumb.ph .slide p{color:var(--label-2);font-weight:500;font-size:13px}
+.thumb .slide.blank p{font-size:13px}
+
+/* Library drawer in Live: adds to the service only */
+.drawer{border-left:1px solid var(--sep);background:var(--raised);display:flex;flex-direction:column;min-height:0;min-width:0}
+.drawer .dh{display:flex;align-items:center;gap:8px;padding:16px 14px 8px}
+.drawer .dh h2{font:600 13px/1 var(--font)}
+.drawer .dh .tb{margin-left:auto;width:auto;padding:0 6px}
+.drawer .rule{margin:0 14px 10px;padding:10px 12px;border-radius:6px;background:var(--control);font-size:12px;line-height:1.45;color:var(--label-2)}
+.drawer .rule b{color:var(--label);font-weight:600}
+.drawer .search{margin:0 14px;height:30px;box-shadow:0 0 0 3px var(--focus)}
+.drawer .count{font-size:11px;color:var(--label-2);padding:10px 18px 4px}
+.res{padding:0 10px;overflow:auto;min-height:0}
+.res li{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 8px;border-radius:6px}
+.res li .ic{color:var(--accent)}
+.res li b{font-weight:500}
+.res mark{background:none;color:inherit;text-decoration:underline;text-underline-offset:2px}
+.res li small{display:block;font-size:11px;color:var(--label-2)}
+.res li .k{font-size:11px;color:var(--label-2)}
+.res li[aria-selected="true"]{background:var(--sel)}
+.res li[aria-selected="true"] *{color:#FFFFFF!important}
+.dp{margin-top:auto;border-top:1px solid var(--sep);padding:14px;display:flex;flex-direction:column;gap:10px}
+.dp .slides{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.dp .slide{background:#000000;box-shadow:0 0 0 1px var(--sep)}
+.dp .slide p{font-size:10px;text-shadow:none}
+.dp .acts{display:grid;gap:6px}
+.dp .acts .push{height:30px;justify-content:space-between}
+.dp .note{font-size:11px;line-height:1.45;color:var(--label-2)}
+
+.outcol{border-left:1px solid var(--sep);padding:18px 22px 16px;display:flex;flex-direction:column;min-height:0}
+.outcol h2{font:500 11px/1 var(--font);color:var(--label-2);margin-bottom:8px}
+.mons{display:flex;flex-direction:column;gap:18px}
+.scr{aspect-ratio:16/9;border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px var(--sep);color:#FFFFFF;text-align:center}
+.scr.slide p{font-size:19px;text-shadow:none}
+.mon .name{display:flex;align-items:center;gap:8px;margin-top:8px;height:18px}
+.mon .name b{font-weight:600}
+.mon .role{font-size:11px;color:var(--label-2)}
+.status{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--label)}
+.status::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--live)}
+.tele{background:#000000;display:grid;grid-template-rows:auto 1fr auto auto;text-align:left;padding:12px 16px;gap:6px;font-size:13px}
+.tele .clk{display:flex;justify-content:space-between;align-items:baseline;color:var(--label-2)}
+.tele .clk b{color:#FFFFFF;font-size:20px;font-variant-numeric:tabular-nums}
+.tele .cur{font-size:22px;font-weight:700;line-height:1.15;align-self:center}
+.tele .nx{color:var(--label-2)}
+.keyout{background:var(--key-green);display:grid;align-content:end;padding:0 24px 18px}
+.keyout div{background:rgba(0,0,0,.72);border-radius:4px;padding:8px 12px;font-size:15px;font-weight:600;line-height:1.3;text-align:left}
+.clear{margin-top:auto;padding-top:16px;display:flex;flex-direction:column;gap:10px}
+.bgline{display:flex;align-items:center;gap:6px;color:var(--label-2)}
+.bgline b{color:var(--label);font-weight:500}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btns .danger{grid-column:1/-1}
+.clear .push{height:32px}
+.demo{right:auto;left:50%;transform:translateX(-50%)}
+@media (prefers-reduced-motion:no-preference){
+  .pane.now h3 .flag::before{animation:livepulse 1.6s ease-in-out infinite}
+  @keyframes livepulse{50%{opacity:.35}}
+}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<!--ICONS-START-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sidebar" viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M7.5 3.5v13M4.5 6.5h1M4.5 9h1"/></symbol>
+  <symbol id="i-inspector" viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M12.5 3.5v13M14.5 6.5h1M14.5 9h1"/></symbol>
+  <symbol id="i-note" viewBox="0 0 16 16"><path d="M6 12V3.2l7-1.4V10.5"/><circle cx="4.2" cy="12" r="1.8"/><circle cx="11.2" cy="10.5" r="1.8"/></symbol>
+  <symbol id="i-film" viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="2"/><path d="m6.5 6 3.5 2-3.5 2z"/></symbol>
+  <symbol id="i-present" viewBox="0 0 16 16"><rect x="1.5" y="2" width="13" height="9" rx="1.5"/><path d="M8 11v3M5.5 14.5h5"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 16 16"><path d="M4 1.5h5L12.5 5v9.5h-8.5z"/><path d="M9 1.5V5h3.5M6.5 8.5h3.5M6.5 11h3.5"/></symbol>
+  <symbol id="i-item" viewBox="0 0 16 16"><path d="M3 4h10M3 8h10M3 12h6"/></symbol>
+  <symbol id="i-header" viewBox="0 0 16 16"><path d="M2.5 3.5h11M2.5 8h7M2.5 12.5h7" stroke-width="2"/></symbol>
+  <symbol id="i-timer" viewBox="0 0 16 16"><circle cx="8" cy="9" r="5.5"/><path d="M8 9V6.2M6.5 1.5h3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3.5 3.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 10 10"><path d="m3.5 2 3 3-3 3"/></symbol>
+  <symbol id="i-ud" viewBox="0 0 10 12"><path d="m2.5 4.5 2.5-2.5 2.5 2.5M2.5 7.5 5 10l2.5-2.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+  <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M4 7l4-4 4 4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 16 16"><path d="M8 3v10M4 9l4 4 4-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
+  <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v4M8 4.9v.1"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 2 14.5 13.5h-13z"/><path d="M8 6.5v3.2M8 11.6v.1"/></symbol>
+  <symbol id="i-display" viewBox="0 0 20 20"><rect x="2" y="4" width="11" height="8" rx="1.5"/><path d="M6 15h3M7.5 12v3M15 7h1.5A1.5 1.5 0 0 1 18 8.5v5a1.5 1.5 0 0 1-1.5 1.5H12"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7M11.5 4.5l-7 7"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 12 16"><path d="M4 4h.01M8 4h.01M4 8h.01M8 8h.01M4 12h.01M8 12h.01" stroke-width="2.2"/></symbol>
+  <symbol id="i-template" viewBox="0 0 16 16"><rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke-dasharray="2 1.6"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></symbol>
+  <symbol id="i-loop" viewBox="0 0 16 16"><path d="M2.5 8a5 5 0 0 1 9-3M13.5 8a5 5 0 0 1-9 3"/><path d="M11.8 1.8v3.4H8.4M4.2 14.2v-3.4h3.4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14"/><path d="m13 10.5 9 5.5-9 5.5z"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></symbol>
+  <symbol id="i-library" viewBox="0 0 16 16"><path d="M3 2.5v11M6 2.5v11M9 3.2l3.6 10.3"/></symbol>
+  <symbol id="i-open" viewBox="0 0 16 16"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M11.5 9.5v4h-9v-9h4"/></symbol>
+</svg>
+<!--ICONS-END-->
+
+<div class="win" role="application" aria-label="Global Service Studio — Sunday Service, Live">
+  <header class="toolbar">
+    <div class="tl" role="toolbar" aria-label="Service">
+      <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+      <button class="tb" type="button" aria-label="Show sidebar" aria-pressed="false"><svg class="ic"><use href="#i-sidebar"/></svg></button>
+      <button class="svcpick" type="button" aria-haspopup="menu" aria-label="Sunday Service, Sunday November 15 at 10:00. Switch service"><span><h1>Sunday Service</h1><p class="num">Sun, Nov 15 · 10:00</p></span><svg class="ud" viewBox="0 0 10 12" aria-hidden="true"><use href="#i-ud"/></svg></button>
+    </div>
+    <div class="seg mode" role="group" aria-label="Mode">
+      <button type="button" aria-pressed="false">Prepare</button><button type="button" aria-pressed="true">Live</button>
+    </div>
+    <div class="tr" role="toolbar" aria-label="View">
+      <span class="clock num" aria-label="Current time 10:04">10:04</span>
+      <button class="tb" type="button" aria-label="Outputs"><svg class="ic"><use href="#i-display"/></svg></button>
+      <button class="tb on" type="button" id="libbtn" aria-label="Library" aria-pressed="true" aria-keyshortcuts="Meta+L" title="Library ⌘L"><svg class="ic"><use href="#i-library"/></svg></button>
+    </div>
+  </header>
+
+  <div class="body" id="body">
+    <nav class="plan" aria-labelledby="h-plan">
+      <div class="phd"><h2 id="h-plan">Order of service</h2><span class="tot">On time · ends about <b class="num">10:58</b></span></div>
+      <p class="sub">Click an item to see its slides. A slide goes on the screens only when you click it or press Next.</p>
+      <div class="list" id="plan"></div>
+      <dl class="keys" aria-labelledby="h-keys">
+        <h3 id="h-keys">Keys in Live</h3>
+        <dt><span class="kbd">Space</span><span class="kbd">→</span></dt><dd>Next slide</dd>
+        <dt><span class="kbd">←</span></dt><dd>Previous slide</dd>
+        <dt><span class="kbd">⌥→</span></dt><dd>First slide of next item</dd>
+        <dt><span class="kbd">⌥←</span></dt><dd>Start of this item</dd>
+        <dt><span class="kbd">F1</span><span class="kbd">F2</span><span class="kbd">F3</span></dt><dd>Clear slide, background, all</dd>
+        <dt><span class="kbd">⌘L</span></dt><dd>Add from Library</dd>
+      </dl>
+    </nav>
+
+    <main aria-labelledby="item-title">
+      <div class="itemhead">
+        <h2 id="item-title"></h2>
+        <span class="l2" id="item-sub"></span>
+        <span class="sp"></span>
+        <span class="pos" id="item-pos"></span>
+      </div>
+      <div class="stagecol">
+        <section class="pane now" aria-labelledby="h-now">
+          <h3><span class="flag live">LIVE</span><span id="h-now">On the screens now</span><span class="where"><b id="now-item"></b> · <span id="now-pos"></span></span></h3>
+          <div class="slide" id="now-slide" role="img"><p></p></div>
+        </section>
+        <div class="lower">
+          <section class="pane next" aria-labelledby="h-next">
+            <h3><span id="h-next">Next</span><span class="flag next">NEXT</span><span class="where"><b id="next-item"></b> · <span id="next-pos"></span></span></h3>
+            <div class="slide" id="next-slide" role="img"><p></p></div>
+          </section>
+          <div class="go" role="group" aria-label="Move through the service">
+            <p class="after" id="after"></p>
+            <div class="gobtns">
+              <button class="go-prev" id="go-prev" type="button" aria-keyshortcuts="ArrowLeft"><span class="t"><strong>Previous</strong><span class="dest" id="prev-dest"></span></span><span class="kbd">←</span></button>
+              <button class="go-next" id="go-next" type="button" aria-keyshortcuts="Space ArrowRight">
+                <span class="t"><strong>Next</strong><span class="dest" id="next-dest"></span></span>
+                <svg class="arrow" viewBox="0 0 28 28" aria-hidden="true"><path d="M5 14h17M15 7l7 7-7 7"/></svg>
+                <span class="keys2"><span class="kbd">Space</span><span class="kbd">→</span></span>
+              </button>
+              <div class="jump">
+                <button class="push" type="button" id="go-start" aria-keyshortcuts="Alt+ArrowLeft">Start of this item<span class="kbd">⌥←</span></button>
+                <button class="push" type="button" id="go-item" aria-keyshortcuts="Alt+ArrowRight"><span id="item-dest">Next item</span><span class="kbd">⌥→</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <section class="timer" aria-labelledby="h-timer">
+          <h3 id="h-timer">Timing and notes<span>Planned lengths and notes come from the service</span></h3>
+          <dl>
+            <div><dt>This item</dt><dd>4:12<small>of 4:30</small></dd></div>
+            <div><dt>Left in this item</dt><dd>0:18</dd></div>
+            <div><dt>Service</dt><dd>4:12<small>of 58:20</small></dd></div>
+          </dl>
+          <div class="tnotes" aria-label="Media notes from the service">
+            <div><h4>Media notes · <span id="n-now">Morning Light</span><span class="flag live">LIVE</span></h4><p class="none" id="n-now-t">No notes for Media.</p></div>
+            <div><h4>Media notes · <span id="n-next">We Lift Our Voice</span><span class="flag next">NEXT</span></h4><p id="n-next-t">Stay on the bridge slide until the drums stop.</p></div>
+          </div>
+          <div class="prog"><p><span>Started <b class="num">10:00</b></span><span>On time · ends about <b class="num">10:58</b></span></p><div class="bar" role="img" aria-label="7 percent of the service done"><i style="width:7%"></i></div></div>
+        </section>
+      </div>
+      <section class="film" aria-labelledby="h-film">
+        <h3 id="h-film">Slides<span>This item, then the rest of the service</span><span class="follow"><svg class="ic" aria-hidden="true"><use href="#i-loop"/></svg>Follows the live slide</span></h3>
+        <div class="scroll" id="scroll" tabindex="0" aria-label="Slides of the service"></div>
+      </section>
+      <p class="sr" aria-live="polite" id="say"></p>
+    </main>
+
+    <aside class="drawer" aria-labelledby="h-drw" id="drawer">
+      <div class="dh"><h2 id="h-drw">Add to Service</h2><button class="tb" type="button" id="drw-x" aria-label="Close Library" aria-keyshortcuts="Escape"><span class="kbd">esc</span></button></div>
+      <p class="rule">In Live the Library <b>never goes on the screens</b>. A song you add becomes an item of the service; it goes live when you reach it with Next.</p>
+      <label class="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="sr">Search the Library</span><input type="search" value="open" aria-controls="res"></label>
+      <p class="count">2 songs match “open”</p>
+      <ul class="res" id="res" role="listbox" aria-label="Songs matching open" tabindex="0" aria-activedescendant="r1">
+        <li role="option" aria-selected="true" id="r1"><svg class="ic" aria-hidden="true"><use href="#i-note"/></svg><span><b><mark>Open</mark> Skies</b><small>2 arrangements · 9 slides</small></span><span class="k">D</span></li>
+        <li role="option" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-note"/></svg><span><b>Beneath the <mark>Open</mark> Sky</b><small>1 arrangement · 10 slides</small></span><span class="k">D</span></li>
+      </ul>
+      <section class="dp" aria-label="Open Skies">
+        <div class="slides" aria-hidden="true">
+          <div class="slide"><p>Open skies above me<br>Wide and full of grace</p></div>
+          <div class="slide"><p>Every star a promise<br>Shining on my face</p></div>
+        </div>
+        <div class="acts">
+          <button class="push primary" type="button" aria-keyshortcuts="Meta+Enter">Add as Next Item<span class="kbd">⌘↩</span></button>
+          <button class="push" type="button" aria-keyshortcuts="Alt+Meta+Enter">Add at End<span class="kbd">⌥⌘↩</span></button>
+        </div>
+        <p class="note">Next item means right after <b id="drw-after">Morning Light</b>. To look at a song without adding it, switch to Prepare.</p>
+      </section>
+    </aside>
+
+    <aside class="outcol" aria-labelledby="h-out">
+      <h2 id="h-out">Outputs</h2>
+      <ul class="mons">
+        <li class="mon"><div class="scr slide" aria-hidden="true"><p class="o-text"></p></div><div class="name"><b>Center</b><span class="status">Live</span></div><div class="role">Audience</div></li>
+        <li class="mon"><div class="scr slide" aria-hidden="true"><p class="o-text"></p></div><div class="name"><b>Sides</b><span class="status">Live</span></div><div class="role">Audience</div></li>
+        <li class="mon"><div class="scr tele" aria-hidden="true"><div class="clk"><span id="t-item"></span><b>10:04</b></div><div class="cur o-text"></div><div class="nx" id="t-next"></div></div><div class="name"><b>Stage</b><span class="status">Live</span></div><div class="role">Teleprompter</div></li>
+        <li class="mon"><div class="scr keyout" aria-hidden="true"><div class="o-text"></div></div><div class="name"><b>Key</b><span class="status">Live</span></div><div class="role">Lower third · switcher</div></li>
+      </ul>
+      <section class="clear" aria-label="Clear">
+        <p class="bgline"><svg class="ic" aria-hidden="true"><use href="#i-loop"/></svg>Background <b>Soft Light Loop</b></p>
+        <div class="btns">
+          <button class="push" type="button" aria-keyshortcuts="F1">Clear Slide<span class="kbd">F1</span></button>
+          <button class="push" type="button" aria-keyshortcuts="F2">Clear Background<span class="kbd">F2</span></button>
+          <button class="push danger" type="button" aria-keyshortcuts="F3">Clear All<span class="kbd">F3</span></button>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<aside class="demo" aria-label="Design preview controls, not part of the app"><details><summary>Design preview: drawer and appearance</summary><div class="opts">
+  <div><span>Library drawer</span>
+    <div class="seg" role="group" aria-label="Library drawer" id="demo-drw">
+      <button type="button" aria-pressed="true" data-d="open">Open (⌘L)</button>
+      <button type="button" aria-pressed="false" data-d="closed">Closed</button>
+    </div></div>
+  <div><span>Appearance</span>
+    <div class="seg" role="group" aria-label="Appearance" id="demo-app">
+      <button type="button" aria-pressed="true" data-a="midnight">Midnight</button>
+      <button type="button" aria-pressed="false" data-a="graphite">Graphite</button>
+      <button type="button" aria-pressed="false" data-a="black">Black</button>
+    </div></div>
+</div></details></aside>
+
+<script>
+var PLAN=[
+ {h:"Pre-service",t:"Countdown",k:"media",ic:"i-film",sub:"Media · pre",len:"5:00",s:[["Video",null,"media"]]},
+ {h:"Pre-service",t:"Welcome slides",k:"presentation",ic:"i-present",sub:"Presentation · pre",len:"2:30",s:[["Slide",["Welcome home"],"page"],["Slide",["Coffee and tea","in the lobby after the service"],"page"],["Slide",["New here?","Stop by the welcome desk"],"page"]]},
+ {h:"Worship",t:"Morning Light",k:"song",ic:"i-note",sub:"Song · Default · Key G",len:"4:30",s:[["Verse 1",["Morning light is rising","Over all the earth"]],["Verse 1",["Every shadow fading","Hope is being born"]],["Chorus",["We lift our voice","We lift our eyes"]],["Chorus",["You are the light","That never dies"]],["Verse 2",["Mercy like a river","Running through the night"]],["Verse 2",["Every heart awakened","Every wrong made right"]],["Chorus",["We lift our voice","We lift our eyes"]],["Chorus",["You are the light","That never dies"]],["Bridge",["Shine on us","Shine through us"]],["Chorus",["We lift our voice","We lift our eyes"]],["Chorus",["You are the light","That never dies"]]]},
+ {h:"Worship",t:"We Lift Our Voice",k:"song",ic:"i-note",sub:"Song · Short, sequence for today · Key A",len:"3:40",s:[["Verse 1",["From every valley","Every distant shore"]],["Verse 1",["Your people gather","Singing evermore"]],["Chorus",["We lift our voice","To the One who stays"]],["Chorus",["Morning to evening","We will give You praise"]],["Chorus",["We lift our voice","To the One who stays"]],["Chorus",["Morning to evening","We will give You praise"]],["Bridge",["Higher and higher","Let the anthem rise"]],["Chorus",["We lift our voice","To the One who stays"]],["Chorus",["Morning to evening","We will give You praise"]]]},
+ {h:"Worship",t:"Great Is the Light",k:"song",ic:"i-note",sub:"Song · Default · Key D",len:"5:10",s:[["Verse 1",["Over the mountains","Over the sea"]],["Verse 1",["Light of the morning","Rising for me"]],["Chorus",["Great is the light","Bright is the day"]],["Chorus",["Nothing can dim it","Nothing can fade"]],["Verse 2",["Into the valley","Down to the shore"]],["Verse 2",["Light of the morning","Now and evermore"]],["Chorus",["Great is the light","Bright is the day"]],["Chorus",["Nothing can dim it","Nothing can fade"]]]},
+ {h:"Welcome",t:"Announcements",k:"item",ic:"i-item",sub:"Item · nothing to show",len:"4:00",s:[["Item",null,"blank"]]},
+ {h:"Message",t:"Sermon",k:"item",ic:"i-item",sub:"Item · nothing to show",len:"32:00",s:[["Item",null,"blank"]]},
+ {h:"Message",t:"Sermon slides",k:"placeholder",ic:"i-present",sub:"Presentation placeholder · no file yet",len:"",s:[["Placeholder",null,"ph"]]},
+ {h:"Response",t:"Rest in Your Name",k:"song",ic:"i-note",sub:"Song · Default · Key E",len:"4:00",s:[["Verse 1",["When the day is heavy","When the road is long"]],["Verse 1",["I will rest in Your name","I will find my song"]],["Chorus",["Rest, my soul, rest","Quiet and still"]],["Chorus",["Held in Your hands","Now and until"]],["Chorus",["Rest, my soul, rest","Quiet and still"]],["Chorus",["Held in Your hands","Now and until"]]]},
+ {h:"Response",t:"Offering",k:"item",ic:"i-item",sub:"Item · nothing to show",len:"3:00",s:[["Item",null,"blank"]]},
+ {h:"Response",t:"Benediction",k:"item",ic:"i-item",sub:"Item · nothing to show",len:"1:30",s:[["Item",null,"blank"]]},
+ {h:"After service",t:"Exit loop",k:"media",ic:"i-film",sub:"Media · post",len:"10:00",s:[["Video",null,"media"]]}
+];
+</script>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  function pick(id,attr,fn){[].forEach.call(document.querySelectorAll("#"+id+" button"),function(b){b.addEventListener("click",function(){fn(b.dataset[attr]);
+    [].forEach.call(document.querySelectorAll("#"+id+" button"),function(o){o.setAttribute("aria-pressed",String(o===b))})})})}
+  pick("demo-app","a",function(a){document.documentElement.dataset.appearance=a});
+  function drawer(open){$("body").classList.toggle("closed",!open);$("libbtn").setAttribute("aria-pressed",String(open));$("libbtn").classList.toggle("on",open)}
+  pick("demo-drw","d",function(d){drawer(d==="open")});
+  $("libbtn").addEventListener("click",function(){document.querySelector('#demo-drw [data-d="'+($("body").classList.contains("closed")?"open":"closed")+'"]').click()});
+  $("drw-x").addEventListener("click",function(){document.querySelector('#demo-drw [data-d="closed"]').click();$("libbtn").focus()});
+  // Planned lengths in this direction: Great Is the Light runs 5:40 (own sequence)
+  PLAN[4].len="5:40";PLAN[4].sub="Song · Default, own sequence · Key D";PLAN[4].s.push(["Chorus",["Great is the light","Bright is the day"]],["Chorus",["Nothing can dim it","Nothing can fade"]]);
+  var START=["9:52","9:57","10:00","10:04","10:08","10:13","10:17","","10:49","10:53","10:56","10:58"];
+  var F=[];PLAN.forEach(function(it,ii){it.first=F.length;it.s.forEach(function(x,k){F.push({it:ii,k:k,sec:x[0],lines:x[1],kind:x[2]||"text"})})});
+  function playable(i){return F[i]&&F[i].kind!=="ph"}
+  function step(i,d){i+=d;while(F[i]&&!playable(i))i+=d;return F[i]?i:-1}
+  function firstOf(ii){while(PLAN[ii]&&PLAN[ii].k==="placeholder")ii++;return PLAN[ii]?PLAN[ii].first:-1}
+  var cur=PLAN[2].first+10,first=true;
+  function txt(f){var it=PLAN[f.it];if(f.kind==="blank")return it.t+": nothing to show";if(f.kind==="media")return it.t+" (video)";return f.lines?f.lines.join(" / "):""}
+  function face(f){var it=PLAN[f.it];if(f.kind==="media")return '<svg class="play" aria-hidden="true"><use href="#i-play"/></svg>';
+    if(f.kind==="blank")return "<p>"+it.t+"<br>Nothing to show · background stays</p>";if(f.kind==="ph")return "<p>No file attached<br>Next skips it</p>";return "<p>"+f.lines.join("<br>")+"</p>"}
+  function cls(f){return f.kind==="media"?" media":f.kind==="page"?" page":f.kind==="blank"?" blank":""}
+  function where(i){var f=F[i],it=PLAN[f.it];return f.kind==="text"?f.sec+" · "+(f.k+1)+" of "+it.s.length:f.kind==="page"?"Slide "+(f.k+1)+" of "+it.s.length:it.sub.split(" · ")[0]}
+  var html="",lastH="";
+  PLAN.forEach(function(it,ii){
+    html+='<h4 class="grp4" id="g'+ii+'"><svg class="ic" aria-hidden="true"><use href="#'+it.ic+'"/></svg>'+it.t+'<small>'+it.sub+'</small>'+(it.h!==lastH?'<span class="hdr">· '+it.h+'</span>':'')+'<span class="flag" data-flag="'+ii+'"></span><span class="len">'+it.len+'</span></h4><ol class="grid">';lastH=it.h;
+    it.s.forEach(function(x,k){var i=it.first+k,f=F[i];
+      html+=f.kind==="ph"?'<li><div class="thumb ph"><span class="slide"><p>No file attached<br>Next skips it · attach it in Prepare</p></span><small><span class="sec">Sermon slides</span></small></div></li>'
+        :'<li><button class="thumb" type="button" data-i="'+i+'"><span class="slide'+cls(f)+'">'+face(f)+'</span><small><span>'+(k+1)+'</span><span class="sec">'+(f.kind==="text"?f.sec:it.sub.split(" · ")[0])+'</span><b></b></small></button></li>'});
+    html+="</ol>"});
+  $("scroll").innerHTML=html;var g0=$("scroll").firstElementChild;g0.style.marginTop="4px";g0.style.borderTop="0";g0.style.paddingTop="0";
+  var ph="",lh="",HL={"Pre-service":"before 10:00","Worship":"13:50","Welcome":"4:00","Message":"32:00","Response":"8:30","After service":"after 10:58"};
+  PLAN.forEach(function(it,ii){if(it.h!==lh){ph+='<div class="hd"><svg class="ic" aria-hidden="true"><use href="#i-header"/></svg>'+it.h+'<span class="meta">'+HL[it.h]+'</span></div>';lh=it.h}
+    ph+='<button class="pi'+(it.k==="placeholder"?" ph":"")+'" type="button" data-it="'+ii+'"><span class="tm">'+START[ii]+'</span><svg class="ic" aria-hidden="true"><use href="#'+it.ic+'"/></svg><span class="tt"><b>'+it.t+'</b><small>'+(it.k==="placeholder"?"No file yet · skipped":it.sub.split(" · ").slice(1).join(" · "))+'</small></span><span class="ln"></span></button>'});
+  $("plan").innerHTML=ph;
+  var rows=[].slice.call(document.querySelectorAll("#plan .pi"));
+  function show(){
+    var f=F[cur],it=PLAN[f.it],ni=step(cur,1),pi=step(cur,-1),n=F[ni],p=F[pi],nit=n?PLAN[n.it]:null,crossing=n&&n.it!==f.it;
+    var nextItem=firstOf(f.it+1),nItem=nextItem>=0?PLAN[F[nextItem].it]:null;
+    $("item-title").textContent=it.t;$("item-sub").textContent=it.sub;$("item-pos").innerHTML="Item <b>"+(f.it+1)+"</b> of "+PLAN.length+" · "+it.h;
+    $("now-slide").className="slide"+cls(f);$("now-slide").innerHTML=face(f);$("now-slide").setAttribute("aria-label","Live: "+txt(f));
+    $("now-item").textContent=it.t;$("now-pos").textContent=where(cur);
+    $("next-slide").className="slide"+(n?cls(n):" blank");$("next-slide").innerHTML=n?face(n):"<p>End of the service</p>";$("next-slide").setAttribute("aria-label","Next: "+(n?txt(n):"end of the service"));
+    $("next-item").textContent=n?(crossing?"Next item: ":"")+nit.t:"End";$("next-pos").textContent=n?where(ni):"";
+    $("next-dest").textContent=n?(crossing?"Next item · "+nit.t+" · ":"")+where(ni):"End of the service";$("go-next").disabled=!n;
+    $("prev-dest").textContent=p?(p.it!==f.it?PLAN[p.it].t+" · ":"")+where(pi):"Start of the service";$("go-prev").disabled=!p;
+    $("item-dest").textContent=nItem?"Next item: "+nItem.t:"Last item";$("go-item").disabled=!nItem;
+    $("after").innerHTML=PLAN[f.it+1]?"After this item <b>"+PLAN[f.it+1].t+"</b>":"Last item of the service";
+    $("drw-after").textContent=it.t;
+    var MN={"We Lift Our Voice":"Stay on the bridge slide until the drums stop.","Countdown":"Start at 9:52 sharp.","Welcome slides":"Loop until the band is ready.","Announcements":"Youth retreat sign-ups: lower third only.","Sermon":"Slides follow the speaker.","Offering":"Giving slide on Center only.","Exit loop":"Loop with sound off."};
+    function nt(e,t){$(e).textContent=MN[t]||"No notes for Media.";$(e).className=MN[t]?"":"none"}
+    $("n-now").textContent=it.t;nt("n-now-t",it.t);var ny=nItem||it;$("n-next").textContent=nItem?nItem.t:"—";nt("n-next-t",nItem?nItem.t:"");
+    [].forEach.call(document.querySelectorAll("button.thumb"),function(t){var i=+t.dataset.i;
+      t.className="thumb"+(i<cur?" done":"")+(i===cur?" is-live":"")+(i===ni?" is-next":"");t.querySelector("b").textContent=i===cur?"● LIVE":i===ni?"NEXT":"";
+      t.setAttribute("aria-label",PLAN[F[i].it].t+", "+where(i)+(i===cur?", live":i===ni?", next":""));if(i===cur)t.setAttribute("aria-current","true");else t.removeAttribute("aria-current")});
+    [].forEach.call(document.querySelectorAll("[data-flag]"),function(e){var ii=+e.dataset.flag,lv=ii===f.it,nx=crossing&&ii===n.it;e.className="flag"+(lv?" live":nx?" next":"");e.textContent=lv?"LIVE":nx?"NEXT ITEM":""});
+    rows.forEach(function(r){var ii=+r.dataset.it,lv=ii===f.it,nx=crossing&&ii===n.it,ln=r.querySelector(".ln");
+      r.className="pi"+(PLAN[ii].k==="placeholder"?" ph":"")+(ii<f.it?" done":"")+(lv?" is-live":"")+(nx?" is-next":"");
+      if(lv)r.setAttribute("aria-current","step");else r.removeAttribute("aria-current");
+      ln.innerHTML=lv?'<span class="num">4:12 / '+PLAN[ii].len+'</span><span class="flag live">LIVE</span>':nx?PLAN[ii].len+' <span class="flag next">NEXT</span>':(ii<f.it?PLAN[ii].len+" · done":(PLAN[ii].len||"—"))});
+    var o=f.kind==="text"||f.kind==="page"?f.lines.join("<br>"):"";
+    [].forEach.call(document.querySelectorAll(".o-text"),function(e){e.innerHTML=o});
+    $("t-item").textContent=it.t;$("t-next").textContent=n?(n.lines?n.lines.join(" / "):PLAN[n.it].t):"End";
+    $("say").textContent="Live: "+it.t+", "+where(cur)+". Next: "+(n?PLAN[n.it].t+", "+where(ni):"end of the service");
+    var lt=document.querySelector(".thumb.is-live");if(lt){var sc=$("scroll");sc.scrollTo({top:Math.max(0,lt.offsetTop-sc.offsetTop-260),behavior:first||matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}first=false;
+  }
+  function go(i){if(i<0||!playable(i))return;cur=i;show()}
+  $("go-next").addEventListener("click",function(){go(step(cur,1))});$("go-prev").addEventListener("click",function(){go(step(cur,-1))});
+  $("go-item").addEventListener("click",function(){go(firstOf(F[cur].it+1))});$("go-start").addEventListener("click",function(){go(PLAN[F[cur].it].first)});
+  $("scroll").addEventListener("click",function(e){var t=e.target.closest("button.thumb");if(t)go(+t.dataset.i)});
+  rows.forEach(function(r){r.addEventListener("click",function(){var g=$("g"+r.dataset.it),sc=$("scroll");sc.scrollTop=g.offsetTop-sc.offsetTop-4})});
+  document.addEventListener("keydown",function(e){if(e.target.matches("input"))return;
+    if(e.altKey&&e.key==="ArrowRight"){e.preventDefault();go(firstOf(F[cur].it+1))}else if(e.altKey&&e.key==="ArrowLeft"){e.preventDefault();go(PLAN[F[cur].it].first)}
+    else if(e.key==="ArrowRight"||(e.key===" "&&!e.target.matches("button"))){e.preventDefault();go(step(cur,1))}else if(e.key==="ArrowLeft"){e.preventDefault();go(step(cur,-1))}
+    else if(e.key==="Escape"&&!$("body").classList.contains("closed")){$("drw-x").click()}});
+  show();
+})();
+</script>
+</body>
+</html>
