@@ -76,6 +76,22 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(try Song.decode(from: Data(contentsOf: url)), edited)
     }
 
+    func testSavingToAKnownFileOrToAFileRenamedOutsideTheAppKeepsThatFile() throws {
+        let library = try Library.open(temporaryFolder())
+        var edited = song("First Title")
+        let original = try library.save(edited)
+        let renamed = library.songsFolder.appendingPathComponent("renamed-by-hand.song.json")
+        try files.moveItem(at: original, to: renamed)
+        let other = try library.save(song("Other Title"))
+        edited.title = "Second Title"
+        XCTAssertEqual(try library.save(edited), renamed)
+        edited.title = "Third Title"
+        XCTAssertEqual(try library.save(edited, existingFile: renamed), renamed)
+        let names = try files.contentsOfDirectory(atPath: library.songsFolder.path).sorted()
+        XCTAssertEqual(names, [other.lastPathComponent, "renamed-by-hand.song.json"].sorted())
+        XCTAssertEqual(try Song.decode(from: Data(contentsOf: renamed)), edited)
+    }
+
     func testListingReturnsValidSongsAndReportsInvalidFiles() throws {
         let library = try Library.open(temporaryFolder())
         let (a, b) = (song("Alpha"), song("Beta"))

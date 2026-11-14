@@ -59,15 +59,36 @@ public struct Library: Equatable, Sendable {
         return library
     }
 
-    /// Writes a valid song atomically: to the file that already holds its `id`, or else to `Songs/<slug>-<8 hex of id>.song.json`.
+    /// Writes a valid song atomically: to `existingFile` when the caller knows the file that holds its `id`, else to the file
+    /// found to hold its `id`, or else to `Songs/<slug>-<8 hex of id>.song.json`.
     @discardableResult
-    public func save(_ song: Song) throws -> URL {
+    public func save(_ song: Song, existingFile: URL? = nil) throws -> URL {
+        try save(song, existingFile: existingFile) { _ in false }
+    }
+
+    /// `save(_:existingFile:)`; when searching, files whose name `holdsAnotherID` accepts are not read.
+    func save(_ song: Song, existingFile: URL?, holdsAnotherID: (String) -> Bool) throws -> URL {
         try song.validate()
         let name = "\(Self.slug(song.title))-\(song.id.uuidString.lowercased().prefix(8)).song.json"
-        let existing = try songs().songs.first { $0.song.id == song.id }?.url.lastPathComponent
-        let url = songsFolder.appendingPathComponent(existing ?? name)
+        let found = existingFile == nil ? try file(holding: song.id, expected: name, holdsAnotherID: holdsAnotherID) : nil
+        let url = existingFile ?? songsFolder.appendingPathComponent(found ?? name)
         try song.encoded().write(to: url, options: .atomic)
         return url
+    }
+
+    /// The name of the file that holds `id`. Reads first the expected name, then names ending in the same short id, and only
+    /// then every other file in name order, so a file renamed outside the app is still found.
+    private func file(holding id: UUID, expected: String, holdsAnotherID: (String) -> Bool) throws -> String? {
+        let names = try FileManager.default.contentsOfDirectory(atPath: songsFolder.path)
+            .filter { !$0.hasPrefix(".") && $0.hasSuffix(".song.json") }.sorted()
+        let suffix = "-\(id.uuidString.lowercased().prefix(8)).song.json"
+        let likely = names.filter { $0 == expected } + names.filter { $0 != expected && $0.hasSuffix(suffix) }
+        let rest = names.filter { !$0.hasSuffix(suffix) && !holdsAnotherID($0) }
+        for name in likely + rest {
+            let data = try? Data(contentsOf: songsFolder.appendingPathComponent(name))
+            if let data, (try? Song.decode(from: data))?.id == id { return name }
+        }
+        return nil
     }
 
     /// Reads every `*.song.json` in `Songs/`, in file name order.
