@@ -52,6 +52,8 @@ Three concepts build on the stack:
 
 Chroma key and alpha key output are ways of sending a look: the layers are rendered over a key color, or as separate fill and key signals, for a video switcher to overlay on camera.
 
+Output roles, the key output, background cues and the video pipeline are decided in [ADR 0008](adr/0008-media-layer-key-output-and-video.md).
+
 ## The render engine
 
 - One render loop per output, driven by that display's refresh rate.
