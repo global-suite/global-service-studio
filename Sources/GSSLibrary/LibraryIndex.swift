@@ -145,6 +145,14 @@ public final class LibraryIndex: Sendable {
         }
     }
 
+    /// The indexed files that held the song `id` when they were indexed, in file name order.
+    func files(holding id: UUID) throws -> [URL] {
+        try database.read { db in
+            try String.fetchAll(db, sql: "SELECT file FROM song WHERE id = ? AND deletedAt IS NULL ORDER BY file",
+                                arguments: [id.uuidString.lowercased()])
+        }.map { library.songsFolder.appendingPathComponent($0) }
+    }
+
     /// The indexed files whose song `id` another indexed file also holds, in file name order.
     public func filesWithDuplicateIDs() throws -> [URL] {
         try database.read { db in
