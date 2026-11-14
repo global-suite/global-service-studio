@@ -46,7 +46,8 @@ public enum AppCommand: Equatable, Sendable {
     case setLibrarySearch(String)
     /// Opens a song file of the library; a file that cannot be read is reported in `alert`.
     case openLibrarySong(URL)
-    /// Sets the background of the media layer; a color that is not `#RRGGBB` or a file that is not a readable image is ignored. An image is decoded here, before it shows.
+    /// Sets the background of the media layer; a color that is not `#RRGGBB` or a file that is not a readable image or video is ignored.
+    /// An image is decoded here, and a video prepared, before it shows.
     case setBackground(Background)
     /// Takes the background off and leaves the slide.
     case clearBackground
@@ -116,6 +117,10 @@ public final class AppState: ObservableObject {
     @Published public private(set) var background: Background = .none
     /// The decoded image of an image background, set before `background` is published.
     public private(set) var backgroundImage: CGImage?
+    /// The player of a video background, prepared before `background` is published and stopped when the background changes.
+    private(set) var backgroundVideo: BackgroundVideo?
+    /// A video background being prepared; it shows when ready unless another background is chosen first.
+    private var pendingVideo: BackgroundVideo?
 
     public init(settings: AppSettings? = nil, indexURL: ((Library) throws -> URL)? = nil, indexQueue: DispatchQueue = DispatchQueue(label: "GSS library index")) {
         (self.indexURL, self.indexQueue) = (indexURL, indexQueue)
@@ -218,6 +223,7 @@ public final class AppState: ObservableObject {
     }
 
     /// Validates a background and decodes its image before publishing it; invalid ones and the current one are ignored.
+    /// A video is opened here and published once its player is ready; choosing another background first cancels it.
     private func setBackground(_ new: Background) {
         var new = new, image: CGImage?
         switch new {
@@ -228,9 +234,33 @@ public final class AppState: ObservableObject {
         case .image(let url):
             guard new != background, let decoded = BackgroundImageLoader.image(at: url) else { return }
             image = decoded
+        case .video(let url):
+            guard new != background else { return cancelPendingVideo() }
+            guard pendingVideo?.url != url, let video = BackgroundVideo(url: url) else { return }
+            cancelPendingVideo()
+            pendingVideo = video
+            video.prepare { [weak self, weak video] ready in
+                guard let self, let video, self.pendingVideo === video else { return }
+                self.pendingVideo = nil
+                if ready { self.show(.video(url), image: nil, video: video) } else { video.stop() }
+            }
+            return
         }
+        cancelPendingVideo()
         guard new != background else { return }
-        backgroundImage = image
+        show(new, image: image, video: nil)
+    }
+
+    private func cancelPendingVideo() {
+        pendingVideo?.stop()
+        pendingVideo = nil
+    }
+
+    /// Publishes a prepared background, stopping the video it replaces and starting its own.
+    private func show(_ new: Background, image: CGImage?, video: BackgroundVideo?) {
+        backgroundVideo?.stop()
+        (backgroundImage, backgroundVideo) = (image, video)
+        video?.start()
         background = new
     }
 
