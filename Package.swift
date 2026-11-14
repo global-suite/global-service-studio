@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.1
 
 import PackageDescription
 
@@ -10,13 +10,17 @@ let package = Package(
         .library(name: "GSSCore", targets: ["GSSCore"]),
         .executable(name: "GlobalServiceStudio", targets: ["GlobalServiceStudio"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/groue/GRDB.swift", .upToNextMinor(from: "7.12.0")),
+    ],
     targets: [
         .target(name: "GSSCore"),
-        .target(name: "GSSLibrary", dependencies: ["GSSCore"]),
+        .target(name: "GSSLibrary", dependencies: ["GSSCore", .product(name: "GRDB", package: "GRDB.swift")]),
         .target(name: "GSSApp", dependencies: ["GSSCore", "GSSLibrary"], resources: [.process("Resources")]),
         .executableTarget(name: "GlobalServiceStudio", dependencies: ["GSSApp"]),
         .testTarget(name: "GSSCoreTests", dependencies: ["GSSCore"]),
         .testTarget(name: "GSSLibraryTests", dependencies: ["GSSLibrary"]),
         .testTarget(name: "GSSAppTests", dependencies: ["GSSApp", "GSSLibrary"]),
-    ]
+    ],
+    swiftLanguageModes: [.v5]
 )

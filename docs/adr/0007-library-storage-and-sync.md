@@ -41,6 +41,10 @@ File names are a readable slug plus a short id, such as `morning-light-6f1c2b9e.
 - **Stored in** `~/Library/Application Support/GlobalServiceStudio/Index/<libraryId>.sqlite`, never inside the library folder, so sync tools never copy a database that is being written.
 - **Rebuilt, not migrated.** When the index schema changes, the index is deleted and rebuilt from the files.
 - The index and everything in this record live in the `GSSLibrary` module. `GSSCore` stays free of SQLite.
+- GRDB is pinned to one minor release (`.upToNextMinor`), and only `GSSLibrary` depends on it. The schema version is stored as `PRAGMA user_version`.
+- Search words are reduced to letters and digits and matched as prefixes, so no user input is read as FTS5 query syntax.
+- A deleted or invalid file leaves the search at once; its journal entry stays with its deleted-at time.
+- On opening, an index of another schema version, or one that fails `PRAGMA quick_check`, is deleted and rebuilt.
 
 ### Keeping the index consistent with the files
 
