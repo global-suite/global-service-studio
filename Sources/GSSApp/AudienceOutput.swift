@@ -62,10 +62,10 @@ struct SlideLayer: View {
     }
 }
 
-/// What the audience sees: the screen color layer, then the slide layer; black only while cleared.
+/// What the audience sees: the screen color layer, the media layer with the background, then the slide layer.
 struct AudienceOutputView: View {
     @ObservedObject var state: AppState
-    /// The screen color layer, until themes and backgrounds fill the layers between.
+    /// The screen color layer, under the background.
     static let background = RGBA(hex: 0x000000)
 
     /// The lines on the output: the live slide's, none while cleared; past the last slide the last one stays.
@@ -74,6 +74,7 @@ struct AudienceOutputView: View {
     var body: some View {
         ZStack {
             Self.background.color
+            MediaLayer(fill: state.mediaFill(for: .audience))
             SlideLayer(lines: Self.lines(state), alignment: .center)
         }
     }
@@ -94,11 +95,12 @@ struct KeyOutputView: View {
     }
 }
 
-/// The Output menu: one submenu for each output.
+/// The Output menu: one submenu for each output, then the Background submenu when given.
 enum OutputMenu {
-    static func make(audience: NSMenu, key: NSMenu) -> NSMenu {
+    static func make(audience: NSMenu, key: NSMenu, background: NSMenu? = nil) -> NSMenu {
         let menu = NSMenu(title: Strings.text("Output"))
-        for submenu in [audience, key] {
+        for submenu in [audience, key] + (background.map { [$0] } ?? []) {
+            if submenu === background { menu.addItem(.separator()) }
             let item = NSMenuItem(title: submenu.title, action: nil, keyEquivalent: "")
             item.submenu = submenu
             menu.addItem(item)

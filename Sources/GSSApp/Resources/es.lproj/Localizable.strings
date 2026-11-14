@@ -44,9 +44,8 @@
 /* Live mode: role of the stage output. */ "Teleprompter" = "Teleprompter";
 /* Live mode: role of the key output, a lower third for the video switcher. */ "Lower third · switcher" = "Tercio inferior · switcher";
 /* Live mode button (F1) that takes the slide off the outputs. */ "Clear Slide" = "Borrar diapositiva";
-/* Live mode button (F2) that takes the background off the outputs. */ "Clear Background" = "Borrar fondo";
+/* Live mode button (F2) and Background menu item that take the background off the outputs. */ "Clear Background" = "Borrar fondo";
 /* Live mode button (F3) that clears every layer of the outputs. */ "Clear All" = "Borrar todo";
-/* Live mode: tooltip of the disabled Clear Background button. */ "Available when backgrounds exist" = "Disponible cuando haya fondos";
 /* Live mode: shown next to LIVE while the outputs show nothing. */ "Cleared" = "Borrado";
 /* Prepare mode: title of step 1, the parts of the song in the order they are sung. */ "Song order" = "Orden de la canción";
 /* Prepare mode: hint next to the title of step 1. */ "The parts of the song, in the order they are sung. Click a part to work on it." = "Las partes de la canción, en el orden en que se cantan. Haz clic en una parte para trabajar en ella.";
@@ -129,3 +128,9 @@
 /* Settings: key color choice. */ "Blue" = "Azul";
 /* Settings: key color choice that enables the color well. */ "Custom" = "Personalizado";
 /* Settings: explanation under the key color picker. */ "The Key output shows the lyrics over this color, for a video switcher to remove. It never shows backgrounds." = "La salida de key muestra la letra sobre este color para que el switcher de video lo quite. Nunca muestra fondos.";
+
+/* Output menu: submenu that sets the background of the audience outputs. */ "Background" = "Fondo";
+/* Background menu item that opens a panel to choose an image file as the background. */ "Choose Image…" = "Elegir imagen…";
+/* Background menu item: preset background color. */ "Black" = "Negro";
+/* Background menu item: preset background color. */ "Dark Blue" = "Azul oscuro";
+/* Background menu item: preset background color. */ "Dark Gray" = "Gris oscuro";
