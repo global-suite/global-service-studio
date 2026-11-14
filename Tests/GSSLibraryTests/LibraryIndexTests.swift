@@ -139,6 +139,60 @@ final class LibraryIndexTests: XCTestCase {
         XCTAssertEqual(try files.contentsOfDirectory(atPath: library.songsFolder.path), [url.lastPathComponent])
     }
 
+    func testAFileRenamedOutsideTheAppIsOverwrittenNotDuplicated() throws {
+        let (library, index, _) = try makeIndex()
+        var edited = song("Alpha Title")
+        let renamed = library.songsFolder.appendingPathComponent("renamed-by-hand.song.json")
+        try files.moveItem(at: try index.save(edited), to: renamed)
+        try index.reconcile()
+        edited.title = "Beta Title"
+        XCTAssertEqual(try index.save(edited), renamed)
+        XCTAssertEqual(try files.contentsOfDirectory(atPath: library.songsFolder.path), ["renamed-by-hand.song.json"])
+        XCTAssertEqual(try index.search("beta").map(\.url), [renamed])
+    }
+
+    func testWithoutAnIndexEntryARenamedFileIsStillFound() throws {
+        let (library, index, _) = try makeIndex()
+        var unindexed = song("Alpha Title")
+        let first = library.songsFolder.appendingPathComponent("first-rename.song.json")
+        try files.moveItem(at: try library.save(unindexed), to: first)
+        unindexed.title = "Beta Title"
+        XCTAssertEqual(try index.save(unindexed), first)
+
+        let second = library.songsFolder.appendingPathComponent("second-rename.song.json")
+        try files.moveItem(at: first, to: second)
+        unindexed.title = "Gamma Title"
+        XCTAssertEqual(try index.save(unindexed), second)
+        XCTAssertEqual(try files.contentsOfDirectory(atPath: library.songsFolder.path), ["second-rename.song.json"])
+        XCTAssertEqual(try Song.decode(from: Data(contentsOf: second)), unindexed)
+    }
+
+    func testAnIndexedFileChangedOutsideTheAppToHoldTheSongIsFound() throws {
+        let (library, index, _) = try makeIndex()
+        let indexed = try index.save(song("Alpha Title"))
+        var replacement = song("Beta Title")
+        try replacement.encoded().write(to: indexed)
+        try files.setAttributes([.modificationDate: Date(timeIntervalSinceNow: 60)], ofItemAtPath: indexed.path)
+        replacement.title = "Gamma Title"
+        XCTAssertEqual(try index.save(replacement), indexed)
+        XCTAssertEqual(try files.contentsOfDirectory(atPath: library.songsFolder.path), [indexed.lastPathComponent])
+    }
+
+    func testASongWhoseFileWasDeletedOutsideTheAppIsWrittenToANewFile() throws {
+        let (library, index, _) = try makeIndex()
+        var edited = song("Alpha Title")
+        let renamed = library.songsFolder.appendingPathComponent("renamed-by-hand.song.json")
+        try files.moveItem(at: try index.save(edited), to: renamed)
+        try index.reconcile()
+        try files.removeItem(at: renamed)
+        edited.title = "Beta Title"
+        let url = try index.save(edited)
+        XCTAssertEqual(url.lastPathComponent, "beta-title-\(edited.id.uuidString.lowercased().prefix(8)).song.json")
+        XCTAssertEqual(try files.contentsOfDirectory(atPath: library.songsFolder.path), [url.lastPathComponent])
+        XCTAssertEqual(try Song.decode(from: Data(contentsOf: url)), edited)
+        XCTAssertEqual(try index.search("beta").map(\.url), [url])
+    }
+
     func testTheDefaultLocationIsInApplicationSupportOutsideTheLibrary() throws {
         let library = try Library.open(temporaryFolder())
         let url = try LibraryIndex.defaultURL(for: library)
@@ -171,6 +225,9 @@ final class LibraryIndexTests: XCTestCase {
         let warm = try time { index = try LibraryIndex(library: library, at: url); XCTAssertEqual(try index?.reconcile().read, 0) }
         let search = try time { for query in ["cora", "canción río", "montana alba 49", "inven"] { _ = try index?.search(query) } }
         let save = try time { try index?.save(song("Invented Extra")) }
-        print("GSS_PERF 5000 songs: cold rebuild \(cold), warm open and reconcile \(warm), 4 searches \(search), save one song \(save)")
+        var existing = try Song.decode(from: Data(contentsOf: library.songsFolder.appendingPathComponent("song-2500.song.json")))
+        existing.title = "Invented Edited"
+        let overwrite = try time { try index?.save(existing) }
+        print("GSS_PERF 5000 songs: cold rebuild \(cold), warm open and reconcile \(warm), 4 searches \(search), save one new song \(save), overwrite one song \(overwrite)")
     }
 }

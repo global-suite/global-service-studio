@@ -88,10 +88,29 @@ public final class LibraryIndex: Sendable {
         }
     }
 
-    /// Saves a song with `Library.save(_:)` and updates its index entry at once.
+    /// Saves a song with `Library.save(_:existingFile:)` and updates its index entry at once. The file that holds the song's
+    /// `id` is taken from the index when it still exists; otherwise files the index knows unchanged with another `id` are not read.
     @discardableResult
     public func save(_ song: Song) throws -> URL {
-        let url = try library.save(song)
+        let id = song.id.uuidString.lowercased()
+        let known = try database.read { db in
+            try String.fetchAll(db, sql: "SELECT file FROM song WHERE id = ? AND deletedAt IS NULL ORDER BY file", arguments: [id])
+        }
+        let existing = known.map { library.songsFolder.appendingPathComponent($0) }.first { FileManager.default.fileExists(atPath: $0.path) }
+        var others: [String: Stamp] = [:]
+        if existing == nil {
+            others = try database.read { db in
+                let rows = try Row.fetchCursor(db, sql: "SELECT file, size, modified FROM song WHERE id != ? AND deletedAt IS NULL", arguments: [id])
+                var stamps: [String: Stamp] = [:]
+                while let row = try rows.next() { stamps[row[0]] = Stamp(size: row[1], modified: row[2]) }
+                return stamps
+            }
+        }
+        let folder = library.songsFolder.path + "/"
+        let url = try library.save(song, existingFile: existing) { name in
+            guard let stamp = others[name], let now = Self.quickStamp(of: folder + name) else { return false }
+            return now.size == stamp.size && abs(now.modified - stamp.modified) < 0.000_001
+        }
         try database.write { try Self.index(url, stamp: Self.stamp(of: url), in: $0) }
         return url
     }
@@ -118,6 +137,15 @@ public final class LibraryIndex: Sendable {
     private static func stamp(of url: URL) throws -> Stamp {
         let values = try url.resourceValues(forKeys: stampKeys)
         return Stamp(size: values.fileSize ?? 0, modified: values.contentModificationDate?.timeIntervalSinceReferenceDate ?? 0)
+    }
+
+    /// Size and modification time from `stat`: much cheaper than `stamp(of:)` when many files are checked.
+    private static func quickStamp(of path: String) -> Stamp? {
+        var info = stat()
+        guard stat(path, &info) == 0 else { return nil }
+        let time = info.st_mtimespec
+        let seconds = Double(time.tv_sec) + Double(time.tv_nsec) / 1_000_000_000 - Date.timeIntervalBetween1970AndReferenceDate
+        return Stamp(size: Int(info.st_size), modified: seconds)
     }
 
     private static func index(_ url: URL, stamp: Stamp, in db: Database) throws {
