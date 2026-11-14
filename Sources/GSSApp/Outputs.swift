@@ -64,11 +64,7 @@ struct OutputMonitor: View {
         let lines = state.shownLines.joined(separator: "\n")
         switch output.kind {
         case .audience:
-            ZStack {
-                Color.black
-                MediaLayer(fill: state.mediaFill(for: .audience))
-                Text(lines).font(.system(size: width / 20, weight: .semibold)).foregroundColor(.white).multilineTextAlignment(.center)
-            }
+            AudienceOutputView(state: state)
         case .stage:
             VStack(alignment: .leading, spacing: width / 60) {
                 HStack {
@@ -87,13 +83,7 @@ struct OutputMonitor: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .background(Color.black)
         case .key:
-            KeyOutputView.background(state).color.overlay(alignment: .bottomLeading) {
-                if !state.isCleared {
-                    Text(lines).font(.system(size: width / 26, weight: .semibold)).foregroundColor(.white)
-                        .padding(width / 50).background(RoundedRectangle(cornerRadius: 3).fill(Color.black.opacity(0.72)))
-                        .padding(width / 16)
-                }
-            }
+            KeyOutputView(state: state)
         }
     }
 }
