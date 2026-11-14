@@ -43,6 +43,44 @@ The app is dark only for now, with three appearances the operator can choose. **
 | `ok` | `#32D74B` | Output connected |
 | `key-green` | `#00B140` | The key color drawn in the Key output only |
 
+## Tokens added with the service plan design (2026-11-14)
+
+Source: the accepted artboards in `design/service-plan/` (01–08) and the owner's decision of 2026-11-14 (`odd/tasks/service-plan.md`, L6). They are shared by every appearance unless a column says otherwise.
+
+### Color
+
+| Token | Value | Use |
+|---|---|---|
+| `accent-strong` | `#0071E3` | Any filled accent surface behind text: primary push buttons, the Next button in Live, the highlighted menu item, key caps drawn on the accent. White text on it is **4.70:1** (WCAG AA for 13 px text); white on `accent` is only 3.65:1. Against `window` it is 3.63:1, enough for a control boundary |
+| `accent-strong-hover` | `accent-strong` under `rgba(0,0,0,0.12)` (≈ `#0063C8`) | Hover and pressed state of `accent-strong`; always darker, never lighter (white text 5.78:1) |
+| `on-accent` | `#FFFFFF` | Text and icons on `accent-strong`, on `selection` and on the accent badge of a drag |
+| `selection` | `rgba(10,132,255,0.60)` | Selected row in the sidebar, the run sheet and lists when the window is key. White text on it is 6.91:1 on Midnight, 6.84:1 on Graphite, 8.10:1 on Black, 6.61:1 on `content-raised` |
+| `destructive-fill` | `rgba(255,69,58,0.16)` | Fill of destructive push buttons such as Clear All; always with a text label. `label` on it is 10.66:1 |
+| `destructive-fill-hover` | `rgba(255,69,58,0.24)` | Hover of a destructive push button |
+| `destructive-border` | `inset 0 0 0 1px rgba(255,69,58,0.24)` | Hairline of a destructive push button |
+| `key-cap` | `control` fill, `inset 0 -1px 0 rgba(0,0,0,0.5)`, text 11px / 600 `label-secondary` | Key labels next to actions, in menus, tooltips and the shortcut legend (`label-secondary` on it is 5.25:1) |
+| `key-cap-on-accent` | `window` fill, text `label` | Key labels drawn inside an `accent-strong` button (12.54:1) |
+
+Rule: use `accent-strong` for every filled accent shape that carries text, and `accent` for everything that does not (selection rings, focus ring, outlines, icons, the insertion line of a drag). This replaces `accent` as the fill of the Primary push button in Components.
+
+### Shadows
+
+| Token | Value | Use |
+|---|---|---|
+| `shadow-window` | `inset 0 0 0 1px separator, 0 0 0 1px rgba(0,0,0,0.5), 0 22px 60px rgba(0,0,0,0.5)` | The main window |
+| `shadow-menu` | `0 0 0 1px separator, 0 12px 32px rgba(0,0,0,0.55)` | Menus and context menus |
+| `shadow-popover` | `0 0 0 1px separator, 0 16px 40px rgba(0,0,0,0.6)` | Popovers and dialogs anchored to a control |
+| `shadow-float` | `0 0 0 1px separator, 0 8px 24px rgba(0,0,0,0.5)` | The drag preview, tooltips and small floating panels |
+| `shadow-drawer` | `-12px 0 32px rgba(0,0,0,0.35)` | A drawer that slides over the content from the right |
+| `shadow-segment` | `0 1px 2px rgba(0,0,0,0.5)` | The selected segment of a segmented control |
+| `shadow-live` | `0 0 0 3px live, 0 0 48px rgba(255,69,58,0.24)` | The live panel in Live mode |
+
+### Mockup backdrop
+
+| Token | Midnight (default) | Graphite | Black | Use |
+|---|---|---|---|---|
+| `desk` | `#0B0B0B` | `#2A2A2C` | `#000000` | The desktop behind the window in artboards only; not a color of the app |
+
 ## Typography
 
 System font only: `-apple-system, "SF Pro Text", "Helvetica Neue", sans-serif`. Numbers that change use `font-variant-numeric: tabular-nums`.
@@ -103,7 +141,7 @@ No empty regions: when the current item's slides do not fill the grid, it contin
 - **Window**: traffic lights at the left of a unified title bar and toolbar; the title sits next to them; toolbar items are borderless icon buttons that show a rounded fill on hover.
 - **Sidebar (source list)**: translucent material; section headers in Subheadline; rows 28px with an icon; the selected row is a rounded rectangle (radius 6) filled with `accent` when the window is key.
 - **Segmented control**: one rounded container in `control` fill; the selected segment is a lighter rounded fill with a soft shadow. Used for the Prepare / Live switch and for small choices.
-- **Push button**: `control` fill, radius 6, 13px title. Primary uses `accent`. Destructive live actions use a red tint and a text label.
+- **Push button**: `control` fill, radius 6, 13px title. Primary uses `accent-strong` (see Additional tokens). Destructive live actions use a red tint and a text label.
 - **Inspector**: right pane on the sidebar material, with grouped sections and disclosure headers.
 - **Slide thumbnail**: 16:9, radius 6, black background, centered white text; the section name and index below in Subheadline. Live: 3px `live` ring plus a "LIVE" label. Next: 2px `next` ring plus a "NEXT" label. Selected: 3px `accent` ring.
 - **Output monitor**: a 16:9 preview with its name, role and a status dot plus text.
