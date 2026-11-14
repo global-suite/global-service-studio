@@ -43,6 +43,24 @@ final class LibraryIndexTests: XCTestCase {
         XCTAssertEqual(try index.search("cancion").first?.url.deletingLastPathComponent().lastPathComponent, "Songs")
     }
 
+    func testAllSongsAreSortedByTitleIgnoringCaseAndAccents() throws {
+        let (_, index, _) = try makeIndex()
+        for title in ["Zeta Invented", "éter Placeholder", "Alba Nueva", "Ébano"] { try index.save(song(title)) }
+        XCTAssertEqual(try index.allSongs().map(\.title), ["Alba Nueva", "Ébano", "éter Placeholder", "Zeta Invented"])
+    }
+
+    func testFilesThatShareASongIDAreReported() throws {
+        let (library, index, _) = try makeIndex()
+        let url = try index.save(song("Shared Title"))
+        try index.save(song("Alone Title"))
+        XCTAssertEqual(try index.filesWithDuplicateIDs(), [])
+        let copy = library.songsFolder.appendingPathComponent("shared-title copy.song.json")
+        try files.copyItem(at: url, to: copy)
+        try index.reconcile()
+        let names = try index.filesWithDuplicateIDs().map(\.lastPathComponent)
+        XCTAssertEqual(names, [copy.lastPathComponent, url.lastPathComponent])
+    }
+
     func testATitleMatchRanksAboveALyricsMatch() throws {
         let (_, index, _) = try makeIndex()
         try index.save(song("Other Words", lyrics: ["Invented river", "river of placeholder river"]))
@@ -110,6 +128,20 @@ final class LibraryIndexTests: XCTestCase {
 
         try Data("Invented, not a database".utf8).write(to: url)
         XCTAssertEqual(try LibraryIndex(library: library, at: url).reconcile().read, 2)
+    }
+
+    func testALockedIndexIsWaitedForAndNeverDeleted() throws {
+        let (library, index, url) = try makeIndex()
+        try index.save(song("Alpha Title"))
+        var connection: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &connection), SQLITE_OK)
+        XCTAssertEqual(sqlite3_exec(connection, "BEGIN EXCLUSIVE", nil, nil, nil), SQLITE_OK)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) {
+            sqlite3_exec(connection, "COMMIT", nil, nil, nil)
+            sqlite3_close(connection)
+        }
+        let reopened = try LibraryIndex(library: library, at: url)
+        XCTAssertEqual(try titles(reopened, "alpha"), ["Alpha Title"])
     }
 
     func testACorruptedIndexWithAValidHeaderIsRebuilt() throws {
