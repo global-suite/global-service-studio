@@ -1,0 +1,49 @@
+{
+  "title": "Service plan",
+  "brief": "How an operator builds and runs the order of service (plan) in Global Service Studio. Owner rule: Live only ever shows items of the plan; clicking a song in the Library never changes what is on air, it opens the song in Prepare, and songs reach Live only by being in the plan. Covers building the plan in Prepare (add from the Library by drag and by an explicit Add to Service action; headers, presentation and media placeholders, plain items with a length; reorder; remove; per-item arrangement and sequence for that day without changing the song, key, notes by category; total and per-section times; title, date and service time; empty plan; templates) and running it in Live (live item marked with text, not only color; Next across items; the slide grid continuing with the next items under their own headers; a Library click in Live never goes on air). Three directions, each at 1440×900 and 3440×1440.",
+  "feature": "odd/tasks/service-plan.md",
+  "artboards": [
+    {
+      "file": "01-sidebar-first-prepare.html",
+      "title": "A · Sidebar first · Prepare",
+      "tradeoff": "Closest to today's app and to other presentation software: the plan lives in the sidebar Service section and is built by dragging from the Library section under it, with a + menu for headers, items and placeholders; the main area edits one item at a time. Cheapest to build on the current Sidebar.swift, but the 240 px sidebar only shows titles and lengths, so the times of the whole service live in the inspector",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "02-sidebar-first-live-wide.html",
+      "title": "A · Sidebar first · Live (ultrawide)",
+      "tradeoff": "The native ultrawide Live with the plan in the sidebar: the live item and its sections are marked LIVE, the next item NEXT, Next crosses into the next item, and the grid continues through the rest of the service. A Library click opens a popover that offers Add as Next Item or Open in Prepare and never touches the screens; the popover covers part of the stage column while it is open",
+      "width": 3440,
+      "height": 1440
+    },
+    {
+      "file": "03-plan-board-prepare.html",
+      "title": "B · Plan board · Prepare",
+      "tradeoff": "A run sheet, like the one a worship leader prints: start times, key, length, position and notes for every row, with the selected row opening inline for its arrangement, sequence and notes, and the Library as a panel on the right. Best for planning the whole service and its timing at once; it adds a view that Live does not share, and at 1440 the notes column only fits one note per row",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "04-plan-board-prepare-wide.html",
+      "title": "B · Plan board · Prepare (ultrawide)",
+      "tradeoff": "The run sheet at full width: each note category (Vocals, Band, Media, Lighting) becomes its own column, a bar shows how long each section is, and the selected item's slides and the Library sit beside it. The densest overview of the service for the planning team; with a short service the table leaves empty space under its last row",
+      "width": 3440,
+      "height": 1440
+    },
+    {
+      "file": "05-keyboard-planner-prepare.html",
+      "title": "C · Keyboard planner · Prepare",
+      "tradeoff": "Built for an operator who plans with the keyboard: the plan column shows clock times and the insertion point, ⌘L opens a Library drawer with the search already focused, ⌘↩ adds after the selection, ⌥↑ ⌥↓ move, and the sequence is typed as part codes (V1 C V2 C). Fastest for a trained operator; the hidden sidebar and typed sequence are less discoverable for a volunteer",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "06-keyboard-planner-live-wide.html",
+      "title": "C · Keyboard planner · Live (ultrawide)",
+      "tradeoff": "The plan column stays in Live with start times, elapsed time on the live item, LIVE and NEXT labels, and keys to jump between items (⌥→ ⌥←); a timing and Media-notes panel replaces the stage message. The Library drawer in Live can only add to the service (Add as Next Item, Add at End), never show. Most information while running; the widest layout, and with the drawer open the slide grid drops to four per row",
+      "width": 3440,
+      "height": 1440
+    }
+  ]
+}
