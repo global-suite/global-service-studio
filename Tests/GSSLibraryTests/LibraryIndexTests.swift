@@ -152,8 +152,13 @@ final class LibraryIndexTests: XCTestCase {
         let (library, _, url) = try makeIndex()
         let words = ["luz", "canción", "río", "amanecer", "placeholder", "invented", "montaña", "corazón", "alba", "camino", "estrella", "voz"]
         for n in 0..<5_000 {
-            let line = { (i: Int) in (0..<6).map { words[(n * 7 + i * 3 + $0 * 5) % words.count] }.joined(separator: " ") }
-            var song = self.song("\(words[n % words.count].capitalized) \(words[(n / 12) % words.count]) \(n)", lyrics: (0..<24).map(line), author: "Invented Writer \(n % 50)")
+            var lyrics: [String] = []
+            for i in 0..<24 {
+                let picked: [String] = (0..<6).map { (k: Int) -> String in words[(n * 7 + i * 3 + k * 5) % words.count] }
+                lyrics.append(picked.joined(separator: " "))
+            }
+            let title = "\(words[n % words.count].capitalized) \(words[(n / 12) % words.count]) \(n)"
+            var song = self.song(title, lyrics: lyrics, author: "Invented Writer \(n % 50)")
             song.ccliNumber = String(1_000_000 + n)
             try song.encoded().write(to: library.songsFolder.appendingPathComponent("song-\(n).song.json"))
         }
