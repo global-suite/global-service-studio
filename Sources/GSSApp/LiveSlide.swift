@@ -25,14 +25,15 @@ public struct SongPart: Equatable, Sendable {
 
     /// The parts in the order of the default arrangement; a part is a repeat when its section was sung before.
     /// Shown once per run, a run's first part takes the slides, named "Chorus ×3", and the others have none.
-    public static func parts(of song: Song, mode: RepetitionMode = .separateSlides) -> [SongPart] {
+    /// Lines are grouped into slides of up to `maxLines` by `SlideBreaks`; the defaults give slides of two lines.
+    public static func parts(of song: Song, mode: RepetitionMode = .separateSlides, maxLines: Int = 2, wrap: ThemeWrap = .natural) -> [SongPart] {
         let order = song.arrangements?.first { $0.id == song.defaultArrangement }?.sequence ?? song.sections.map(\.id)
         let sections = order.compactMap { id in song.sections.first { $0.id == id } }
         let runs = repetitions(of: sections.map(\.id))
         return zip(sections, runs).reduce(into: []) { parts, item in
             let (section, run) = item
             let texts = section.lines.map { $0.text[song.language] ?? "" }
-            let groups = stride(from: 0, to: texts.count, by: 2).map { Array(texts[$0..<min($0 + 2, texts.count)]) }
+            let groups = SlideBreaks.ranges(of: section.lines, maxLines: maxLines, wrap: wrap).map { Array(texts[$0]) }
             let once = mode == .oncePerRun, base = Strings.sectionName(section)
             let name = once && run.count > 1 ? String(format: Strings.text("%1$@ ×%2$ld"), base, run.count) : base
             let slides = once && run.repetition > 1 ? [] : groups.enumerated().map {
