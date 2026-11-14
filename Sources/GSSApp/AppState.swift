@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import GSSCore
+import GSSLibrary
 
 /// The two modes of the main window.
 public enum AppMode: CaseIterable, Sendable {
@@ -27,6 +28,17 @@ public enum AppCommand: Equatable, Sendable {
     case addSection(kind: SongSectionKind, at: Int)
     /// Chooses how Live shows repeated parts, saved in the settings; the live slide stays on the same part.
     case setRepetitionMode(RepetitionMode)
+    /// Makes a folder the library, creating its layout when the folder is empty, and saves it in the settings; a refused folder is reported in `alert`.
+    case chooseLibraryFolder(URL)
+    /// Saves the current song in the library, creating the library the first time; a failure is reported in `alert`.
+    case saveSong
+    /// Opens the most recently modified song of the library when the folder holds one; never creates the library.
+    case openMostRecentSong
+}
+
+/// A failure the window shows to the operator, already localized.
+public struct AppAlert: Equatable, Sendable {
+    public let title, message: String
 }
 
 /// A display, by its Core Graphics display ID.
@@ -48,12 +60,17 @@ public final class AppState: ObservableObject {
     @Published public private(set) var outputScreen: ScreenID?
     /// How Live shows repeated parts.
     @Published public private(set) var repetitionMode: RepetitionMode
+    /// The library folder songs are saved to.
+    @Published public private(set) var libraryFolder: URL
+    /// The last failure to show, set again for every new one.
+    @Published public private(set) var alert: AppAlert?
     /// Where settings changes are saved; nil keeps them in memory.
     private let settings: AppSettings?
 
     public init(settings: AppSettings? = nil) {
         let mode = settings?.repetitionMode ?? .separateSlides, parts = SongPart.parts(of: SampleSong.song, mode: mode)
         (song, self.parts, slides, repetitionMode, self.settings) = (SampleSong.song, parts, parts.flatMap(\.slides), mode, settings)
+        libraryFolder = settings?.libraryFolder ?? AppSettings.defaultLibraryFolder
         selectedPart = livePart
     }
 
@@ -104,7 +121,22 @@ public final class AppState: ObservableObject {
             }
         case .addSection(let kind, let index): addSection(kind, at: index)
         case .setRepetitionMode(let mode): setRepetitionMode(mode)
+        case .chooseLibraryFolder(let folder):
+            library("The library folder could not be opened.") {
+                _ = try Library.open(folder)
+                settings?.libraryFolder = folder
+                libraryFolder = folder
+            }
+        case .saveSong: library("The song could not be saved.") { try Library.open(libraryFolder).save(song) }
+        case .openMostRecentSong:
+            guard Library.exists(at: libraryFolder) else { return }
+            library("The library folder could not be opened.") { try Library.open(libraryFolder).songs().mostRecent.map { load($0.song) } }
         }
+    }
+
+    /// Runs a library operation; a failure becomes an alert with the localized title.
+    private func library(_ title: String, _ operation: () throws -> Void) {
+        do { try operation() } catch { alert = AppAlert(title: Strings.text(title), message: Strings.libraryMessage(for: error)) }
     }
 
     /// Replaces the primary-language words of a section, keeping each line's other fields, and rebuilds the slides.

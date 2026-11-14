@@ -104,3 +104,11 @@
 /* Settings: every repetition of a part has its own slides. */ "Separate slides for each repetition" = "Diapositivas separadas en cada repetición";
 /* Settings: a part sung several times in a row is shown once. */ "Show repeated parts once" = "Mostrar las partes repetidas una sola vez";
 /* Live mode: a part shown once for a run of repeats; %1$@ is the section, %2$ld the times it is sung in a row. */ "%1$@ ×%2$ld" = "%1$@ ×%2$ld";
+/* File menu item (Cmd-S) that saves the current song in the library folder. */ "Save Song" = "Guardar canción";
+/* File menu item that chooses the folder songs are saved to. */ "Choose Library Folder…" = "Elegir carpeta de biblioteca…";
+/* Alert title when a folder cannot be used as the library. */ "The library folder could not be opened." = "No se pudo abrir la carpeta de la biblioteca.";
+/* Alert title when saving the current song fails. */ "The song could not be saved." = "No se pudo guardar la canción.";
+/* Alert message: the chosen folder has other files and no library.json. */ "This folder is not empty and is not a library. Choose an empty folder or an existing library." = "Esta carpeta no está vacía y no es una biblioteca. Elige una carpeta vacía o una biblioteca existente.";
+/* Alert message: the folder's library.json has another format. */ "The library.json file in this folder belongs to another app." = "El archivo library.json de esta carpeta pertenece a otra app.";
+/* Alert message: the folder's library.json has a newer version. */ "This library was made by a newer version of Global Service Studio." = "Esta biblioteca se creó con una versión más nueva de Global Service Studio.";
+/* Alert message: the library folder or a song file could not be read or written. */ "The folder could not be read or written. Check that it exists and that you can change it." = "No se pudo leer ni escribir en la carpeta. Comprueba que exista y que puedas modificarla.";

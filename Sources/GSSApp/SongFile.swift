@@ -32,4 +32,24 @@ extension MainWindowController {
             }
         }
     }
+
+    /// File > Save Song: saves the current song in the library folder.
+    @objc func saveSong(_ sender: Any?) { state.perform(.saveSong) }
+
+    /// File > Choose Library Folder…: chooses a folder, or creates one, and makes it the library.
+    @objc func chooseLibraryFolder(_ sender: Any?) {
+        guard let window else { return }
+        let panel = NSOpenPanel()
+        (panel.canChooseFiles, panel.canChooseDirectories, panel.canCreateDirectories) = (false, true, true)
+        panel.beginSheetModal(for: window) { [weak self] response in
+            if response == .OK, let url = panel.url { self?.state.perform(.chooseLibraryFolder(url)) }
+        }
+    }
+
+    /// Shows a failure as an alert on the window.
+    func show(_ failure: AppAlert) {
+        let alert = NSAlert()
+        (alert.messageText, alert.informativeText) = (failure.title, failure.message)
+        if let window, window.isVisible { alert.beginSheetModal(for: window) } else { alert.runModal() }
+    }
 }

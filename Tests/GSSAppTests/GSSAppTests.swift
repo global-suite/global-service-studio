@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import GSSCore
+import GSSLibrary
 import SwiftUI
 import XCTest
 @testable import GSSApp
@@ -558,5 +559,54 @@ final class GSSAppTests: XCTestCase {
         XCTAssertEqual(state.liveIndex, 9, "the live slide stays on the second verse")
         XCTAssertEqual(String(format: Strings.text("%1$@ ×%2$ld", language: "es"), "Coro", 3), "Coro ×3")
         XCTAssertEqual(AppState().repetitionMode, .separateSlides)
+    }
+
+    private func libraryFolder() -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("GSSAppTests-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        return url
+    }
+
+    func testSaveSongCommandWritesTheCurrentSongToTheChosenLibrary() throws {
+        let (settings, _) = settings(), folder = libraryFolder()
+        XCTAssertEqual(settings.libraryFolder.path, NSHomeDirectory() + "/Documents/Global Service Studio Library")
+        let state = AppState(settings: settings)
+        state.perform(.chooseLibraryFolder(folder))
+        XCTAssertEqual([state.libraryFolder, settings.libraryFolder].map(\.path), [folder.path, folder.path])
+        state.perform(.saveSong)
+        state.perform(.setLines(sectionID: "b", lines: ["Invented words"]))
+        state.perform(.saveSong)
+        XCTAssertEqual(try Library.open(folder).songs().songs.map(\.song), [state.song])
+        XCTAssertNil(state.alert)
+        let file = try XCTUnwrap(MainMenu.make(output: NSMenu()).items.first { $0.title == Strings.text("File") }?.submenu)
+        XCTAssertEqual(file.items.map(\.keyEquivalent), ["o", "s", ""])
+        XCTAssertEqual(file.items.map(\.action), [#selector(MainWindowController.openSong(_:)), #selector(MainWindowController.saveSong(_:)), #selector(MainWindowController.chooseLibraryFolder(_:))])
+        XCTAssertEqual(["Save Song", "Choose Library Folder…"].map { Strings.text($0, language: "es") }, ["Guardar canción", "Elegir carpeta de biblioteca…"])
+    }
+
+    func testARefusedLibraryFolderIsReportedAndLeftUnchanged() throws {
+        let state = AppState(), folder = libraryFolder(), previous = state.libraryFolder
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data("Invented notes".utf8).write(to: folder.appendingPathComponent("notes.txt"))
+        state.perform(.chooseLibraryFolder(folder))
+        XCTAssertEqual(state.libraryFolder, previous)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["notes.txt"])
+        XCTAssertEqual(state.alert, AppAlert(title: Strings.text("The library folder could not be opened."),
+                                             message: Strings.text("This folder is not empty and is not a library. Choose an empty folder or an existing library.")))
+        XCTAssertEqual(Strings.text("The song could not be saved.", language: "es"), "No se pudo guardar la canción.")
+    }
+
+    func testOpenMostRecentSongLoadsTheLatestSongOrKeepsTheSample() throws {
+        let state = AppState(), folder = libraryFolder(), sample = state.song
+        state.perform(.chooseLibraryFolder(folder.appendingPathComponent("Missing")))
+        try FileManager.default.removeItem(at: folder)
+        state.perform(.openMostRecentSong)
+        XCTAssertEqual(state.song, sample)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path), "opening does not create the library")
+        let song = try PlainTextSongImporter.song(from: "Invented words", fallbackTitle: "Placeholder")
+        try Library.open(folder).save(song)
+        state.perform(.chooseLibraryFolder(folder))
+        state.perform(.openMostRecentSong)
+        XCTAssertEqual(state.song, song)
     }
 }

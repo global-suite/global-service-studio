@@ -15,7 +15,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
     let state: AppState
     let modeControl = NSSegmentedControl(labels: AppMode.allCases.map(\.title), trackingMode: .selectOne, target: nil, action: nil)
     private let splitViewController = NSSplitViewController()
-    private var subscription: AnyCancellable?
+    private var subscription, alertSubscription: AnyCancellable?
     private var keyMonitor: Any?
 
     init(state: AppState, appearance: Appearance = .standard) {
@@ -43,6 +43,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
         (modeControl.target, modeControl.action) = (self, #selector(modeControlChanged(_:)))
         modeControl.toolTip = Strings.text("Switch between Prepare and Live")
         subscription = state.$mode.sink { [weak self] in self?.modeControl.selectedSegment = AppMode.allCases.firstIndex(of: $0) ?? 0 }
+        alertSubscription = state.$alert.compactMap { $0 }.sink { [weak self] in self?.show($0) }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] in self?.handleKey($0) ?? $0 }
     }
 
