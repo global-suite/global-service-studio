@@ -609,4 +609,112 @@ final class GSSAppTests: XCTestCase {
         state.perform(.openMostRecentSong)
         XCTAssertEqual(state.song, song)
     }
+
+    /// A state whose library is `folder`, with its index in a temporary folder, once the index is loaded.
+    private func libraryState(_ folder: URL) -> AppState {
+        let indexes = libraryFolder()
+        let state = AppState(indexURL: { indexes.appendingPathComponent("\($0.id.uuidString).sqlite") })
+        state.perform(.chooseLibraryFolder(folder))
+        waitForLibrary(state)
+        return state
+    }
+
+    private func waitForLibrary(_ state: AppState) {
+        let deadline = Date(timeIntervalSinceNow: 10)
+        while state.isLibraryLoading, Date() < deadline { RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01)) }
+        XCTAssertFalse(state.isLibraryLoading)
+    }
+
+    private func invented(_ title: String) throws -> Song {
+        try PlainTextSongImporter.song(from: "Invented words of \(title)", fallbackTitle: title)
+    }
+
+    func testTheLibraryListIsSortedByTitleAndSearchFiltersIt() throws {
+        let folder = libraryFolder(), library = try Library.open(folder)
+        for title in ["Zeta Invented", "Canción del Alba", "Amanecer Nuevo", "Cantar Placeholder"] { try library.save(try invented(title)) }
+        let state = libraryState(folder)
+        XCTAssertEqual(state.librarySongs.map(\.title), ["Amanecer Nuevo", "Canción del Alba", "Cantar Placeholder", "Zeta Invented"])
+        state.perform(.setLibrarySearch("cancion"))
+        XCTAssertEqual(state.librarySearch, "cancion")
+        XCTAssertEqual(state.librarySongs.map(\.title), ["Canción del Alba"])
+        state.perform(.setLibrarySearch("CAN"))
+        XCTAssertEqual(Set(state.librarySongs.map(\.title)), ["Canción del Alba", "Cantar Placeholder"])
+        state.perform(.setLibrarySearch(" "))
+        XCTAssertEqual(state.librarySongs.count, 4)
+        XCTAssertEqual(Strings.songCount(4, language: "es"), "4 canciones")
+        XCTAssertEqual(Strings.songCount(1, language: "en"), "1 song")
+    }
+
+    func testOpeningALibrarySongLoadsItAndMarksItOpen() throws {
+        let folder = libraryFolder(), song = try invented("Alba Invented")
+        try Library.open(folder).save(song)
+        let state = libraryState(folder)
+        XCTAssertNil(state.openSongFile, "the sample song is not in the library")
+        let row = try XCTUnwrap(state.librarySongs.first)
+        state.perform(.openLibrarySong(row.url))
+        XCTAssertEqual(state.song, song)
+        XCTAssertEqual(state.openSongFile, row.url)
+        state.perform(.openLibrarySong(folder.appendingPathComponent("Songs/missing.song.json")))
+        XCTAssertEqual(state.song, song)
+        XCTAssertEqual(state.alert?.title, Strings.text("The song could not be opened."))
+    }
+
+    func testSavingASongAddsItToTheListAtOnce() throws {
+        let folder = libraryFolder()
+        try Library.open(folder).save(try invented("Zeta Invented"))
+        let state = libraryState(folder)
+        state.perform(.loadSong(try invented("Alba Invented")))
+        state.perform(.saveSong)
+        XCTAssertFalse(state.isLibraryLoading)
+        XCTAssertEqual(state.librarySongs.map(\.title), ["Alba Invented", "Zeta Invented"])
+        XCTAssertEqual(state.openSongFile, state.librarySongs.first?.url)
+        XCTAssertNil(state.alert)
+    }
+
+    func testAnEmptyLibraryShowsAHintAndTheFirstSaveListsTheSong() throws {
+        let folder = libraryFolder(), state = libraryState(folder)
+        XCTAssertEqual(state.librarySongs, [])
+        XCTAssertEqual(state.libraryProblems, [])
+        XCTAssertEqual(Strings.text("Save a song with ⌘S or open a song file with ⌘O.", language: "es"), "Guarda una canción con ⌘S o abre un archivo de canción con ⌘O.")
+        state.perform(.saveSong)
+        waitForLibrary(state)
+        XCTAssertEqual(state.librarySongs.map(\.id), [state.song.id])
+    }
+
+    func testInvalidFilesAndSharedIDsAreListedAsProblems() throws {
+        let folder = libraryFolder(), library = try Library.open(folder)
+        let url = try library.save(try invented("Alba Invented"))
+        try FileManager.default.copyItem(at: url, to: library.songsFolder.appendingPathComponent("copy.song.json"))
+        try Data("{".utf8).write(to: library.songsFolder.appendingPathComponent("broken.song.json"))
+        let state = libraryState(folder)
+        let invalid = LibraryProblem(file: "broken.song.json", reason: Strings.text("This file is not a valid song file."))
+        let shared = Strings.text("Another file has the same song ID.")
+        let expected = [invalid, LibraryProblem(file: url.lastPathComponent, reason: shared), LibraryProblem(file: "copy.song.json", reason: shared)]
+        XCTAssertEqual(state.libraryProblems, expected)
+        XCTAssertEqual(Strings.problemsTitle(3, language: "es"), "Problemas (3)")
+        let copy = library.songsFolder.appendingPathComponent("copy.song.json")
+        state.perform(.openLibrarySong(copy))
+        XCTAssertEqual(state.openSongFile, copy, "the clicked file is selected, not the first file with its id")
+    }
+
+    func testSwitchingFoldersSavingAndSearchingWhileLoadingEndOnTheLastFolderWithoutAnAlert() throws {
+        let first = libraryFolder(), second = libraryFolder(), indexes = libraryFolder(), queue = DispatchQueue(label: "GSSAppTests.held")
+        try Library.open(first).save(try invented("First Invented"))
+        try Library.open(second).save(try invented("Second Invented"))
+        queue.suspend()
+        let state = AppState(indexURL: { indexes.appendingPathComponent("\($0.id.uuidString).sqlite") }, indexQueue: queue)
+        for folder in [first, second, first] { state.perform(.chooseLibraryFolder(folder)) }
+        state.perform(.setLibrarySearch("first"))
+        state.perform(.loadSong(try invented("Alba Invented")))
+        state.perform(.saveSong)
+        queue.resume()
+        waitForLibrary(state)
+        XCTAssertNil(state.alert)
+        XCTAssertEqual(state.librarySongs.map(\.title), ["First Invented"])
+        state.perform(.setLibrarySearch(""))
+        XCTAssertEqual(state.librarySongs.map(\.title), ["Alba Invented", "First Invented"])
+        state.perform(.chooseLibraryFolder(second))
+        waitForLibrary(state)
+        XCTAssertEqual(state.librarySongs.map(\.title), ["Second Invented"])
+    }
 }
