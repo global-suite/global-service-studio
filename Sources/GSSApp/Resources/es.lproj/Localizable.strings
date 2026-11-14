@@ -112,3 +112,14 @@
 /* Alert message: the folder's library.json has another format. */ "The library.json file in this folder belongs to another app." = "El archivo library.json de esta carpeta pertenece a otra app.";
 /* Alert message: the folder's library.json has a newer version. */ "This library was made by a newer version of Global Service Studio." = "Esta biblioteca se creó con una versión más nueva de Global Service Studio.";
 /* Alert message: the library folder or a song file could not be read or written. */ "The folder could not be read or written. Check that it exists and that you can change it." = "No se pudo leer ni escribir en la carpeta. Comprueba que exista y que puedas modificarla.";
+
+/* Output menu: submenu with the displays and the show command of the audience output. */ "Audience Output" = "Salida al público";
+/* Output menu: submenu with the displays and the show command of the key output for a video switcher. */ "Key Output" = "Salida de key";
+/* Key Output menu item (Cmd-Shift-K) that shows the lyrics over the key color on the chosen display. */ "Show Key Output" = "Mostrar salida de key";
+/* Key Output menu item (Cmd-Shift-K) that takes the key output off its display. */ "Hide Key Output" = "Ocultar salida de key";
+/* Key Output menu: disabled item and tooltip shown when only one display is connected. */ "Connect a second display to show the key output." = "Conecta una segunda pantalla para mostrar la salida de key.";
+/* Settings: label of the key output color picker. */ "Key color" = "Color de key";
+/* Settings: key color choice. */ "Green" = "Verde";
+/* Settings: key color choice. */ "Blue" = "Azul";
+/* Settings: key color choice that enables the color well. */ "Custom" = "Personalizado";
+/* Settings: explanation under the key color picker. */ "The Key output shows the lyrics over this color, for a video switcher to remove. It never shows backgrounds." = "La salida de key muestra la letra sobre este color para que el switcher de video lo quite. Nunca muestra fondos.";

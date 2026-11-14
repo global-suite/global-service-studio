@@ -112,3 +112,14 @@
 /* Alert message: the folder's library.json has another format. */ "The library.json file in this folder belongs to another app." = "The library.json file in this folder belongs to another app.";
 /* Alert message: the folder's library.json has a newer version. */ "This library was made by a newer version of Global Service Studio." = "This library was made by a newer version of Global Service Studio.";
 /* Alert message: the library folder or a song file could not be read or written. */ "The folder could not be read or written. Check that it exists and that you can change it." = "The folder could not be read or written. Check that it exists and that you can change it.";
+
+/* Output menu: submenu with the displays and the show command of the audience output. */ "Audience Output" = "Audience Output";
+/* Output menu: submenu with the displays and the show command of the key output for a video switcher. */ "Key Output" = "Key Output";
+/* Key Output menu item (Cmd-Shift-K) that shows the lyrics over the key color on the chosen display. */ "Show Key Output" = "Show Key Output";
+/* Key Output menu item (Cmd-Shift-K) that takes the key output off its display. */ "Hide Key Output" = "Hide Key Output";
+/* Key Output menu: disabled item and tooltip shown when only one display is connected. */ "Connect a second display to show the key output." = "Connect a second display to show the key output.";
+/* Settings: label of the key output color picker. */ "Key color" = "Key color";
+/* Settings: key color choice. */ "Green" = "Green";
+/* Settings: key color choice. */ "Blue" = "Blue";
+/* Settings: key color choice that enables the color well. */ "Custom" = "Custom";
+/* Settings: explanation under the key color picker. */ "The Key output shows the lyrics over this color, for a video switcher to remove. It never shows backgrounds." = "The Key output shows the lyrics over this color, for a video switcher to remove. It never shows backgrounds.";

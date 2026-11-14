@@ -33,4 +33,20 @@ final class OutputLayerTests: XCTestCase {
         let decoded = try JSONDecoder().decode([OutputLayer].self, from: encoded)
         XCTAssertEqual(decoded, OutputLayer.allCases)
     }
+
+    func testAudienceShowsEveryLayerInCompositingOrder() {
+        XCTAssertEqual(OutputRole.audience.layers, OutputLayer.compositingOrder)
+    }
+
+    func testKeyShowsOnlySlidePropsAndMessagesAndNeverBackgrounds() {
+        XCTAssertEqual(OutputRole.key.layers, [.slide, .props, .messages])
+        XCTAssertFalse(OutputRole.key.shows(.media))
+        XCTAssertFalse(OutputRole.key.shows(.videoInput))
+        XCTAssertFalse(OutputRole.key.shows(.screenColor))
+        XCTAssertTrue(OutputRole.key.shows(.slide))
+    }
+
+    func testStageShowsTheSlideAndMessages() {
+        XCTAssertEqual(OutputRole.stage.layers, [.slide, .messages])
+    }
 }
