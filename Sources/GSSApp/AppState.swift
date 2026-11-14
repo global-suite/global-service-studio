@@ -24,8 +24,14 @@ public enum AppCommand: Equatable, Sendable {
     case selectKeyOutputScreen(ScreenID?)
     /// Sets the key color, saved in the settings; anything but `#RRGGBB` is ignored.
     case setKeyColor(String)
-    /// Makes a song the current one, from its first slide; a song without slides is ignored.
+    /// Makes a song the one prepared, from its first part; a song without slides is ignored. It never changes what is on air.
     case loadSong(Song)
+    /// Makes a plan the program, with the songs its items refer to; nothing is on air until Next or a slide click.
+    case openPlan(Plan, songs: [Song])
+    /// Shows a plan item's slides in the Live grid without putting them on air; nil or the live item returns to it, an item without slides is ignored.
+    case previewItem(Int?)
+    /// Adds a song file of the library to the plan, after the live item or at the end; it never goes on air by itself.
+    case addToService(URL, position: ServicePosition)
     /// Edits the order of the default arrangement: a part moves to a final position, a section is inserted (repeated) at a position,
     /// a part leaves the order (never the last one), or a new section of a kind is created at a position. Invalid indexes are ignored.
     case moveArrangementItem(from: Int, to: Int)
@@ -69,7 +75,14 @@ public typealias ScreenID = UInt32
 /// The state the interface shows, changed only by `perform(_:)`.
 public final class AppState: ObservableObject {
     @Published public private(set) var mode: AppMode = .prepare
+    /// The live slide within `slides` when the live item shows exactly the prepared song's slides, else -1.
     @Published public private(set) var liveIndex = 0
+    /// The plan Live runs, with its songs and slides; nothing else goes on air.
+    @Published public private(set) var program: Program
+    /// The live slide, an index into `program.slides`; -1 before the first slide, with nothing on air.
+    @Published public private(set) var programIndex = 0
+    /// The plan item the Live grid previews, not on air; nil follows the live item.
+    @Published public private(set) var previewItem: Int?
     @Published public private(set) var isCleared = false
     @Published public private(set) var song: Song
     @Published public private(set) var parts: [SongPart]
@@ -126,19 +139,28 @@ public final class AppState: ObservableObject {
         (self.indexURL, self.indexQueue) = (indexURL, indexQueue)
         let mode = settings?.repetitionMode ?? .separateSlides, parts = SongPart.parts(of: SampleSong.song, mode: mode)
         (song, self.parts, slides, repetitionMode, self.settings) = (SampleSong.song, parts, parts.flatMap(\.slides), mode, settings)
+        // A plan with the sample song, run until a plan is opened.
+        program = Program(plan: Plan(title: "Sample", items: [PlanItem(id: "sample", kind: .song, song: SampleSong.song.id)]), songs: [SampleSong.song.id: SampleSong.song], mode: mode)
         libraryFolder = settings?.libraryFolder ?? AppSettings.defaultLibraryFolder
         keyColor = settings?.keyColor ?? KeyColor.green.hex
         selectedPart = livePart
     }
 
-    /// The part that holds the live slide.
-    public var livePart: Int { part(containing: liveIndex) }
+    /// The part of the prepared song that holds the live slide, or -1 when it is not on air.
+    public var livePart: Int { liveIndex < 0 ? -1 : part(containing: liveIndex) }
     /// The part that holds a slide of the song.
     public func part(containing slide: Int) -> Int { parts.firstIndex { $0.slideRange.contains(slide) } ?? 0 }
 
-    public var liveSlide: LiveSlide { slides[liveIndex] }
-    public var nextSlide: LiveSlide? { slides.indices.contains(liveIndex + 1) ? slides[liveIndex + 1] : nil }
-    public var previousSlide: LiveSlide? { liveIndex > 0 ? slides[liveIndex - 1] : nil }
+    /// Whether a slide of the program is live.
+    public var isOnAir: Bool { program.slides.indices.contains(programIndex) }
+    /// The plan item of the live slide.
+    public var liveItem: Int? { isOnAir ? program.slides[programIndex].item : nil }
+    /// The plan item Next goes to after the live item's slides.
+    public var nextItem: Int? { program.slides.dropFirst(liveItem.map { program.range(of: $0).upperBound } ?? 0).first?.item }
+    /// The live slide of the program; a blank one when nothing is on air.
+    public var liveSlide: LiveSlide { isOnAir ? program.slides[programIndex].slide : LiveSlide(section: "", part: 0, partCount: 0, lines: []) }
+    public var nextSlide: LiveSlide? { program.slides.indices.contains(programIndex + 1) ? program.slides[programIndex + 1].slide : nil }
+    public var previousSlide: LiveSlide? { programIndex > 0 ? program.slides[programIndex - 1].slide : nil }
     /// The lines the outputs show: none while cleared.
     public var shownLines: [String] { isCleared ? [] : liveSlide.lines }
 
@@ -147,8 +169,8 @@ public final class AppState: ObservableObject {
     public func perform(_ command: AppCommand) {
         switch command {
         case .setMode(let mode): if mode != self.mode { self.mode = mode }
-        case .nextSlide: goToSlide(liveIndex + 1)
-        case .previousSlide: goToSlide(liveIndex - 1)
+        case .nextSlide: goToSlide(programIndex + 1)
+        case .previousSlide: goToSlide(programIndex - 1)
         case .goToSlide(let index): goToSlide(index)
         case .clearSlide: if !isCleared { isCleared = true }
         case .clearAll:
@@ -173,6 +195,17 @@ public final class AppState: ObservableObject {
         case .loadSong(let song):
             load(song)
             if self.song == song { openSongFile = nil }
+        case .openPlan(let plan, let songs):
+            program = Program(plan: plan, songs: Dictionary(songs.map { ($0.id, $0) }) { first, _ in first }, mode: repetitionMode)
+            (programIndex, previewItem) = (-1, nil)
+            syncLiveIndex()
+        case .previewItem(let item):
+            guard let item, item != liveItem else { if previewItem != nil { previewItem = nil }; return }
+            if !program.range(of: item).isEmpty, item != previewItem { previewItem = item }
+        case .addToService(let url, let position):
+            do { add(try Song.decode(from: Data(contentsOf: url)), position) } catch {
+                alert = AppAlert(title: Strings.text("The song could not be opened."), message: Strings.text("This file could not be read."))
+            }
         case .moveArrangementItem(let from, let to):
             editOrder { order in
                 guard order.indices.contains(from), order.indices.contains(to), from != to else { return nil }
@@ -220,6 +253,40 @@ public final class AppState: ObservableObject {
         case .setBackground(let background): setBackground(background)
         case .clearBackground: setBackground(.none)
         }
+    }
+
+    /// Adds a song item to the plan after the live item (first when nothing is on air) or at the end, keeping the live slide and the preview.
+    private func add(_ song: Song, _ position: ServicePosition) {
+        var plan = program.plan
+        let index = position == .end ? plan.items.count : liveItem.map { $0 + 1 } ?? 0
+        plan.items.insert(PlanItem(id: UUID().uuidString.lowercased(), kind: .song, title: song.title, song: song.id), at: index)
+        if let preview = previewItem, preview >= index { previewItem = preview + 1 }
+        rebuildProgram(plan: plan, songs: program.songs.merging([song.id: song]) { old, _ in old })
+    }
+
+    /// Rebuilds the program keeping the live slide on its item: on `liveIndex` when the item shows the prepared slides, else at its place, clamped.
+    private func rebuildProgram(plan: Plan? = nil, songs: [UUID: Song]? = nil) {
+        let item = liveItem, offset = item.map { programIndex - program.range(of: $0).lowerBound } ?? 0
+        program = Program(plan: plan ?? program.plan, songs: songs ?? program.songs, mode: repetitionMode)
+        if let item {
+            let range = program.range(of: item)
+            let prepared = liveIndex >= 0 && program.slides[range].map(\.slide) == slides
+            let index = range.isEmpty ? min(programIndex, program.slides.count - 1) : range.lowerBound + min(prepared ? liveIndex : offset, range.count - 1)
+            if index != programIndex { programIndex = index }
+        }
+        syncLiveIndex()
+    }
+
+    /// Puts the edited prepared song into the program when the plan holds it.
+    private func preparedSongChanged() {
+        if program.songs[song.id] != nil { rebuildProgram(songs: program.songs.merging([song.id: song]) { $1 }) }
+    }
+
+    /// Points `liveIndex` at the live slide within the prepared song when the live item shows exactly its slides, else -1.
+    private func syncLiveIndex() {
+        let range = liveItem.map { program.range(of: $0) } ?? 0..<0
+        let index = !range.isEmpty && program.slides[range].map(\.slide) == slides ? programIndex - range.lowerBound : -1
+        if index != liveIndex { liveIndex = index }
     }
 
     /// Validates a background and decodes its image before publishing it; invalid ones and the current one are ignored.
@@ -325,6 +392,7 @@ public final class AppState: ObservableObject {
         parts = SongPart.parts(of: song, mode: repetitionMode)
         slides = parts.flatMap(\.slides)
         if liveIndex >= slides.count { liveIndex = slides.count - 1 }
+        preparedSongChanged()
     }
 
     /// Changes the order of the default arrangement, creating one when the song has none; `edit` returns the part to select, or nil to ignore the command.
@@ -351,6 +419,7 @@ public final class AppState: ObservableObject {
         let index = min(live ?? liveIndex, slides.count - 1)
         if index != liveIndex { liveIndex = index }
         if selected != selectedPart { selectedPart = selected }
+        preparedSongChanged()
     }
 
     /// Whether a section has words other than the placeholder a new section starts with.
@@ -380,11 +449,12 @@ public final class AppState: ObservableObject {
     private func setRepetitionMode(_ mode: RepetitionMode) {
         settings?.repetitionMode = mode
         guard mode != repetitionMode else { return }
-        let newParts = SongPart.parts(of: song, mode: mode), offset = liveIndex - parts[livePart].firstSlide
-        let part = newParts[...livePart].lastIndex { !$0.slides.isEmpty } ?? 0
-        let index = newParts[part].firstSlide + min(offset, max(newParts[part].slides.count - 1, 0))
+        let newParts = SongPart.parts(of: song, mode: mode), live = max(livePart, 0), offset = liveIndex - parts[live].firstSlide
+        let part = newParts[...live].lastIndex { !$0.slides.isEmpty } ?? 0
+        let index = liveIndex < 0 ? -1 : newParts[part].firstSlide + min(offset, max(newParts[part].slides.count - 1, 0))
         (repetitionMode, parts, slides) = (mode, newParts, newParts.flatMap(\.slides))
         if index != liveIndex { liveIndex = index }
+        rebuildProgram()
     }
 
     private func open(_ song: Song, from file: URL) {
@@ -396,14 +466,15 @@ public final class AppState: ObservableObject {
         let parts = SongPart.parts(of: song, mode: repetitionMode), slides = parts.flatMap(\.slides)
         guard !slides.isEmpty else { return }
         (self.song, self.parts, self.slides) = (song, parts, slides)
-        if liveIndex != 0 { liveIndex = 0 }
         if selectedPart != 0 { selectedPart = 0 }
-        if isCleared { isCleared = false }
+        syncLiveIndex()
     }
 
     private func goToSlide(_ index: Int) {
-        guard slides.indices.contains(index) else { return }
-        if index != liveIndex { liveIndex = index }
+        guard program.slides.indices.contains(index) else { return }
+        if index != programIndex { programIndex = index }
+        if previewItem != nil { previewItem = nil }
         if isCleared { isCleared = false }
+        syncLiveIndex()
     }
 }
