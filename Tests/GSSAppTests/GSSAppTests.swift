@@ -159,14 +159,16 @@ final class GSSAppTests: XCTestCase {
         controller.state.perform(.nextSlide)
         XCTAssertNil(key(99))
         XCTAssertTrue(controller.state.isCleared)
-        XCTAssertNotNil(key(120))
+        controller.state.perform(.setBackground(.color("#102030")))
+        XCTAssertNil(key(120))
+        XCTAssertEqual(controller.state.background, Background.none, "F2 clears the background")
+        XCTAssertTrue(controller.state.isCleared, "F2 leaves the slide as it was")
     }
 
     func testSampleOutputsAreLocalizedAndTheWideLiveViewLaysOut() {
         XCTAssertEqual(LiveOutput.samples.map(\.kind), [.audience, .audience, .stage, .key])
         XCTAssertEqual(LiveOutput.samples.map { Strings.text($0.name, language: "es") }, ["Centro", "Laterales", "Escenario", "Key"])
         XCTAssertEqual(Strings.text("Cleared", language: "es"), "Borrado")
-        XCTAssertEqual(Strings.text("Available when backgrounds exist", language: "es"), "Disponible cuando haya fondos")
         let view = NSHostingView(rootView: LiveView(state: AppState(), appearance: .standard))
         view.frame = NSRect(x: 0, y: 0, width: 3200, height: 1340)
         view.layoutSubtreeIfNeeded()

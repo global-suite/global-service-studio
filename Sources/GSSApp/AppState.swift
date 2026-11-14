@@ -1,4 +1,5 @@
 import Combine
+import CoreGraphics
 import Foundation
 import GSSCore
 import GSSLibrary
@@ -45,6 +46,10 @@ public enum AppCommand: Equatable, Sendable {
     case setLibrarySearch(String)
     /// Opens a song file of the library; a file that cannot be read is reported in `alert`.
     case openLibrarySong(URL)
+    /// Sets the background of the media layer; a color that is not `#RRGGBB` or a file that is not a readable image is ignored. An image is decoded here, before it shows.
+    case setBackground(Background)
+    /// Takes the background off and leaves the slide.
+    case clearBackground
 }
 
 /// A file of the library the list cannot show, with the localized reason.
@@ -107,6 +112,11 @@ public final class AppState: ObservableObject {
     /// The library file the current song was opened from or saved to; nil for a song from elsewhere.
     @Published public private(set) var openSongFile: URL?
 
+    /// The background of the media layer, which slide changes and Clear Slide leave alone.
+    @Published public private(set) var background: Background = .none
+    /// The decoded image of an image background, set before `background` is published.
+    public private(set) var backgroundImage: CGImage?
+
     public init(settings: AppSettings? = nil, indexURL: ((Library) throws -> URL)? = nil, indexQueue: DispatchQueue = DispatchQueue(label: "GSS library index")) {
         (self.indexURL, self.indexQueue) = (indexURL, indexQueue)
         let mode = settings?.repetitionMode ?? .separateSlides, parts = SongPart.parts(of: SampleSong.song, mode: mode)
@@ -127,7 +137,7 @@ public final class AppState: ObservableObject {
     /// The lines the outputs show: none while cleared.
     public var shownLines: [String] { isCleared ? [] : liveSlide.lines }
 
-    /// Applies a command; moves outside the song and words that leave a part empty are ignored, other moves end a clear. Clear All has no background to clear yet.
+    /// Applies a command; moves outside the song and words that leave a part empty are ignored, other moves end a clear. Clear All also clears the background.
     /// The audience output shows only with a display chosen, and clearing the display hides it.
     public func perform(_ command: AppCommand) {
         switch command {
@@ -135,7 +145,10 @@ public final class AppState: ObservableObject {
         case .nextSlide: goToSlide(liveIndex + 1)
         case .previousSlide: goToSlide(liveIndex - 1)
         case .goToSlide(let index): goToSlide(index)
-        case .clearSlide, .clearAll: if !isCleared { isCleared = true }
+        case .clearSlide: if !isCleared { isCleared = true }
+        case .clearAll:
+            if !isCleared { isCleared = true }
+            setBackground(.none)
         case .selectPart(let index): if parts.indices.contains(index), index != selectedPart { selectedPart = index }
         case .setLines(let sectionID, let lines): setLines(sectionID, lines)
         case .showAudienceOutput(let shown): if shown != isAudienceOutputShown, !shown || outputScreen != nil { isAudienceOutputShown = shown }
@@ -199,7 +212,26 @@ public final class AppState: ObservableObject {
             do { open(try Song.decode(from: Data(contentsOf: url)), from: url) } catch {
                 alert = AppAlert(title: Strings.text("The song could not be opened."), message: Strings.text("This file could not be read."))
             }
+        case .setBackground(let background): setBackground(background)
+        case .clearBackground: setBackground(.none)
         }
+    }
+
+    /// Validates a background and decodes its image before publishing it; invalid ones and the current one are ignored.
+    private func setBackground(_ new: Background) {
+        var new = new, image: CGImage?
+        switch new {
+        case .none: break
+        case .color(let hex):
+            guard let color = KeyColor(hex: hex) else { return }
+            new = .color(color.hex)
+        case .image(let url):
+            guard new != background, let decoded = BackgroundImageLoader.image(at: url) else { return }
+            image = decoded
+        }
+        guard new != background else { return }
+        backgroundImage = image
+        background = new
     }
 
     /// Opens and reconciles the index off the main thread, then shows it on the main thread; until then the list is empty.

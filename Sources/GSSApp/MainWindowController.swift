@@ -59,7 +59,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
     /// Returns nil when the key was used.
     func handleKey(_ event: NSEvent) -> NSEvent? {
         let part = state.selectedPart
-        let commands: [UInt16: AppCommand] = state.mode == .live ? [49: .nextSlide, 124: .nextSlide, 123: .previousSlide, 122: .clearSlide, 99: .clearAll]
+        let commands: [UInt16: AppCommand] = state.mode == .live ? [49: .nextSlide, 124: .nextSlide, 123: .previousSlide, 122: .clearSlide, 120: .clearBackground, 99: .clearAll]
             : [123: .selectPart(part - 1), 124: .selectPart(part + 1), 51: .removeArrangementItem(at: part), 117: .removeArrangementItem(at: part)]
         guard event.window === window, !(window?.firstResponder is NSText),
               event.modifierFlags.isDisjoint(with: [.command, .control, .option]), let command = commands[event.keyCode] else { return event }

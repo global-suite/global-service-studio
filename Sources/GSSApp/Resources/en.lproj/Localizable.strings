@@ -44,9 +44,8 @@
 /* Live mode: role of the stage output. */ "Teleprompter" = "Teleprompter";
 /* Live mode: role of the key output, a lower third for the video switcher. */ "Lower third · switcher" = "Lower third · switcher";
 /* Live mode button (F1) that takes the slide off the outputs. */ "Clear Slide" = "Clear Slide";
-/* Live mode button (F2) that takes the background off the outputs. */ "Clear Background" = "Clear Background";
+/* Live mode button (F2) and Background menu item that take the background off the outputs. */ "Clear Background" = "Clear Background";
 /* Live mode button (F3) that clears every layer of the outputs. */ "Clear All" = "Clear All";
-/* Live mode: tooltip of the disabled Clear Background button. */ "Available when backgrounds exist" = "Available when backgrounds exist";
 /* Live mode: shown next to LIVE while the outputs show nothing. */ "Cleared" = "Cleared";
 /* Prepare mode: title of step 1, the parts of the song in the order they are sung. */ "Song order" = "Song order";
 /* Prepare mode: hint next to the title of step 1. */ "The parts of the song, in the order they are sung. Click a part to work on it." = "The parts of the song, in the order they are sung. Click a part to work on it.";
@@ -129,3 +128,9 @@
 /* Settings: key color choice. */ "Blue" = "Blue";
 /* Settings: key color choice that enables the color well. */ "Custom" = "Custom";
 /* Settings: explanation under the key color picker. */ "The Key output shows the lyrics over this color, for a video switcher to remove. It never shows backgrounds." = "The Key output shows the lyrics over this color, for a video switcher to remove. It never shows backgrounds.";
+
+/* Output menu: submenu that sets the background of the audience outputs. */ "Background" = "Background";
+/* Background menu item that opens a panel to choose an image file as the background. */ "Choose Image…" = "Choose Image…";
+/* Background menu item: preset background color. */ "Black" = "Black";
+/* Background menu item: preset background color. */ "Dark Blue" = "Dark Blue";
+/* Background menu item: preset background color. */ "Dark Gray" = "Dark Gray";
