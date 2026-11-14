@@ -44,6 +44,20 @@
       "tradeoff": "The plan column stays in Live with start times, elapsed time on the live item, LIVE and NEXT labels, and keys to jump between items (⌥→ ⌥←); a timing and Media-notes panel replaces the stage message. The Library drawer in Live can only add to the service (Add as Next Item, Add at End), never show. Most information while running; the widest layout, and with the drawer open the slide grid drops to four per row",
       "width": 3440,
       "height": 1440
+    },
+    {
+      "file": "07-chosen-prepare.html",
+      "title": "Chosen · Prepare",
+      "tradeoff": "Direction A as the base (the plan in the sidebar Service section, built by dragging from the Library or with Add to Service; the main area edits the selected item for this service) plus B's run sheet as an optional Item | Run Sheet view with clock times, lengths, positions and notes per team, and C's shortcuts where they apply: a tooltip and context menu on Library songs (⌘↩ add after the selection, ⌥⌘↩ add at the end), ⌥↑ ⌥↓ and ⌫ on the item, and a keyboard legend under the main area. Keeps the cheap sidebar build of A and gives planners B's overview without a second screen; the legend costs one 36 px row and at 1440 the run sheet shows about three team notes per row",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "08-chosen-live-wide.html",
+      "title": "Chosen · Live (ultrawide)",
+      "tradeoff": "A's native ultrawide Live with the owner's rules: Next onto an item without slides stops there with the lyrics cleared and the background kept; placeholders without a file are skipped and marked Skipped; clicking a plan item only previews its slides in the grid (Previewing · not on air) until a slide click or Next; a Library click opens a popover that can only Add as Next Item (⌘↩) or Add at End (⌥⌘↩) and never touches the screens. Safest for a volunteer operator; previewing scrolls the grid away from the live item until Back to Live Item, and the popover covers part of the stage message panel while open",
+      "width": 3440,
+      "height": 1440
     }
   ]
 }
