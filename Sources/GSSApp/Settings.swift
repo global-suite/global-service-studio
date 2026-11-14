@@ -17,6 +17,21 @@ public enum RepetitionMode: String, CaseIterable, Sendable {
     var title: String { self == .separateSlides ? "Separate slides for each repetition" : "Show repeated parts once" }
 }
 
+/// A key color as `#RRGGBB`, the form the settings store.
+public struct KeyColor: Equatable, Sendable {
+    public let hex: String
+    public static let green = KeyColor(hex: "#00B140")!
+    public static let blue = KeyColor(hex: "#0047BB")!
+
+    /// A color from `#RRGGBB`, in either case; nil for anything else.
+    public init?(hex: String) {
+        guard hex.count == 7, hex.first == "#", hex.dropFirst().allSatisfy(\.isHexDigit) else { return nil }
+        self.hex = hex.uppercased()
+    }
+
+    public var rgba: RGBA { RGBA(hex: Int(hex.dropFirst(), radix: 16)!) }
+}
+
 /// The user's settings, kept in user defaults; unknown stored values read as the defaults.
 public struct AppSettings {
     let defaults: UserDefaults
@@ -31,6 +46,11 @@ public struct AppSettings {
     public var repetitionMode: RepetitionMode {
         get { defaults.string(forKey: "repetitionMode").flatMap(RepetitionMode.init(rawValue:)) ?? .separateSlides }
         nonmutating set { defaults.set(newValue.rawValue, forKey: "repetitionMode") }
+    }
+    /// The key output's color; green when unset or not a `#RRGGBB` color.
+    public var keyColor: String {
+        get { defaults.string(forKey: "keyColor").flatMap(KeyColor.init(hex:))?.hex ?? KeyColor.green.hex }
+        nonmutating set { defaults.set(newValue, forKey: "keyColor") }
     }
     public var libraryFolder: URL {
         get { defaults.url(forKey: "libraryFolder") ?? Self.defaultLibraryFolder }
@@ -61,9 +81,43 @@ struct SettingsView: View {
             }
             .pickerStyle(.radioGroup)
             .padding(.top, 12)
+            KeyColorPicker(state: state).padding(.top, 12)
         }
         .padding(20)
         .frame(width: 460)
+    }
+}
+
+/// The key output's color: green, blue or any custom color.
+struct KeyColorPicker: View {
+    @ObservedObject var state: AppState
+    @State private var isCustom = false
+
+    var body: some View {
+        let current = KeyColor(hex: state.keyColor) ?? .green
+        let choice = isCustom || (current != .green && current != .blue) ? "custom" : current.hex
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Picker(Strings.text("Key color"), selection: Binding(get: { choice }, set: { value in
+                    isCustom = value == "custom"
+                    if !isCustom { state.perform(.setKeyColor(value)) }
+                })) {
+                    Text(Strings.text("Green")).tag(KeyColor.green.hex)
+                    Text(Strings.text("Blue")).tag(KeyColor.blue.hex)
+                    Text(Strings.text("Custom")).tag("custom")
+                }
+                ColorPicker("", selection: Binding(get: { current.rgba.color }, set: { color in
+                    guard let rgb = NSColor(color).usingColorSpace(.sRGB) else { return }
+                    let hex = [rgb.redComponent, rgb.greenComponent, rgb.blueComponent].map { String(format: "%02X", Int(($0 * 255).rounded())) }.joined()
+                    isCustom = true
+                    state.perform(.setKeyColor("#" + hex))
+                }), supportsOpacity: false)
+                .labelsHidden()
+                .disabled(choice != "custom")
+            }
+            Text(Strings.text("The Key output shows the lyrics over this color, for a video switcher to remove. It never shows backgrounds."))
+                .font(.system(size: 11)).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

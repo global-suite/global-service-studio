@@ -294,7 +294,7 @@ final class GSSAppTests: XCTestCase {
         XCTAssertEqual(menu.items.prefix(2).map(\.title), ["Built-in", "Projector"])
         XCTAssertTrue(controller.validateMenuItem(try toggle()))
         XCTAssertEqual(try toggle().title, Strings.text("Show Audience Output"))
-        controller.toggleAudienceOutput(nil)
+        controller.toggleOutput(nil)
         XCTAssertEqual([state.outputScreen, state.isAudienceOutputShown ? 1 : 0], [900_002, 1])
         XCTAssertNil(controller.window, "no window opens for a display that is not connected")
         XCTAssertTrue(controller.validateMenuItem(try toggle()))
@@ -608,6 +608,113 @@ final class GSSAppTests: XCTestCase {
         state.perform(.chooseLibraryFolder(folder))
         state.perform(.openMostRecentSong)
         XCTAssertEqual(state.song, song)
+    }
+
+    func testKeyOutputCommandsShowItOnlyWithAChosenDisplay() {
+        let state = AppState()
+        XCTAssertNil(state.keyOutputScreen)
+        state.perform(.showKeyOutput(true))
+        XCTAssertFalse(state.isKeyOutputShown)
+        state.perform(.selectKeyOutputScreen(8))
+        state.perform(.showKeyOutput(true))
+        XCTAssertEqual(state.keyOutputScreen, 8)
+        XCTAssertTrue(state.isKeyOutputShown)
+        XCTAssertFalse(state.isAudienceOutputShown, "the key output is independent of the audience output")
+        state.perform(.selectKeyOutputScreen(nil))
+        XCTAssertNil(state.keyOutputScreen)
+        XCTAssertFalse(state.isKeyOutputShown)
+    }
+
+    func testADisplayHoldsOneOutputAndChoosingItMovesTheOtherOff() {
+        let state = AppState()
+        state.perform(.selectOutputScreen(7))
+        state.perform(.showAudienceOutput(true))
+        state.perform(.selectKeyOutputScreen(7))
+        state.perform(.showKeyOutput(true))
+        XCTAssertEqual(state.keyOutputScreen, 7)
+        XCTAssertTrue(state.isKeyOutputShown)
+        XCTAssertNil(state.outputScreen)
+        XCTAssertFalse(state.isAudienceOutputShown)
+        state.perform(.selectOutputScreen(7))
+        XCTAssertEqual(state.outputScreen, 7)
+        XCTAssertNil(state.keyOutputScreen)
+        XCTAssertFalse(state.isKeyOutputShown)
+        state.perform(.selectKeyOutputScreen(8))
+        XCTAssertEqual([state.outputScreen, state.keyOutputScreen], [7, 8], "different displays leave each other alone")
+    }
+
+    func testKeyColorAcceptsOnlyHexColorsAndIsSaved() {
+        let (settings, defaults) = settings()
+        XCTAssertEqual(settings.keyColor, "#00B140")
+        let state = AppState(settings: settings)
+        XCTAssertEqual(state.keyColor, "#00B140")
+        state.perform(.setKeyColor("#0047bb"))
+        XCTAssertEqual(state.keyColor, "#0047BB")
+        XCTAssertEqual(AppSettings(defaults: defaults).keyColor, "#0047BB")
+        for invalid in ["green", "#12345", "0047BB", "#0047BG", "#0047BB00", ""] { state.perform(.setKeyColor(invalid)) }
+        XCTAssertEqual(state.keyColor, "#0047BB")
+        XCTAssertEqual(AppSettings(defaults: defaults).keyColor, "#0047BB")
+        defaults.set("blue", forKey: "keyColor")
+        XCTAssertEqual(settings.keyColor, "#00B140")
+        XCTAssertEqual(KeyColor.green.hex, "#00B140")
+        XCTAssertEqual(KeyColor.blue.hex, "#0047BB")
+        XCTAssertEqual(KeyColor(hex: "#0047BB"), .blue)
+        XCTAssertEqual(KeyColor(hex: "#102030")?.rgba, RGBA(hex: 0x102030))
+        XCTAssertNil(KeyColor(hex: "#1020"))
+    }
+
+    func testKeyOutputShowsTheLiveLinesOverTheKeyColorOnly() {
+        let state = AppState()
+        XCTAssertEqual(KeyOutputView.lines(state), state.liveSlide.lines)
+        state.perform(.clearSlide)
+        XCTAssertEqual(KeyOutputView.lines(state), [])
+        XCTAssertEqual(KeyOutputView.background(state), KeyColor.green.rgba)
+        state.perform(.setKeyColor("#0047BB"))
+        XCTAssertEqual(KeyOutputView.background(state), KeyColor.blue.rgba)
+        XCTAssertEqual(AudienceOutputView.background, RGBA(hex: 0x000000))
+        let view = NSHostingView(rootView: KeyOutputView(state: state))
+        view.frame = NSRect(x: 0, y: 0, width: 1920, height: 1080)
+        view.layoutSubtreeIfNeeded()
+        XCTAssertGreaterThan(view.fittingSize.height, 0)
+    }
+
+    func testKeyOutputMenuUsesItsOwnTitlesShortcutAndAvoidsTheAudienceDisplay() throws {
+        let screens = [ScreenInfo(id: 900_001, name: "Built-in"), ScreenInfo(id: 900_002, name: "Projector"), ScreenInfo(id: 900_003, name: "Switcher")]
+        let state = AppState(), controller = AudienceOutputController(state: state, role: .key, operatorWindow: nil) { screens }
+        let toggle = try XCTUnwrap(controller.menu.items.last)
+        XCTAssertEqual(controller.menu.title, Strings.text("Key Output"))
+        XCTAssertEqual(toggle.keyEquivalent, "k")
+        XCTAssertEqual(toggle.keyEquivalentModifierMask, [.command, .shift])
+        XCTAssertTrue(controller.validateMenuItem(toggle))
+        XCTAssertEqual(toggle.title, Strings.text("Show Key Output"))
+        state.perform(.selectOutputScreen(900_002))
+        controller.toggleOutput(nil)
+        XCTAssertEqual(state.keyOutputScreen, 900_003, "the default display is neither the operator's nor the audience's")
+        XCTAssertTrue(state.isKeyOutputShown)
+        XCTAssertEqual(state.outputScreen, 900_002)
+        XCTAssertTrue(controller.validateMenuItem(toggle))
+        XCTAssertEqual(toggle.title, Strings.text("Hide Key Output"))
+        controller.selectScreen(controller.menu.items[1])
+        XCTAssertEqual(state.keyOutputScreen, 900_002)
+        XCTAssertNil(state.outputScreen)
+        XCTAssertEqual(defaultOutputScreen(screens: screens, operatorScreenID: 900_001, avoiding: 900_002)?.id, 900_003)
+        XCTAssertEqual(defaultOutputScreen(screens: Array(screens.prefix(2)), operatorScreenID: 900_001, avoiding: 900_002)?.id, 900_002)
+    }
+
+    func testOutputMenuHoldsTheAudienceAndKeySubmenus() {
+        let audience = NSMenu(title: "A"), key = NSMenu(title: "K")
+        let menu = OutputMenu.make(audience: audience, key: key)
+        XCTAssertEqual(menu.title, Strings.text("Output"))
+        XCTAssertEqual(menu.items.map(\.submenu), [audience, key])
+        XCTAssertEqual(menu.items.map(\.title), ["A", "K"])
+    }
+
+    func testKeyOutputStringsAreTranslated() {
+        for key in ["Key Output", "Show Key Output", "Hide Key Output", "Audience Output", "Key color", "Green", "Blue", "Custom",
+                    "The Key output shows the lyrics over this color, for a video switcher to remove. It never shows backgrounds."] {
+            XCTAssertNotEqual(Strings.text(key, language: "es"), key, key)
+            XCTAssertEqual(Strings.text(key, language: "en"), key, key)
+        }
     }
 
     /// A state whose library is `folder`, with its index in a temporary folder, once the index is loaded.

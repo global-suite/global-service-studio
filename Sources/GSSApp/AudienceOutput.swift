@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import GSSCore
 import SwiftUI
 
 /// A connected display as the Output menu lists it.
@@ -17,12 +18,12 @@ extension NSScreen {
     var displayID: ScreenID? { (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value }
 }
 
-/// The display the audience output uses by default: the first, in order, that does not hold the operator window; nil with a single display.
-/// When the operator's display is unknown, the first display counts as the operator's.
-func defaultOutputScreen(screens: [ScreenInfo], operatorScreenID: ScreenID?) -> ScreenInfo? {
+/// The display an output uses by default: the first, in order, that holds neither the operator window nor the other output (`avoiding`),
+/// else the first without the operator window; nil with a single display. When the operator's display is unknown, the first display counts as the operator's.
+func defaultOutputScreen(screens: [ScreenInfo], operatorScreenID: ScreenID?, avoiding other: ScreenID? = nil) -> ScreenInfo? {
     guard screens.count > 1 else { return nil }
     let operatorID = operatorScreenID ?? screens[0].id
-    return screens.first { $0.id != operatorID }
+    return screens.first { $0.id != operatorID && $0.id != other } ?? screens.first { $0.id != operatorID }
 }
 
 /// A borderless window over a whole display, above the menu bar, that never takes keyboard focus or mouse events.
@@ -38,46 +39,93 @@ final class OutputWindow: NSWindow {
     }
 }
 
-/// What the audience sees: the live lines centered in white on black, or black only while cleared.
+/// The slide layer: the live lines in white over transparency, nothing while cleared (ADR 0008).
+struct SlideLayer: View {
+    let lines: [String]
+    let alignment: Alignment
+
+    var body: some View {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                ForEach(Array(lines.enumerated()), id: \.offset) { Text($0.element) }
+            }
+            .font(.system(size: geometry.size.height * 0.07, weight: .bold))
+            .foregroundColor(.white)
+            .shadow(color: .black.opacity(alignment == .center ? 0 : 0.6), radius: 2, y: 1)
+            .multilineTextAlignment(.center)
+            .lineLimit(1)
+            .minimumScaleFactor(0.25)
+            .padding(.horizontal, geometry.size.width * 0.05)
+            .padding(.bottom, alignment == .bottom ? geometry.size.height * 0.08 : 0)
+            .frame(width: geometry.size.width, height: geometry.size.height, alignment: alignment)
+        }
+    }
+}
+
+/// What the audience sees: the screen color layer, then the slide layer; black only while cleared.
 struct AudienceOutputView: View {
     @ObservedObject var state: AppState
+    /// The screen color layer, until themes and backgrounds fill the layers between.
+    static let background = RGBA(hex: 0x000000)
 
     /// The lines on the output: the live slide's, none while cleared; past the last slide the last one stays.
     static func lines(_ state: AppState) -> [String] { state.shownLines }
 
     var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                ForEach(Array(Self.lines(state).enumerated()), id: \.offset) { Text($0.element) }
-            }
-            .font(.system(size: geometry.size.height * 0.07, weight: .bold))
-            .foregroundColor(.white)
-            .multilineTextAlignment(.center)
-            .lineLimit(1)
-            .minimumScaleFactor(0.25)
-            .padding(.horizontal, geometry.size.width * 0.05)
-            .frame(width: geometry.size.width, height: geometry.size.height)
+        ZStack {
+            Self.background.color
+            SlideLayer(lines: Self.lines(state), alignment: .center)
         }
-        .background(Color.black)
     }
 }
 
-/// Owns the Output menu and the audience output window. The menu changes the state through commands; the window follows the state.
+/// What a video switcher receives: the slide layer in the lower third over the key color, never backgrounds (ADR 0008).
+struct KeyOutputView: View {
+    @ObservedObject var state: AppState
+
+    static func lines(_ state: AppState) -> [String] { state.shownLines }
+    static func background(_ state: AppState) -> RGBA { (KeyColor(hex: state.keyColor) ?? .green).rgba }
+
+    var body: some View {
+        ZStack {
+            Self.background(state).color
+            SlideLayer(lines: Self.lines(state), alignment: .bottom)
+        }
+    }
+}
+
+/// The Output menu: one submenu for each output.
+enum OutputMenu {
+    static func make(audience: NSMenu, key: NSMenu) -> NSMenu {
+        let menu = NSMenu(title: Strings.text("Output"))
+        for submenu in [audience, key] {
+            let item = NSMenuItem(title: submenu.title, action: nil, keyEquivalent: "")
+            item.submenu = submenu
+            menu.addItem(item)
+        }
+        return menu
+    }
+}
+
+/// Owns one output's menu and window, for the audience or the key role. The menu changes the state through commands; the window follows the state.
 final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     let state: AppState
-    let menu = NSMenu(title: Strings.text("Output"))
+    let role: OutputRole
+    let menu: NSMenu
     private(set) var window: OutputWindow?
     private weak var operatorWindow: NSWindow?
     private let screens: () -> [ScreenInfo]
     private var subscription: AnyCancellable?
     private var observer: NSObjectProtocol?
 
-    init(state: AppState, operatorWindow: NSWindow?, screens: @escaping () -> [ScreenInfo] = ScreenInfo.connected) {
-        (self.state, self.operatorWindow, self.screens) = (state, operatorWindow, screens)
+    init(state: AppState, role: OutputRole = .audience, operatorWindow: NSWindow?, screens: @escaping () -> [ScreenInfo] = ScreenInfo.connected) {
+        (self.state, self.role, self.operatorWindow, self.screens) = (state, role, operatorWindow, screens)
+        menu = NSMenu(title: Strings.text(role == .key ? "Key Output" : "Audience Output"))
         super.init()
         menu.delegate = self
         menuNeedsUpdate(menu)
-        subscription = state.$isAudienceOutputShown.combineLatest(state.$outputScreen).sink { [weak self] in self?.update(shown: $0, screen: $1) }
+        let shown = role == .key ? state.$isKeyOutputShown : state.$isAudienceOutputShown, screen = role == .key ? state.$keyOutputScreen : state.$outputScreen
+        subscription = shown.combineLatest(screen).sink { [weak self] in self?.update(shown: $0, screen: $1) }
         observer = NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             self?.screensChanged()
         }
@@ -85,10 +133,19 @@ final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValida
 
     deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
 
+    private var isShown: Bool { role == .key ? state.isKeyOutputShown : state.isAudienceOutputShown }
+    private var screen: ScreenID? { role == .key ? state.keyOutputScreen : state.outputScreen }
+    private var otherScreen: ScreenID? { role == .key ? state.outputScreen : state.keyOutputScreen }
+    private func select(_ screen: ScreenID?) { state.perform(role == .key ? .selectKeyOutputScreen(screen) : .selectOutputScreen(screen)) }
+    private func show(_ shown: Bool) { state.perform(role == .key ? .showKeyOutput(shown) : .showAudienceOutput(shown)) }
+    private var connectMessage: String {
+        Strings.text(role == .key ? "Connect a second display to show the key output." : "Connect a second display to show the audience output.")
+    }
+
     /// Closes the output when its display disconnects, follows a new size of its display and rebuilds the menu.
     func screensChanged() {
-        if let screen = state.outputScreen, !screens().contains(where: { $0.id == screen }) { state.perform(.selectOutputScreen(nil)) }
-        update(shown: state.isAudienceOutputShown, screen: state.outputScreen)
+        if let screen, !screens().contains(where: { $0.id == screen }) { select(nil) }
+        update(shown: isShown, screen: screen)
         menuNeedsUpdate(menu)
     }
 
@@ -101,32 +158,33 @@ final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValida
             (item.target, item.tag) = (self, Int(screen.id))
             menu.addItem(item)
         }
-        if list.count < 2 { menu.addItem(withTitle: Strings.text("Connect a second display to show the audience output."), action: nil, keyEquivalent: "") }
+        if list.count < 2 { menu.addItem(withTitle: connectMessage, action: nil, keyEquivalent: "") }
         menu.addItem(.separator())
-        let toggle = NSMenuItem(title: Strings.text("Show Audience Output"), action: #selector(toggleAudienceOutput(_:)), keyEquivalent: "o")
+        let toggle = NSMenuItem(title: Strings.text(role == .key ? "Show Key Output" : "Show Audience Output"), action: #selector(toggleOutput(_:)), keyEquivalent: role == .key ? "k" : "o")
         (toggle.target, toggle.keyEquivalentModifierMask) = (self, [.command, .shift])
         menu.addItem(toggle)
     }
 
-    @objc func selectScreen(_ sender: NSMenuItem) { state.perform(.selectOutputScreen(ScreenID(sender.tag))) }
+    @objc func selectScreen(_ sender: NSMenuItem) { select(ScreenID(sender.tag)) }
 
-    /// Hides the output, or shows it, first choosing a display other than the operator's when none is chosen or it is gone.
-    @objc func toggleAudienceOutput(_ sender: Any?) {
-        guard !state.isAudienceOutputShown else { return state.perform(.showAudienceOutput(false)) }
+    /// Hides the output, or shows it, first choosing a display other than the operator's and the other output's when none is chosen or it is gone.
+    @objc func toggleOutput(_ sender: Any?) {
+        guard !isShown else { return show(false) }
         let list = screens()
-        if !list.contains(where: { $0.id == state.outputScreen }) {
-            state.perform(.selectOutputScreen(defaultOutputScreen(screens: list, operatorScreenID: operatorWindow?.screen?.displayID)?.id))
+        if !list.contains(where: { $0.id == screen }) {
+            select(defaultOutputScreen(screens: list, operatorScreenID: operatorWindow?.screen?.displayID, avoiding: otherScreen)?.id)
         }
-        state.perform(.showAudienceOutput(true))
+        show(true)
     }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         let canShow = screens().count > 1
-        if menuItem.action == #selector(selectScreen(_:)) { menuItem.state = ScreenID(menuItem.tag) == state.outputScreen ? .on : .off }
-        if menuItem.action == #selector(toggleAudienceOutput(_:)) {
-            menuItem.title = Strings.text(state.isAudienceOutputShown ? "Hide Audience Output" : "Show Audience Output")
-            menuItem.toolTip = canShow ? nil : Strings.text("Connect a second display to show the audience output.")
-            return canShow || state.isAudienceOutputShown
+        if menuItem.action == #selector(selectScreen(_:)) { menuItem.state = ScreenID(menuItem.tag) == screen ? .on : .off }
+        if menuItem.action == #selector(toggleOutput(_:)) {
+            let titles = role == .key ? ("Hide Key Output", "Show Key Output") : ("Hide Audience Output", "Show Audience Output")
+            menuItem.title = Strings.text(isShown ? titles.0 : titles.1)
+            menuItem.toolTip = canShow ? nil : connectMessage
+            return canShow || isShown
         }
         return canShow
     }
@@ -134,7 +192,8 @@ final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValida
     /// Covers the chosen display while shown, without taking focus; hidden otherwise or when that display is not connected.
     private func update(shown: Bool, screen id: ScreenID?) {
         guard shown, let screen = NSScreen.screens.first(where: { $0.displayID == id }) else { return window?.orderOut(nil) ?? () }
-        let window = window ?? OutputWindow(content: NSHostingView(rootView: AudienceOutputView(state: state)))
+        let content = role == .key ? NSHostingView(rootView: AnyView(KeyOutputView(state: state))) : NSHostingView(rootView: AnyView(AudienceOutputView(state: state)))
+        let window = window ?? OutputWindow(content: content)
         self.window = window
         window.setFrame(screen.frame, display: true)
         window.orderFrontRegardless()

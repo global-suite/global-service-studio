@@ -118,3 +118,14 @@
 /* Library sidebar: title of the row listing files that cannot be shown; %ld is how many. */ "Problems (%ld)" = "Problemas (%ld)";
 /* Library sidebar: reason under a song file that cannot be read. */ "This file is not a valid song file." = "Este archivo no es un archivo de canción válido.";
 /* Library sidebar: reason under a song file whose song ID another file also has. */ "Another file has the same song ID." = "Otro archivo tiene el mismo ID de canción.";
+
+/* Output menu: submenu with the displays and the show command of the audience output. */ "Audience Output" = "Salida al público";
+/* Output menu: submenu with the displays and the show command of the key output for a video switcher. */ "Key Output" = "Salida de key";
+/* Key Output menu item (Cmd-Shift-K) that shows the lyrics over the key color on the chosen display. */ "Show Key Output" = "Mostrar salida de key";
+/* Key Output menu item (Cmd-Shift-K) that takes the key output off its display. */ "Hide Key Output" = "Ocultar salida de key";
+/* Key Output menu: disabled item and tooltip shown when only one display is connected. */ "Connect a second display to show the key output." = "Conecta una segunda pantalla para mostrar la salida de key.";
+/* Settings: label of the key output color picker. */ "Key color" = "Color de key";
+/* Settings: key color choice. */ "Green" = "Verde";
+/* Settings: key color choice. */ "Blue" = "Azul";
+/* Settings: key color choice that enables the color well. */ "Custom" = "Personalizado";
+/* Settings: explanation under the key color picker. */ "The Key output shows the lyrics over this color, for a video switcher to remove. It never shows backgrounds." = "La salida de key muestra la letra sobre este color para que el switcher de video lo quite. Nunca muestra fondos.";

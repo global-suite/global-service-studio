@@ -18,6 +18,11 @@ public enum AppCommand: Equatable, Sendable {
     case setLines(sectionID: String, lines: [String])
     case showAudienceOutput(Bool)
     case selectOutputScreen(ScreenID?)
+    /// Shows or hides the key output, like the audience output; a display holds one output, so choosing one moves the other output off it.
+    case showKeyOutput(Bool)
+    case selectKeyOutputScreen(ScreenID?)
+    /// Sets the key color, saved in the settings; anything but `#RRGGBB` is ignored.
+    case setKeyColor(String)
     /// Makes a song the current one, from its first slide; a song without slides is ignored.
     case loadSong(Song)
     /// Edits the order of the default arrangement: a part moves to a final position, a section is inserted (repeated) at a position,
@@ -69,6 +74,12 @@ public final class AppState: ObservableObject {
     @Published public private(set) var isAudienceOutputShown = false
     /// The display chosen for the audience output.
     @Published public private(set) var outputScreen: ScreenID?
+    /// Whether the key output covers its display; only with a display chosen.
+    @Published public private(set) var isKeyOutputShown = false
+    /// The display chosen for the key output.
+    @Published public private(set) var keyOutputScreen: ScreenID?
+    /// The color behind the words on the key output, as `#RRGGBB`.
+    @Published public private(set) var keyColor: String
     /// How Live shows repeated parts.
     @Published public private(set) var repetitionMode: RepetitionMode
     /// The library folder songs are saved to.
@@ -101,6 +112,7 @@ public final class AppState: ObservableObject {
         let mode = settings?.repetitionMode ?? .separateSlides, parts = SongPart.parts(of: SampleSong.song, mode: mode)
         (song, self.parts, slides, repetitionMode, self.settings) = (SampleSong.song, parts, parts.flatMap(\.slides), mode, settings)
         libraryFolder = settings?.libraryFolder ?? AppSettings.defaultLibraryFolder
+        keyColor = settings?.keyColor ?? KeyColor.green.hex
         selectedPart = livePart
     }
 
@@ -129,7 +141,17 @@ public final class AppState: ObservableObject {
         case .showAudienceOutput(let shown): if shown != isAudienceOutputShown, !shown || outputScreen != nil { isAudienceOutputShown = shown }
         case .selectOutputScreen(let screen):
             if screen == nil, isAudienceOutputShown { isAudienceOutputShown = false }
+            if screen != nil, screen == keyOutputScreen { perform(.selectKeyOutputScreen(nil)) }
             if screen != outputScreen { outputScreen = screen }
+        case .showKeyOutput(let shown): if shown != isKeyOutputShown, !shown || keyOutputScreen != nil { isKeyOutputShown = shown }
+        case .selectKeyOutputScreen(let screen):
+            if screen == nil, isKeyOutputShown { isKeyOutputShown = false }
+            if screen != nil, screen == outputScreen { perform(.selectOutputScreen(nil)) }
+            if screen != keyOutputScreen { keyOutputScreen = screen }
+        case .setKeyColor(let value):
+            guard let color = KeyColor(hex: value) else { return }
+            settings?.keyColor = color.hex
+            if color.hex != keyColor { keyColor = color.hex }
         case .loadSong(let song):
             load(song)
             if self.song == song { openSongFile = nil }

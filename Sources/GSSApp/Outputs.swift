@@ -83,7 +83,7 @@ struct OutputMonitor: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .background(Color.black)
         case .key:
-            Appearance.keyGreen.color.overlay(alignment: .bottomLeading) {
+            KeyOutputView.background(state).color.overlay(alignment: .bottomLeading) {
                 if !state.isCleared {
                     Text(lines).font(.system(size: width / 26, weight: .semibold)).foregroundColor(.white)
                         .padding(width / 50).background(RoundedRectangle(cornerRadius: 3).fill(Color.black.opacity(0.72)))

@@ -29,3 +29,25 @@ public enum OutputLayer: Int, CaseIterable, Comparable, Codable, Sendable {
         lhs.rawValue < rhs.rawValue
     }
 }
+
+/// What an output is for; the role sets the output's default look: which layers it shows (ADR 0008).
+public enum OutputRole: String, CaseIterable, Codable, Sendable {
+    /// What the room sees: every layer.
+    case audience
+    /// A teleprompter for the stage, with its own layout.
+    case stage
+    /// Words over a key color for a video switcher; never backgrounds or video input.
+    case key
+
+    /// The layers the output shows, in compositing order.
+    public var layers: [OutputLayer] {
+        switch self {
+        case .audience: return OutputLayer.compositingOrder
+        case .stage: return [.slide, .messages]
+        case .key: return [.slide, .props, .messages]
+        }
+    }
+
+    /// Whether the output shows a layer.
+    public func shows(_ layer: OutputLayer) -> Bool { layers.contains(layer) }
+}
