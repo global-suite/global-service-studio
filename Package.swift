@@ -18,6 +18,8 @@ let package = Package(
         .target(name: "GSSLibrary", dependencies: ["GSSCore", .product(name: "GRDB", package: "GRDB.swift")]),
         .target(name: "GSSApp", dependencies: ["GSSCore", "GSSLibrary"], resources: [.process("Resources")]),
         .executableTarget(name: "GlobalServiceStudio", dependencies: ["GSSApp"]),
+        // Developer tool that measures video playback (ADR 0008); not part of the app.
+        .executableTarget(name: "GSSVideoBench"),
         .testTarget(name: "GSSCoreTests", dependencies: ["GSSCore"]),
         .testTarget(name: "GSSLibraryTests", dependencies: ["GSSLibrary"]),
         .testTarget(name: "GSSAppTests", dependencies: ["GSSApp", "GSSLibrary"]),

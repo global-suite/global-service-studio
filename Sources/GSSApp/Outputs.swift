@@ -64,7 +64,11 @@ struct OutputMonitor: View {
         let lines = state.shownLines.joined(separator: "\n")
         switch output.kind {
         case .audience:
-            Color.black.overlay(Text(lines).font(.system(size: width / 20, weight: .semibold)).foregroundColor(.white).multilineTextAlignment(.center))
+            ZStack {
+                Color.black
+                MediaLayer(fill: state.mediaFill(for: .audience))
+                Text(lines).font(.system(size: width / 20, weight: .semibold)).foregroundColor(.white).multilineTextAlignment(.center)
+            }
         case .stage:
             VStack(alignment: .leading, spacing: width / 60) {
                 HStack {
@@ -94,7 +98,7 @@ struct OutputMonitor: View {
     }
 }
 
-/// Clear Slide (F1), Clear Background (F2) and Clear All (F3), in a row or a column; Clear Background waits for backgrounds.
+/// Clear Slide (F1), Clear Background (F2) and Clear All (F3), in a row or a column; Clear Background needs a background.
 struct ClearActions: View {
     @ObservedObject var state: AppState
     let stacked: Bool
@@ -105,11 +109,9 @@ struct ClearActions: View {
         layout {
             pair {
                 button("Clear Slide", "F1", danger: false) { state.perform(.clearSlide) }
-                button("Clear Background", "F2", danger: false) {}
-                    .disabled(true)
-                    .opacity(0.45)
-                    .contentShape(Rectangle())
-                    .help(Strings.text("Available when backgrounds exist"))
+                button("Clear Background", "F2", danger: false) { state.perform(.clearBackground) }
+                    .disabled(state.background == .none)
+                    .opacity(state.background == .none ? 0.45 : 1)
             }
             button("Clear All", "F3", danger: true) { state.perform(.clearAll) }
         }

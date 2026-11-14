@@ -20,10 +20,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var windowController = MainWindowController(state: state)
     private lazy var audienceOutput = AudienceOutputController(state: state, operatorWindow: windowController.window)
     private lazy var keyOutput = AudienceOutputController(state: state, role: .key, operatorWindow: windowController.window)
+    private lazy var backgroundMenu = BackgroundMenuController(state: state)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = NSAppearance(named: .darkAqua)
-        NSApp.mainMenu = MainMenu.make(output: OutputMenu.make(audience: audienceOutput.menu, key: keyOutput.menu))
+        NSApp.mainMenu = MainMenu.make(output: OutputMenu.make(audience: audienceOutput.menu, key: keyOutput.menu, background: backgroundMenu.menu))
         windowController.showWindow(nil)
         state.perform(.openMostRecentSong)
         state.perform(.openLibraryIndex)
