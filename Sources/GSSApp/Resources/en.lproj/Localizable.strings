@@ -134,3 +134,4 @@
 /* Background menu item: preset background color. */ "Black" = "Black";
 /* Background menu item: preset background color. */ "Dark Blue" = "Dark Blue";
 /* Background menu item: preset background color. */ "Dark Gray" = "Dark Gray";
+/* Background menu item that opens a panel to choose a movie file as a muted looping background. */ "Choose Video…" = "Choose Video…";

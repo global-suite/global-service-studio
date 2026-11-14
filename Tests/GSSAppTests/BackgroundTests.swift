@@ -147,11 +147,11 @@ final class BackgroundTests: XCTestCase {
         let state = AppState(), image = try png(), text = folder.appendingPathComponent("notes.txt")
         try Data("Invented placeholder words".utf8).write(to: text)
         var chosen: URL? = image
-        let controller = BackgroundMenuController(state: state) { chosen }
+        let controller = BackgroundMenuController(state: state, chooseImageFile: { chosen })
         let menu = controller.menu
         XCTAssertEqual(menu.title, Strings.text("Background"))
         let titles = menu.items.filter { !$0.isSeparatorItem }.map(\.title)
-        XCTAssertEqual(titles, ["Choose Image…", "Black", "Dark Blue", "Dark Gray", "Clear Background"].map { Strings.text($0) })
+        XCTAssertEqual(titles, ["Choose Image…", "Choose Video…", "Black", "Dark Blue", "Dark Gray", "Clear Background"].map { Strings.text($0) })
         func item(_ title: String) throws -> NSMenuItem { try XCTUnwrap(menu.items.first { $0.title == Strings.text(title) }) }
         func click(_ title: String) throws {
             let item = try item(title)

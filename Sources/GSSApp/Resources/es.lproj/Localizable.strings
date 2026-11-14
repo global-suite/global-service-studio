@@ -134,3 +134,4 @@
 /* Background menu item: preset background color. */ "Black" = "Negro";
 /* Background menu item: preset background color. */ "Dark Blue" = "Azul oscuro";
 /* Background menu item: preset background color. */ "Dark Gray" = "Gris oscuro";
+/* Background menu item that opens a panel to choose a movie file as a muted looping background. */ "Choose Video…" = "Elegir video…";
