@@ -30,3 +30,5 @@ A library is a folder the user chooses, laid out as decided in [ADR 0007](adr/00
 - Identity is the `id` inside the file: a song that already has a file is saved to that file, whatever its name.
 - Listing reads every `*.song.json` in `Songs/`; a file that cannot be read is reported with its error, never skipped.
 - A plan is saved the same way to `Plans/<slug>-<first 8 hex digits of its id>.plan.json`, such as `sunday-gathering-d51b0c3e.plan.json`, with the slug made from its title, or `plan` when nothing is left ([ADR 0009](adr/0009-service-plan-format.md)).
+- Listing plans reports unreadable files like songs, and shows dated services newest first and templates (plans without a date) by title.
+- Resolving a plan finds the song of each song item by `id`; a missing song or arrangement is reported on that item, never as an error of the whole plan.
