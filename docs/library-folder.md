@@ -29,3 +29,4 @@ A library is a folder the user chooses, laid out as decided in [ADR 0007](adr/00
 - The slug is the title in lowercase ASCII, accents removed, words joined by `-`, at most 60 characters, or `song` when nothing is left.
 - Identity is the `id` inside the file: a song that already has a file is saved to that file, whatever its name.
 - Listing reads every `*.song.json` in `Songs/`; a file that cannot be read is reported with its error, never skipped.
+- A plan is saved the same way to `Plans/<slug>-<first 8 hex digits of its id>.plan.json`, such as `sunday-gathering-d51b0c3e.plan.json`, with the slug made from its title, or `plan` when nothing is left ([ADR 0009](adr/0009-service-plan-format.md)).
