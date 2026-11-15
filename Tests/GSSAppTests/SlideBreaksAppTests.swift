@@ -59,4 +59,18 @@ final class SlideBreaksAppTests: XCTestCase {
         let parts = SongPart.parts(of: song, maxLines: 4, wrap: .balanced)
         XCTAssertEqual(parts[0].slides.map(\.lines.count), [1, 4])
     }
+
+    func testDefaultSlidesFollowTheAudienceThemeLyricsSlot() throws {
+        let slot = OutputThemes.lyricsSlot(of: OutputThemes.audience)
+        XCTAssertEqual(slot.maxLines, 2)
+        XCTAssertEqual(slot.wrap, .balanced)
+        XCTAssertEqual(OutputThemes.lyricsSlot(of: OutputThemes.key).maxLines, 2, "the lower third fits two lines")
+        XCTAssertEqual([OutputThemes.slideMaxLines], [2])
+        XCTAssertEqual(OutputThemes.slideWrap, .balanced)
+        let byDefault = SongPart.parts(of: fiveLineSong).map { $0.slides.map(\.lines.count) }
+        let byTheme = SongPart.parts(of: fiveLineSong, maxLines: slot.maxLines!, wrap: slot.wrap!).map { $0.slides.map(\.lines.count) }
+        XCTAssertEqual(byDefault, byTheme)
+        XCTAssertEqual(byDefault.first, [2, 2, 1], "five lines at two per slide")
+        for theme in [OutputThemes.audience, OutputThemes.key] { XCTAssertNoThrow(try theme.validate()) }
+    }
 }

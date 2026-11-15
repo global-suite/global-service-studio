@@ -6,7 +6,8 @@ import SwiftUI
 enum OutputThemes {
     private static func lyrics(x: Double, y: Double, width: Double, height: Double, size: Double) -> [String: ThemeSlot] {
         [Theme.lyricsSlot: ThemeSlot(frame: ThemeFrame(x: x, y: y, width: width, height: height),
-                                     font: ThemeFont(family: "Helvetica Neue", weight: .bold, size: size), color: "#FFFFFF", align: .center)]
+                                     font: ThemeFont(family: "Helvetica Neue", weight: .bold, size: size), color: "#FFFFFF", align: .center,
+                                     maxLines: 2, wrap: .balanced)]
     }
 
     private static func theme(_ id: String, _ name: String, slots: [String: ThemeSlot]) -> Theme {
@@ -26,6 +27,11 @@ enum OutputThemes {
 
     /// The lyrics slot of a theme, or the audience one when the theme has none.
     static func lyricsSlot(of theme: Theme) -> ThemeSlot { theme.slots[Theme.lyricsSlot] ?? audience.slots[Theme.lyricsSlot]! }
+
+    /// How songs are split into slides: by the audience theme's lyrics slot, since every output shows the same slides.
+    /// A slot without `maxLines` gives two lines; without `wrap`, balanced slides (ADR 0005).
+    static var slideMaxLines: Int { lyricsSlot(of: audience).maxLines ?? 2 }
+    static var slideWrap: ThemeWrap { lyricsSlot(of: audience).wrap ?? .balanced }
 }
 
 extension RGBA {

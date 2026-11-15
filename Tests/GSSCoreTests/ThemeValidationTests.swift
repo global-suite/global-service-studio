@@ -65,4 +65,8 @@ final class ThemeValidationTests: XCTestCase {
             }
         }
     }
+
+    func testBackgroundColorIsCheckedBeforeMedia() throws {
+        try check("invalidColor", at: "background.color") { $0.background = ThemeBackground(kind: .image, color: "zz") }
+    }
 }
