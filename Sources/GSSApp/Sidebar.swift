@@ -1,7 +1,7 @@
 import GSSLibrary
 import SwiftUI
 
-/// The sidebar: the service, still a placeholder, and the library's songs with a search field.
+/// The sidebar: the items of the service, with the live and next ones marked in words, and the library's songs with a search field.
 /// The search field is a `TextField`, not `.searchable`, which on macOS 13 goes to the toolbar instead of the section.
 struct Sidebar: View {
     @ObservedObject var state: AppState
@@ -9,7 +9,10 @@ struct Sidebar: View {
 
     var body: some View {
         List(selection: Binding(get: { state.openSongFile }, set: { url in url.map { state.perform(.openLibrarySong($0)) } })) {
-            Section(Strings.text("Service")) { Text(Strings.text("Nothing here yet")).foregroundColor(tertiary) }
+            Section(Strings.text("Service")) {
+                if state.program.plan.items.isEmpty { Text(Strings.text("Nothing here yet")).foregroundColor(tertiary) }
+                ForEach(state.program.plan.items.indices, id: \.self) { serviceRow($0) }
+            }
             Section(Strings.text("Library")) {
                 TextField(Strings.text("Search Songs"), text: Binding(get: { state.librarySearch }, set: { state.perform(.setLibrarySearch($0)) }))
                     .textFieldStyle(.roundedBorder)
@@ -22,12 +25,26 @@ struct Sidebar: View {
                 ForEach(state.librarySongs, id: \.url) { song in
                     // The open song is the selected row: accent fill from the list, and bold so it does not rely on color.
                     Label(song.title, systemImage: "music.note").fontWeight(song.url == state.openSongFile ? .semibold : .regular).lineLimit(1).tag(song.url)
+                        .contextMenu {
+                            Button(Strings.text("Add as Next Item")) { state.perform(.addToService(song.url, position: .next)) }
+                            Button(Strings.text("Add to End of Service")) { state.perform(.addToService(song.url, position: .end)) }
+                        }
                 }
                 if !state.libraryProblems.isEmpty { problems }
             }
         }
         .listStyle(.sidebar)
         .environment(\.defaultMinListRowHeight, 28)
+    }
+
+    /// A plan item: headers in secondary text; clicking an item previews its slides in Live without putting them on air.
+    private func serviceRow(_ item: Int) -> some View {
+        let isHeader = state.program.plan.items[item].kind == .header, mark = item == state.liveItem ? "LIVE" : item == state.nextItem ? "NEXT" : nil
+        return Button { state.perform(.previewItem(item)) } label: { HStack(spacing: 6) {
+            Text(state.program.title(of: item)).fontWeight(isHeader ? .semibold : .regular).foregroundColor(isHeader ? .secondary : .primary).lineLimit(1)
+            Spacer(minLength: 4)
+            if let mark { Text(Strings.text(mark)).font(.system(size: 10, weight: .bold)).foregroundColor((mark == "LIVE" ? Appearance.live : Appearance.next).color) }
+        }.contentShape(Rectangle()) }.buttonStyle(.plain)
     }
 
     private var problems: some View {

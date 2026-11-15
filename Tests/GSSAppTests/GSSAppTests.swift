@@ -321,8 +321,8 @@ final class GSSAppTests: XCTestCase {
         XCTAssertEqual(state.song, song)
         XCTAssertEqual(state.parts.map(\.section.id), ["v1", "c1", "c1"])
         XCTAssertEqual(state.slides.map(\.lines), [["First words", "Second words"], ["Third words"], ["Refrain words"], ["Refrain words"]])
-        XCTAssertEqual([state.liveIndex, state.selectedPart], [0, 0])
-        XCTAssertFalse(state.isCleared)
+        XCTAssertEqual([state.liveIndex, state.selectedPart, state.programIndex], [-1, 0, 9])
+        XCTAssertTrue(state.isCleared)
         state.perform(.loadSong(Song(title: "Empty", language: "en", sections: [])))
         XCTAssertEqual(state.song, song, "a song without slides is ignored")
     }
