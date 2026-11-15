@@ -1,7 +1,7 @@
 import Foundation
 
 extension Song {
-    /// Checks unique ids, references, primary-language text and chord offsets.
+    /// Checks unique ids, references, primary-language text, chord offsets and backgrounds.
     public func validate() throws {
         func fail(_ reason: String, _ path: String) -> FormatError { .validation(reason: reason, at: path) }
         var sectionIds = Set<String>()
@@ -29,6 +29,10 @@ extension Song {
         }
         if let defaultArrangement, !arrangementIds.contains(defaultArrangement) {
             throw fail("unknownArrangement", "defaultArrangement")
+        }
+        try backgrounds?.defaultBackground?.validate(at: "backgrounds.default")
+        for (key, background) in (backgrounds?.sections ?? [:]).sorted(by: { $0.key < $1.key }) {
+            try background.validate(at: "backgrounds.sections.\(key)")
         }
     }
 }

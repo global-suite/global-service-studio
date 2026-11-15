@@ -21,6 +21,7 @@ public struct Song: Equatable, Sendable {
     public var defaultArrangement: String?
     public var externalIds: [String: JSONValue]?
     public var extensions: [String: JSONValue]?
+    public var backgrounds: SongBackgrounds?
     public var unknown: [String: JSONValue] = [:]
 
     public init(id: UUID = UUID(), title: String, language: String, sections: [SongSection]) {
@@ -44,6 +45,7 @@ public struct Song: Equatable, Sendable {
         song.defaultArrangement = try reader.optional("defaultArrangement")
         song.externalIds = try reader.optional("externalIds")
         song.extensions = try reader.optional("extensions")
+        song.backgrounds = try reader.optional("backgrounds")
         song.unknown = reader.unknown
         try song.validate()
         return song
@@ -56,7 +58,7 @@ public struct Song: Equatable, Sendable {
             "copyright": copyright?.json, "ccliNumber": ccliNumber?.json, "key": key?.json, "tempo": tempo?.json,
             "timeSignature": timeSignature?.json, "tags": tags?.json, "sections": sections.json,
             "arrangements": arrangements?.json, "defaultArrangement": defaultArrangement?.json,
-            "externalIds": externalIds?.json, "extensions": extensions?.json,
+            "externalIds": externalIds?.json, "extensions": extensions?.json, "backgrounds": backgrounds?.json,
         ]
         let envelope = Envelope.fields(format: Self.format, version: Self.supportedVersion, id: id)
         return try JSONValue.object(fields.merging(envelope) { $1 }, unknown: unknown).canonicalData()
