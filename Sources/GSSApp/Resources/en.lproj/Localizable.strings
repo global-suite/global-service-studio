@@ -147,3 +147,8 @@
 /* Alert text when the chosen song file is XML but not an OpenLyrics song. */ "This XML file is not an OpenLyrics song." = "This XML file is not an OpenLyrics song.";
 /* Alert title after opening an OpenLyrics song when some verses were left out. */ "Some verses were not imported." = "Some verses were not imported.";
 /* One line of the alert listing verses left out of an opened song: %1$@ is the verse name, such as v1, %2$@ its language code. */ "%1$@ (language: %2$@)" = "%1$@ (language: %2$@)";
+
+/* Output menu: submenu with the displays and the show command of the stage output, a teleprompter for singers and the band. */ "Stage Output" = "Stage Output";
+/* Stage Output menu item (Cmd-Shift-T) that shows the stage teleprompter on the chosen display. */ "Show Stage Output" = "Show Stage Output";
+/* Stage Output menu item (Cmd-Shift-T) that takes the stage output off its display. */ "Hide Stage Output" = "Hide Stage Output";
+/* Stage Output menu: disabled item and tooltip shown when only one display is connected. */ "Connect a second display to show the stage output." = "Connect a second display to show the stage output.";
