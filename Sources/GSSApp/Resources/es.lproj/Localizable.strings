@@ -135,3 +135,11 @@
 /* Background menu item: preset background color. */ "Dark Blue" = "Azul oscuro";
 /* Background menu item: preset background color. */ "Dark Gray" = "Gris oscuro";
 /* Background menu item that opens a panel to choose a movie file as a muted looping background. */ "Choose Video…" = "Elegir video…";
+/* Live mode: text in the slide grid while the plan has no items. */ "Add songs to the service from the Library." = "Agrega canciones al servicio desde la Biblioteca.";
+/* Live mode: label next to the title of a plan item whose slides the grid shows without putting them on air. */ "Previewing · not on air" = "Vista previa · no está en vivo";
+/* Live mode: button that ends a preview and shows the live item's slides again. */ "Back to Live Item" = "Volver al elemento en vivo";
+/* Live mode: text next to LIVE in the band above the live slide while no slide is on air. */ "Nothing on air" = "Nada en vivo";
+/* Live mode: shown in the Next panel and button after the last slide of the service. */ "End of service" = "Fin del servicio";
+/* Live mode: shown in the Previous button on the first slide of the service. */ "Start of service" = "Inicio del servicio";
+/* Library sidebar: context menu item of a song that adds it to the service right after the live item. */ "Add as Next Item" = "Agregar como siguiente elemento";
+/* Library sidebar: context menu item of a song that adds it at the end of the service. */ "Add to End of Service" = "Agregar al final del servicio";

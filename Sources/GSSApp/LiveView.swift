@@ -4,7 +4,7 @@ extension RGBA {
     var color: Color { Color(nsColor: nsColor) }
 }
 
-/// Live mode: the live slide, the next one, the buttons to move, every slide of the song and the outputs, laid out by size class.
+/// Live mode: the live slide, the next one, the buttons to move, every slide of the program by plan item and the outputs, laid out by size class.
 struct LiveView: View {
     @ObservedObject var state: AppState
     let appearance: Appearance
@@ -34,7 +34,7 @@ struct LiveView: View {
 
     private func content(_ size: SizeClass, width: CGFloat, height: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            SongHeader(song: state.song)
+            header
             // Live and the Next column fill the width and end at the same height:
             // Next's slide plus its label (28) and the buttons (68) match Live's slide plus its band (28).
             // When the height caps Live, Regular and Wide give the width left over to Next, up to Live's width.
@@ -84,6 +84,17 @@ struct LiveView: View {
         .padding(EdgeInsets(top: 14, leading: 32, bottom: 16, trailing: 32))
     }
 
+    /// The title of the live item, or of the previewed item with a label that it is not on air and a way back.
+    private var header: some View {
+        HStack(spacing: 12) {
+            Text((state.previewItem ?? state.liveItem).map { state.program.title(of: $0) } ?? "").font(.system(size: 15, weight: .semibold)).foregroundColor(Appearance.label.color)
+            if state.previewItem != nil {
+                Text(Strings.text("Previewing · not on air")).fontWeight(.semibold).foregroundColor(Appearance.next.color)
+                Button(Strings.text("Back to Live Item")) { state.perform(.previewItem(nil)) }.controlSize(.small)
+            }
+        }.lineLimit(1).frame(height: 20)
+    }
+
     private var sectionTitle: some View {
         Text(Strings.text("Outputs")).font(.system(size: 11, weight: .medium)).foregroundColor(Appearance.labelSecondary.color)
     }
@@ -93,9 +104,9 @@ struct LiveView: View {
             HStack(spacing: 8) {
                 Circle().frame(width: 8, height: 8)
                 Text(Strings.text("LIVE")).font(.system(size: 13, weight: .heavy))
-                Text(Strings.text(state.isCleared ? "Cleared" : "On screen now")).font(.system(size: 13, weight: .bold))
+                Text(Strings.text(state.isCleared ? "Cleared" : state.isOnAir ? "On screen now" : "Nothing on air")).font(.system(size: 13, weight: .bold))
                 Spacer(minLength: 8)
-                Text(state.isCleared ? "" : state.liveSlide.position).font(.system(size: 11))
+                Text(state.isCleared || !state.isOnAir ? "" : state.liveSlide.position).font(.system(size: 11))
             }
             .lineLimit(1)
             .foregroundColor(appearance.window.color)
@@ -118,7 +129,7 @@ struct LiveView: View {
                 Text(state.nextSlide?.position ?? "").font(.system(size: 11)).foregroundColor(Appearance.labelSecondary.color).lineLimit(1)
             }
             .frame(height: 20)
-            SlideFace(lines: state.nextSlide?.lines ?? [Strings.text("End of song")], size: max(19, width / 30))
+            SlideFace(lines: state.nextSlide?.lines ?? [Strings.text("End of service")], size: max(19, width / 30))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Appearance.next.color, lineWidth: 2))
         }
@@ -132,7 +143,7 @@ struct LiveView: View {
                     KeyCap(label: "←", fill: appearance.window.color)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(Strings.text("Previous")).font(.system(size: 13, weight: .semibold)).foregroundColor(Appearance.label.color)
-                        Text(state.previousSlide?.position ?? Strings.text("Start of song")).font(.system(size: 11)).foregroundColor(Appearance.labelSecondary.color)
+                        Text(state.previousSlide?.position ?? Strings.text("Start of service")).font(.system(size: 11)).foregroundColor(Appearance.labelSecondary.color)
                     }
                     Spacer(minLength: 0)
                 }
@@ -147,7 +158,7 @@ struct LiveView: View {
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(Strings.text("Next")).font(.system(size: 17, weight: .bold))
-                        Text(state.nextSlide?.position ?? Strings.text("End of song")).font(.system(size: 11)).opacity(0.85)
+                        Text(state.nextSlide?.position ?? Strings.text("End of service")).font(.system(size: 11)).opacity(0.85)
                     }
                     Spacer(minLength: 6)
                     KeyCap(label: Strings.text("Space"), fill: appearance.window.color)
@@ -171,26 +182,38 @@ struct LiveView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(Strings.text("All slides")).font(.system(size: 13, weight: .semibold)).foregroundColor(Appearance.label.color)
             GeometryReader { grid in ScrollViewReader { proxy in
-                let columns = size.gridColumns(slides: state.slides.count, width: grid.size.width, height: grid.size.height)
+                let columns = size.gridColumns(slides: state.program.slides.count, width: grid.size.width, height: grid.size.height)
                 let textSize = min(16, max(11, (grid.size.width - 10 * CGFloat(columns - 1)) / CGFloat(columns) / 21))
                 ScrollView {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns), spacing: 10) {
-                        ForEach(state.slides.indices, id: \.self) { index in thumbnail(index, textSize: textSize).id(index) }
+                    if state.program.slides.isEmpty { Text(Strings.text("Add songs to the service from the Library.")).foregroundColor(Appearance.labelTertiary.color) }
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        ForEach(state.program.plan.items.indices, id: \.self) { item in
+                            let range = state.program.range(of: item)
+                            if state.program.plan.items[item].kind == .header || !range.isEmpty {
+                                Text(state.program.title(of: item)).font(.system(size: 12, weight: .semibold)).foregroundColor(Appearance.labelSecondary.color).id("item\(item)")
+                            }
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns), spacing: 10) {
+                                ForEach(range, id: \.self) { index in thumbnail(index, textSize: textSize).id(index) }
+                            }
+                        }
                     }
                     .padding(3)
                 }
                 .frame(maxHeight: .infinity)
-                .onChange(of: state.liveIndex) { index in
-                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { proxy.scrollTo(index / columns * columns, anchor: .top) }
+                .onChange(of: state.programIndex) { index in
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { proxy.scrollTo(index, anchor: .top) }
                 }
+                .onChange(of: state.previewItem) { item in withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                    if let item { proxy.scrollTo("item\(item)", anchor: .top) } else { proxy.scrollTo(state.programIndex, anchor: .top) }
+                } }
             } }
         }
     }
 
     private func thumbnail(_ index: Int, textSize: CGFloat) -> some View {
-        let isLive = index == state.liveIndex, isNext = index == state.liveIndex + 1
-        return SlideThumbnail(number: index + 1, slide: state.slides[index], textSize: textSize, ring: isLive ? Appearance.live : isNext ? Appearance.next : appearance.separator,
-                              ringWidth: isLive ? 3 : isNext ? 2 : 1, badge: isLive ? "LIVE" : isNext ? "NEXT" : nil, dimmed: index < state.liveIndex) { state.perform(.goToSlide(index)) }
+        let isLive = index == state.programIndex, isNext = index == state.programIndex + 1
+        return SlideThumbnail(number: index + 1, slide: state.program.slides[index].slide, textSize: textSize, ring: isLive ? Appearance.live : isNext ? Appearance.next : appearance.separator,
+                              ringWidth: isLive ? 3 : isNext ? 2 : 1, badge: isLive ? "LIVE" : isNext ? "NEXT" : nil, dimmed: index < state.programIndex) { state.perform(.goToSlide(index)) }
     }
 }
 
