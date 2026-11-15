@@ -143,6 +143,10 @@
 /* Live mode: shown in the Previous button on the first slide of the service. */ "Start of service" = "Start of service";
 /* Library sidebar: context menu item of a song that adds it to the service right after the live item. */ "Add as Next Item" = "Add as Next Item";
 /* Library sidebar: context menu item of a song that adds it at the end of the service. */ "Add to End of Service" = "Add to End of Service";
+/* Alert text when the chosen song file is not well-formed XML; %ld is the line where reading stopped. */ "This file is not valid XML (line %ld)." = "This file is not valid XML (line %ld).";
+/* Alert text when the chosen song file is XML but not an OpenLyrics song. */ "This XML file is not an OpenLyrics song." = "This XML file is not an OpenLyrics song.";
+/* Alert title after opening an OpenLyrics song when some verses were left out. */ "Some verses were not imported." = "Some verses were not imported.";
+/* One line of the alert listing verses left out of an opened song: %1$@ is the verse name, such as v1, %2$@ its language code. */ "%1$@ (language: %2$@)" = "%1$@ (language: %2$@)";
 
 /* Output menu: submenu with the displays and the show command of the stage output, a teleprompter for singers and the band. */ "Stage Output" = "Stage Output";
 /* Stage Output menu item (Cmd-Shift-T) that shows the stage teleprompter on the chosen display. */ "Show Stage Output" = "Show Stage Output";

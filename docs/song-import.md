@@ -23,6 +23,8 @@ The plan below does not depend on that changing.
 
 ## OpenLyrics import
 
+File → Open Song… opens OpenLyrics files (`.xml`) as well as plain text, and lists any skipped verses in an alert after opening.
+
 `OpenLyricsImporter` in `GSSCore/Import` reads [OpenLyrics 0.9](https://docs.openlyrics.org/en/latest/dataformat.html) files with Foundation's `XMLParser`. It returns the song and a list of verses it left out (`skipped`, each with its name, language and reason).
 
 | OpenLyrics | Song |
