@@ -2,8 +2,8 @@ import AppKit
 
 /// The main menu, built in code.
 enum MainMenu {
-    /// `output` is the Output menu, kept up to date by its owner.
-    static func make(output: NSMenu) -> NSMenu {
+    /// `output` is the Output menu, kept up to date by its owner; `services` fills the templates submenu of the File menu.
+    static func make(output: NSMenu, services: ServiceMenus) -> NSMenu {
         let text = { (key: String) in Strings.text(key) }, name = Strings.appName
         let windowMenu = submenu(text("Window"), [item(text("Minimize"), #selector(NSWindow.performMiniaturize(_:)), "m"), item(text("Zoom"), #selector(NSWindow.performZoom(_:)))])
         NSApp.windowsMenu = windowMenu.submenu
@@ -17,7 +17,7 @@ enum MainMenu {
                 item(String(format: text("Hide %@"), name), #selector(NSApplication.hide(_:)), "h"), .separator(),
                 item(String(format: text("Quit %@"), name), #selector(NSApplication.terminate(_:)), "q"),
             ]),
-            submenu(text("File"), [
+            submenu(text("File"), serviceItems(services) + [
                 item(text("Open Song…"), #selector(MainWindowController.openSong(_:)), "o"), item(text("Save Song"), #selector(MainWindowController.saveSong(_:)), "s"),
                 item(text("Choose Library Folder…"), #selector(MainWindowController.chooseLibraryFolder(_:))),
             ]),
@@ -50,5 +50,16 @@ enum MainMenu {
         items.forEach(menu.addItem)
         item.submenu = menu
         return item
+    }
+
+    /// New Service ⌘N, New Service from Template, Open Service…, Save Service ⇧⌘S and Service Info….
+    private static func serviceItems(_ services: ServiceMenus) -> [NSMenuItem] {
+        let text = { (key: String) in Strings.text(key) }, templates = NSMenuItem(title: text("New Service from Template"), action: nil, keyEquivalent: "")
+        (services.templates.title, services.templates.delegate, templates.submenu) = (templates.title, services, services.templates)
+        return [
+            item(text("New Service"), #selector(MainWindowController.newService(_:)), "n"), templates,
+            item(text("Open Service…"), #selector(MainWindowController.openService(_:))), item(text("Save Service"), #selector(MainWindowController.saveService(_:)), "S"),
+            item(text("Service Info…"), #selector(MainWindowController.showServiceInfo(_:))), .separator(),
+        ]
     }
 }
