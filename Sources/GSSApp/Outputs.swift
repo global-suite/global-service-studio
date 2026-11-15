@@ -61,27 +61,11 @@ struct OutputMonitor: View {
     }
 
     @ViewBuilder private var screen: some View {
-        let lines = state.shownLines.joined(separator: "\n")
         switch output.kind {
         case .audience:
             AudienceOutputView(state: state)
         case .stage:
-            VStack(alignment: .leading, spacing: width / 60) {
-                HStack {
-                    Text(state.isCleared ? "" : state.liveSlide.heading())
-                    Spacer()
-                    TimelineView(.everyMinute) { Text($0.date, style: .time).font(.system(size: width / 20, weight: .semibold)).monospacedDigit().foregroundColor(.white) }
-                }
-                .foregroundColor(Appearance.labelSecondary.color)
-                Spacer(minLength: 0)
-                Text(lines).font(.system(size: width / 18, weight: .bold)).foregroundColor(.white)
-                Spacer(minLength: 0)
-                Text(state.nextSlide?.lines.joined(separator: " / ") ?? Strings.text("End of song")).foregroundColor(Appearance.labelSecondary.color)
-            }
-            .font(.system(size: width / 30))
-            .padding(width / 25)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .background(Color.black)
+            StageOutputView(state: state)
         case .key:
             KeyOutputView(state: state)
         }

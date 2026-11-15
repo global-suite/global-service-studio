@@ -18,12 +18,16 @@ extension NSScreen {
     var displayID: ScreenID? { (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value }
 }
 
-/// The display an output uses by default: the first, in order, that holds neither the operator window nor the other output (`avoiding`),
+/// The display an output uses by default: the first, in order, that holds neither the operator window nor another output (`avoiding`),
 /// else the first without the operator window; nil with a single display. When the operator's display is unknown, the first display counts as the operator's.
-func defaultOutputScreen(screens: [ScreenInfo], operatorScreenID: ScreenID?, avoiding other: ScreenID? = nil) -> ScreenInfo? {
+func defaultOutputScreen(screens: [ScreenInfo], operatorScreenID: ScreenID?, avoiding others: ScreenID?...) -> ScreenInfo? {
+    defaultOutputScreen(screens: screens, operatorScreenID: operatorScreenID, avoiding: others)
+}
+
+func defaultOutputScreen(screens: [ScreenInfo], operatorScreenID: ScreenID?, avoiding others: [ScreenID?]) -> ScreenInfo? {
     guard screens.count > 1 else { return nil }
     let operatorID = operatorScreenID ?? screens[0].id
-    return screens.first { $0.id != operatorID && $0.id != other } ?? screens.first { $0.id != operatorID }
+    return screens.first { $0.id != operatorID && !others.contains($0.id) } ?? screens.first { $0.id != operatorID }
 }
 
 /// A borderless window over a whole display, above the menu bar, that never takes keyboard focus or mouse events.
@@ -102,9 +106,9 @@ struct KeyOutputView: View {
 
 /// The Output menu: one submenu for each output, then the Background submenu when given.
 enum OutputMenu {
-    static func make(audience: NSMenu, key: NSMenu, background: NSMenu? = nil) -> NSMenu {
+    static func make(audience: NSMenu, key: NSMenu, stage: NSMenu? = nil, background: NSMenu? = nil) -> NSMenu {
         let menu = NSMenu(title: Strings.text("Output"))
-        for submenu in [audience, key] + (background.map { [$0] } ?? []) {
+        for submenu in [audience, key] + [stage, background].compactMap({ $0 }) {
             if submenu === background { menu.addItem(.separator()) }
             let item = NSMenuItem(title: submenu.title, action: nil, keyEquivalent: "")
             item.submenu = submenu
@@ -114,7 +118,7 @@ enum OutputMenu {
     }
 }
 
-/// Owns one output's menu and window, for the audience or the key role. The menu changes the state through commands; the window follows the state.
+/// Owns one output's menu and window, for the audience, key or stage role. The menu changes the state through commands; the window follows the state.
 final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     let state: AppState
     let role: OutputRole
@@ -127,11 +131,12 @@ final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValida
 
     init(state: AppState, role: OutputRole = .audience, operatorWindow: NSWindow?, screens: @escaping () -> [ScreenInfo] = ScreenInfo.connected) {
         (self.state, self.role, self.operatorWindow, self.screens) = (state, role, operatorWindow, screens)
-        menu = NSMenu(title: Strings.text(role == .key ? "Key Output" : "Audience Output"))
+        menu = NSMenu(title: Strings.text(Self.texts[role]!.title))
         super.init()
         menu.delegate = self
         menuNeedsUpdate(menu)
-        let shown = role == .key ? state.$isKeyOutputShown : state.$isAudienceOutputShown, screen = role == .key ? state.$keyOutputScreen : state.$outputScreen
+        let shown = [.key: state.$isKeyOutputShown, .stage: state.$isStageOutputShown][role] ?? state.$isAudienceOutputShown
+        let screen = [.key: state.$keyOutputScreen, .stage: state.$stageOutputScreen][role] ?? state.$outputScreen
         subscription = shown.combineLatest(screen).sink { [weak self] in self?.update(shown: $0, screen: $1) }
         observer = NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             self?.screensChanged()
@@ -140,14 +145,23 @@ final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValida
 
     deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
 
-    private var isShown: Bool { role == .key ? state.isKeyOutputShown : state.isAudienceOutputShown }
-    private var screen: ScreenID? { role == .key ? state.keyOutputScreen : state.outputScreen }
-    private var otherScreen: ScreenID? { role == .key ? state.outputScreen : state.keyOutputScreen }
-    private func select(_ screen: ScreenID?) { state.perform(role == .key ? .selectKeyOutputScreen(screen) : .selectOutputScreen(screen)) }
-    private func show(_ shown: Bool) { state.perform(role == .key ? .showKeyOutput(shown) : .showAudienceOutput(shown)) }
-    private var connectMessage: String {
-        Strings.text(role == .key ? "Connect a second display to show the key output." : "Connect a second display to show the audience output.")
+    /// Each role's menu title, show and hide items, shortcut with Command-Shift, and message when only one display is connected.
+    private static let texts: [OutputRole: (title: String, show: String, hide: String, key: String, connect: String)] = [
+        .audience: ("Audience Output", "Show Audience Output", "Hide Audience Output", "o", "Connect a second display to show the audience output."),
+        .key: ("Key Output", "Show Key Output", "Hide Key Output", "k", "Connect a second display to show the key output."),
+        .stage: ("Stage Output", "Show Stage Output", "Hide Stage Output", "t", "Connect a second display to show the stage output."),
+    ]
+    private var texts: (title: String, show: String, hide: String, key: String, connect: String) { Self.texts[role]! }
+    private var isShown: Bool { [.key: state.isKeyOutputShown, .stage: state.isStageOutputShown][role] ?? state.isAudienceOutputShown }
+    private var screen: ScreenID? { [.key: state.keyOutputScreen, .stage: state.stageOutputScreen][role] ?? state.outputScreen }
+    private var otherScreens: [ScreenID?] {
+        [.audience: state.outputScreen, .key: state.keyOutputScreen, .stage: state.stageOutputScreen].filter { $0.key != role }.map(\.value)
     }
+    private func select(_ screen: ScreenID?) {
+        state.perform([.key: .selectKeyOutputScreen(screen), .stage: .selectStageOutputScreen(screen)][role] ?? .selectOutputScreen(screen))
+    }
+    private func show(_ shown: Bool) { state.perform([.key: .showKeyOutput(shown), .stage: .showStageOutput(shown)][role] ?? .showAudienceOutput(shown)) }
+    private var connectMessage: String { Strings.text(texts.connect) }
 
     /// Closes the output when its display disconnects, follows a new size of its display and rebuilds the menu.
     func screensChanged() {
@@ -167,19 +181,19 @@ final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValida
         }
         if list.count < 2 { menu.addItem(withTitle: connectMessage, action: nil, keyEquivalent: "") }
         menu.addItem(.separator())
-        let toggle = NSMenuItem(title: Strings.text(role == .key ? "Show Key Output" : "Show Audience Output"), action: #selector(toggleOutput(_:)), keyEquivalent: role == .key ? "k" : "o")
+        let toggle = NSMenuItem(title: Strings.text(texts.show), action: #selector(toggleOutput(_:)), keyEquivalent: texts.key)
         (toggle.target, toggle.keyEquivalentModifierMask) = (self, [.command, .shift])
         menu.addItem(toggle)
     }
 
     @objc func selectScreen(_ sender: NSMenuItem) { select(ScreenID(sender.tag)) }
 
-    /// Hides the output, or shows it, first choosing a display other than the operator's and the other output's when none is chosen or it is gone.
+    /// Hides the output, or shows it, first choosing a display other than the operator's and the other outputs' when none is chosen or it is gone.
     @objc func toggleOutput(_ sender: Any?) {
         guard !isShown else { return show(false) }
         let list = screens()
         if !list.contains(where: { $0.id == screen }) {
-            select(defaultOutputScreen(screens: list, operatorScreenID: operatorWindow?.screen?.displayID, avoiding: otherScreen)?.id)
+            select(defaultOutputScreen(screens: list, operatorScreenID: operatorWindow?.screen?.displayID, avoiding: otherScreens)?.id)
         }
         show(true)
     }
@@ -188,8 +202,7 @@ final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValida
         let canShow = screens().count > 1
         if menuItem.action == #selector(selectScreen(_:)) { menuItem.state = ScreenID(menuItem.tag) == screen ? .on : .off }
         if menuItem.action == #selector(toggleOutput(_:)) {
-            let titles = role == .key ? ("Hide Key Output", "Show Key Output") : ("Hide Audience Output", "Show Audience Output")
-            menuItem.title = Strings.text(isShown ? titles.0 : titles.1)
+            menuItem.title = Strings.text(isShown ? texts.hide : texts.show)
             menuItem.toolTip = canShow ? nil : connectMessage
             return canShow || isShown
         }
@@ -199,7 +212,8 @@ final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValida
     /// Covers the chosen display while shown, without taking focus; hidden otherwise or when that display is not connected.
     private func update(shown: Bool, screen id: ScreenID?) {
         guard shown, let screen = NSScreen.screens.first(where: { $0.displayID == id }) else { return window?.orderOut(nil) ?? () }
-        let content = role == .key ? NSHostingView(rootView: AnyView(KeyOutputView(state: state))) : NSHostingView(rootView: AnyView(AudienceOutputView(state: state)))
+        let view = [.key: AnyView(KeyOutputView(state: state)), .stage: AnyView(StageOutputView(state: state))][role] ?? AnyView(AudienceOutputView(state: state))
+        let content = NSHostingView(rootView: view)
         let window = window ?? OutputWindow(content: content)
         self.window = window
         window.setFrame(screen.frame, display: true)
