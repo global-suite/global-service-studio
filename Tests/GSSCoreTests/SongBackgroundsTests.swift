@@ -127,4 +127,31 @@ final class SongBackgroundsTests: XCTestCase {
         song.backgrounds?.sections?["b9"] = ThemeBackground(kind: ThemeBackgroundKind(rawValue: "gradient"))
         XCTAssertNoThrow(try song.validate())
     }
+
+    func testDefaultIsCheckedBeforeSectionsAndSectionsInKeyOrder() throws {
+        try assertInvalid("missingColor", at: "backgrounds.default.color") {
+            $0.backgrounds?.defaultBackground = ThemeBackground(kind: .color)
+            $0.backgrounds?.sections?["a"] = ThemeBackground(kind: .color, color: "x")
+        }
+        try assertInvalid("missingMedia", at: "backgrounds.sections.a.media") {
+            $0.backgrounds?.sections = ["b": ThemeBackground(kind: .color, color: "x"),
+                                        "a": ThemeBackground(kind: .video), "c": ThemeBackground(kind: .image)]
+        }
+    }
+
+    func testSongRulesComeBeforeBackgrounds() throws {
+        try assertInvalid("duplicateSectionId", at: "sections[1].id") {
+            $0.sections[1].id = $0.sections[0].id
+            $0.backgrounds?.defaultBackground = ThemeBackground(kind: .color)
+        }
+    }
+
+    func testColorIsCheckedBeforeMediaEvenForUnknownKinds() throws {
+        try assertInvalid("invalidColor", at: "backgrounds.default.color") {
+            $0.backgrounds?.defaultBackground = ThemeBackground(kind: .image, color: "zz")
+        }
+        try assertInvalid("invalidColor", at: "backgrounds.default.color") {
+            $0.backgrounds?.defaultBackground = ThemeBackground(kind: ThemeBackgroundKind(rawValue: "gradient"), color: "nope")
+        }
+    }
 }
