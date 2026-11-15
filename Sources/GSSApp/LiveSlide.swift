@@ -25,8 +25,9 @@ public struct SongPart: Equatable, Sendable {
 
     /// The parts in the order of the default arrangement; a part is a repeat when its section was sung before.
     /// Shown once per run, a run's first part takes the slides, named "Chorus ×3", and the others have none.
-    /// Lines are grouped into slides of up to `maxLines` by `SlideBreaks`; the defaults give slides of two lines.
-    public static func parts(of song: Song, mode: RepetitionMode = .separateSlides, maxLines: Int = 2, wrap: ThemeWrap = .natural) -> [SongPart] {
+    /// Lines are grouped into slides of up to `maxLines` by `SlideBreaks`; when nil, as the audience theme's lyrics slot says.
+    public static func parts(of song: Song, mode: RepetitionMode = .separateSlides, maxLines: Int? = nil, wrap: ThemeWrap? = nil) -> [SongPart] {
+        let (maxLines, wrap) = (maxLines ?? OutputThemes.slideMaxLines, wrap ?? OutputThemes.slideWrap)
         let order = song.arrangements?.first { $0.id == song.defaultArrangement }?.sequence ?? song.sections.map(\.id)
         let sections = order.compactMap { id in song.sections.first { $0.id == id } }
         let runs = repetitions(of: sections.map(\.id))
