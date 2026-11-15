@@ -22,6 +22,9 @@ public enum AppCommand: Equatable, Sendable {
     /// Shows or hides the key output, like the audience output; a display holds one output, so choosing one moves the other output off it.
     case showKeyOutput(Bool)
     case selectKeyOutputScreen(ScreenID?)
+    /// Shows or hides the stage output, like the key output; a display holds one output, so choosing one moves another output off it.
+    case showStageOutput(Bool)
+    case selectStageOutputScreen(ScreenID?)
     /// Sets the key color, saved in the settings; anything but `#RRGGBB` is ignored.
     case setKeyColor(String)
     /// Makes a song the one prepared, from its first part; a song without slides is ignored. It never changes what is on air.
@@ -97,6 +100,10 @@ public final class AppState: ObservableObject {
     @Published public private(set) var isKeyOutputShown = false
     /// The display chosen for the key output.
     @Published public private(set) var keyOutputScreen: ScreenID?
+    /// Whether the stage output covers its display; only with a display chosen.
+    @Published public private(set) var isStageOutputShown = false
+    /// The display chosen for the stage output.
+    @Published public private(set) var stageOutputScreen: ScreenID?
     /// The color behind the words on the key output, as `#RRGGBB`.
     @Published public private(set) var keyColor: String
     /// How Live shows repeated parts.
@@ -182,12 +189,20 @@ public final class AppState: ObservableObject {
         case .selectOutputScreen(let screen):
             if screen == nil, isAudienceOutputShown { isAudienceOutputShown = false }
             if screen != nil, screen == keyOutputScreen { perform(.selectKeyOutputScreen(nil)) }
+            if screen != nil, screen == stageOutputScreen { perform(.selectStageOutputScreen(nil)) }
             if screen != outputScreen { outputScreen = screen }
         case .showKeyOutput(let shown): if shown != isKeyOutputShown, !shown || keyOutputScreen != nil { isKeyOutputShown = shown }
         case .selectKeyOutputScreen(let screen):
             if screen == nil, isKeyOutputShown { isKeyOutputShown = false }
             if screen != nil, screen == outputScreen { perform(.selectOutputScreen(nil)) }
+            if screen != nil, screen == stageOutputScreen { perform(.selectStageOutputScreen(nil)) }
             if screen != keyOutputScreen { keyOutputScreen = screen }
+        case .showStageOutput(let shown): if shown != isStageOutputShown, !shown || stageOutputScreen != nil { isStageOutputShown = shown }
+        case .selectStageOutputScreen(let screen):
+            if screen == nil, isStageOutputShown { isStageOutputShown = false }
+            if screen != nil, screen == outputScreen { perform(.selectOutputScreen(nil)) }
+            if screen != nil, screen == keyOutputScreen { perform(.selectKeyOutputScreen(nil)) }
+            if screen != stageOutputScreen { stageOutputScreen = screen }
         case .setKeyColor(let value):
             guard let color = KeyColor(hex: value) else { return }
             settings?.keyColor = color.hex

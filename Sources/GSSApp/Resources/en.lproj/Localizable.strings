@@ -143,3 +143,8 @@
 /* Live mode: shown in the Previous button on the first slide of the service. */ "Start of service" = "Start of service";
 /* Library sidebar: context menu item of a song that adds it to the service right after the live item. */ "Add as Next Item" = "Add as Next Item";
 /* Library sidebar: context menu item of a song that adds it at the end of the service. */ "Add to End of Service" = "Add to End of Service";
+
+/* Output menu: submenu with the displays and the show command of the stage output, a teleprompter for singers and the band. */ "Stage Output" = "Stage Output";
+/* Stage Output menu item (Cmd-Shift-T) that shows the stage teleprompter on the chosen display. */ "Show Stage Output" = "Show Stage Output";
+/* Stage Output menu item (Cmd-Shift-T) that takes the stage output off its display. */ "Hide Stage Output" = "Hide Stage Output";
+/* Stage Output menu: disabled item and tooltip shown when only one display is connected. */ "Connect a second display to show the stage output." = "Connect a second display to show the stage output.";
