@@ -60,6 +60,19 @@ public enum AppCommand: Equatable, Sendable {
     case setBackground(Background)
     /// Takes the background off and leaves the slide.
     case clearBackground
+
+    /// Starts an empty service titled "Service" dated today; it is not saved until Save Service.
+    case newService
+    /// Starts a service dated today with a template's items and a new id; the template file is not changed.
+    case newServiceFromTemplate(URL)
+    /// Opens a service file with the songs the library holds; items whose song or arrangement is missing are reported in `alert`.
+    case openService(URL)
+    /// Opens the most recently changed dated service of the library, else starts a new one; never creates the library.
+    case openLaunchService
+    /// Saves the service in the library, creating the library the first time; a failure is reported in `alert`.
+    case saveService
+    /// Changes the title and the `YYYY-MM-DD` date of the service; an empty title or an invalid date is ignored.
+    case setServiceInfo(title: String, date: String)
 }
 
 /// A file of the library the list cannot show, with the localized reason.
@@ -132,6 +145,11 @@ public final class AppState: ObservableObject {
 
     /// The library file the current song was opened from or saved to; nil for a song from elsewhere.
     @Published public private(set) var openSongFile: URL?
+
+    /// The file the service was opened from or saved to; nil for a service never saved.
+    @Published public private(set) var serviceFile: URL?
+    /// Whether the plan changed since the service was opened, started or saved.
+    @Published public private(set) var hasUnsavedServiceChanges = false
 
     /// The background of the media layer, which slide changes and Clear Slide leave alone.
     @Published public private(set) var background: Background = .none
@@ -267,7 +285,66 @@ public final class AppState: ObservableObject {
             }
         case .setBackground(let background): setBackground(background)
         case .clearBackground: setBackground(.none)
+        default: performService(command)
         }
+    }
+
+    /// The service commands: new, from a template, open, save and its title and date.
+    private func performService(_ command: AppCommand) {
+        switch command {
+        case .newService: startService(Plan(title: Strings.text("Service"), date: ServiceDate.today, items: []), file: nil)
+        case .newServiceFromTemplate(let url):
+            readService(url) { template in
+                var plan = template
+                (plan.id, plan.date, plan.externalIds) = (UUID(), ServiceDate.today, nil)
+                startService(plan, file: nil)
+                hasUnsavedServiceChanges = true
+            }
+        case .openService(let url): readService(url) { startService($0, file: url) }
+        case .openLaunchService:
+            let plans = Library.exists(at: libraryFolder) ? (try? Library.open(libraryFolder).plans().plans) ?? [] : []
+            let latest = plans.filter { !$0.plan.isTemplate }.max { $0.modified < $1.modified }
+            if let latest { startService(latest.plan, file: latest.url) } else { performService(.newService) }
+        case .saveService:
+            library("The service could not be saved.") {
+                serviceFile = try Library.open(libraryFolder).save(program.plan)
+                hasUnsavedServiceChanges = false
+            }
+        case .setServiceInfo(let title, let date):
+            var plan = program.plan
+            (plan.title, plan.date) = (title.trimmingCharacters(in: .whitespacesAndNewlines), date)
+            guard !plan.title.isEmpty, (try? plan.validate()) != nil, plan != program.plan else { return }
+            planChanged(plan)
+        default: break
+        }
+    }
+
+    /// Reads a plan file and passes it on; a file that cannot be read is reported in `alert`.
+    private func readService(_ url: URL, _ use: (Plan) -> Void) {
+        do { use(try Plan.decode(from: Data(contentsOf: url))) } catch {
+            alert = AppAlert(title: Strings.text("The service could not be opened."), message: Strings.text("This file is not a valid service file."))
+        }
+    }
+
+    /// Makes a plan the service with the songs the library holds, nothing on air, and reports each item whose song or arrangement is missing.
+    private func startService(_ plan: Plan, file: URL?) {
+        var resolved: [ResolvedPlanItem] = []
+        if Library.exists(at: libraryFolder) {
+            library("The service could not be opened.") { resolved = try Library.open(libraryFolder).resolve(plan, index: index).items }
+        }
+        perform(.openPlan(plan, songs: resolved.compactMap { $0.song?.song }))
+        (serviceFile, hasUnsavedServiceChanges) = (file, false)
+        let lines = resolved.filter { $0.problem != nil }.map { item in
+            String(format: Strings.text(item.song == nil ? "“%@” is not in the library." : "“%@” uses an arrangement its song does not have."),
+                   item.item.title ?? item.song?.song.title ?? item.item.id)
+        }
+        if !lines.isEmpty { alert = AppAlert(title: Strings.text("Some items of the service could not be found."), message: lines.joined(separator: "\n")) }
+    }
+
+    /// Rebuilds the program for an edited plan and marks the service as changed; every edit of the plan goes through here.
+    private func planChanged(_ plan: Plan, songs: [UUID: Song]? = nil) {
+        rebuildProgram(plan: plan, songs: songs)
+        if !hasUnsavedServiceChanges { hasUnsavedServiceChanges = true }
     }
 
     /// Adds a song item to the plan after the live item (first when nothing is on air) or at the end, keeping the live slide and the preview.
@@ -276,7 +353,7 @@ public final class AppState: ObservableObject {
         let index = position == .end ? plan.items.count : liveItem.map { $0 + 1 } ?? 0
         plan.items.insert(PlanItem(id: UUID().uuidString.lowercased(), kind: .song, title: song.title, song: song.id), at: index)
         if let preview = previewItem, preview >= index { previewItem = preview + 1 }
-        rebuildProgram(plan: plan, songs: program.songs.merging([song.id: song]) { old, _ in old })
+        planChanged(plan, songs: program.songs.merging([song.id: song]) { old, _ in old })
     }
 
     /// Rebuilds the program keeping the live slide on its item: on `liveIndex` when the item shows the prepared slides, else at its place, clamped.

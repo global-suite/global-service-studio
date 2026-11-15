@@ -355,7 +355,7 @@ final class GSSAppTests: XCTestCase {
         XCTAssertThrowsError(try SongFile.read(empty)) { XCTAssertEqual(SongFile.message(for: $0), Strings.text("This file has no lyrics.")) }
         XCTAssertThrowsError(try SongFile.read(folder.appendingPathComponent("Missing.txt"))) { XCTAssertEqual(SongFile.message(for: $0), Strings.text("This file could not be read.")) }
         XCTAssertEqual(Strings.text("This file has no lyrics.", language: "es"), "Este archivo no tiene letra.")
-        let file = try XCTUnwrap(MainMenu.make(output: NSMenu()).items.first { $0.title == Strings.text("File") }?.submenu?.items.first)
+        let file = try XCTUnwrap(MainMenu.make(output: NSMenu(), services: ServiceMenus(state: AppState())).items.first { $0.title == Strings.text("File") }?.submenu?.items.first { $0.keyEquivalent == "o" })
         XCTAssertEqual([file.title, file.keyEquivalent, Strings.text("File", language: "es"), Strings.text("Open Song…", language: "es")], [Strings.text("Open Song…"), "o", "Archivo", "Abrir canción…"])
         XCTAssertEqual(file.action, #selector(MainWindowController.openSong(_:)))
     }
@@ -580,9 +580,11 @@ final class GSSAppTests: XCTestCase {
         state.perform(.saveSong)
         XCTAssertEqual(try Library.open(folder).songs().songs.map(\.song), [state.song])
         XCTAssertNil(state.alert)
-        let file = try XCTUnwrap(MainMenu.make(output: NSMenu()).items.first { $0.title == Strings.text("File") }?.submenu)
-        XCTAssertEqual(file.items.map(\.keyEquivalent), ["o", "s", ""])
-        XCTAssertEqual(file.items.map(\.action), [#selector(MainWindowController.openSong(_:)), #selector(MainWindowController.saveSong(_:)), #selector(MainWindowController.chooseLibraryFolder(_:))])
+        let menu = MainMenu.make(output: NSMenu(), services: ServiceMenus(state: state))
+        let file = try XCTUnwrap(menu.items.first { $0.title == Strings.text("File") }?.submenu)
+        XCTAssertEqual(file.items.map(\.keyEquivalent), ["n", "", "", "S", "", "", "o", "s", ""])
+        let songItems = file.items.suffix(3).map(\.action)
+        XCTAssertEqual(songItems, [#selector(MainWindowController.openSong(_:)), #selector(MainWindowController.saveSong(_:)), #selector(MainWindowController.chooseLibraryFolder(_:))])
         XCTAssertEqual(["Save Song", "Choose Library Folder…"].map { Strings.text($0, language: "es") }, ["Guardar canción", "Elegir carpeta de biblioteca…"])
     }
 

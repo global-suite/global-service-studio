@@ -9,10 +9,10 @@ struct Sidebar: View {
 
     var body: some View {
         List(selection: Binding(get: { state.openSongFile }, set: { url in url.map { state.perform(.openLibrarySong($0)) } })) {
-            Section(Strings.text("Service")) {
+            Section {
                 if state.program.plan.items.isEmpty { Text(Strings.text("Nothing here yet")).foregroundColor(tertiary) }
                 ForEach(state.program.plan.items.indices, id: \.self) { serviceRow($0) }
-            }
+            } header: { serviceHeader }
             Section(Strings.text("Library")) {
                 TextField(Strings.text("Search Songs"), text: Binding(get: { state.librarySearch }, set: { state.perform(.setLibrarySearch($0)) }))
                     .textFieldStyle(.roundedBorder)
@@ -45,6 +45,15 @@ struct Sidebar: View {
             Spacer(minLength: 4)
             if let mark { Text(Strings.text(mark)).font(.system(size: 10, weight: .bold)).foregroundColor((mark == "LIVE" ? Appearance.live : Appearance.next).color) }
         }.contentShape(Rectangle()) }.buttonStyle(.plain)
+    }
+
+    /// The service's title and date, and "Unsaved" in words while it has unsaved changes.
+    private var serviceHeader: some View {
+        HStack(spacing: 6) {
+            Text(state.program.plan.title).lineLimit(1).truncationMode(.tail)
+            if let date = ServiceDate.display(state.program.plan.date) { Text(date).foregroundColor(.secondary).lineLimit(1).layoutPriority(1) }
+            if state.hasUnsavedServiceChanges { Text(Strings.text("Unsaved")).foregroundColor(.secondary).lineLimit(1).layoutPriority(1) }
+        }
     }
 
     private var problems: some View {
