@@ -52,13 +52,15 @@ enum MainMenu {
         return item
     }
 
-    /// New Service ⌘N, New Service from Template, Open Service…, Save Service ⇧⌘S and Service Info….
+    /// New Service ⌘N, New Service from Template, Open Service…, Open Recent Service, Save Service ⇧⌘S and Service Info….
     private static func serviceItems(_ services: ServiceMenus) -> [NSMenuItem] {
         let text = { (key: String) in Strings.text(key) }, templates = NSMenuItem(title: text("New Service from Template"), action: nil, keyEquivalent: "")
         (services.templates.title, services.templates.delegate, templates.submenu) = (templates.title, services, services.templates)
+        let recent = NSMenuItem(title: text("Open Recent Service"), action: nil, keyEquivalent: "")
+        (services.recent.title, services.recent.delegate, recent.submenu) = (recent.title, services, services.recent)
         return [
             item(text("New Service"), #selector(MainWindowController.newService(_:)), "n"), templates,
-            item(text("Open Service…"), #selector(MainWindowController.openService(_:))), item(text("Save Service"), #selector(MainWindowController.saveService(_:)), "S"),
+            item(text("Open Service…"), #selector(MainWindowController.openService(_:))), recent, item(text("Save Service"), #selector(MainWindowController.saveService(_:)), "S"),
             item(text("Service Info…"), #selector(MainWindowController.showServiceInfo(_:))), .separator(),
         ]
     }
