@@ -8,10 +8,11 @@ struct Sidebar: View {
     private let tertiary = Color(nsColor: Appearance.labelTertiary.nsColor)
 
     var body: some View {
-        List(selection: Binding(get: { state.openSongFile }, set: { url in url.map { state.perform(.openLibrarySong($0)) } })) {
+        List(selection: Binding(get: { state.openSongFile }, set: { url in url.map { state.perform(.openLibrarySong($0)); state.perform(.selectPlanItem(nil)) } })) {
             Section {
                 if state.program.plan.items.isEmpty { Text(Strings.text("Nothing here yet")).foregroundColor(tertiary) }
                 ForEach(state.program.plan.items.indices, id: \.self) { serviceRow($0) }
+                    .onMove { from, to in from.first.map { state.perform(.movePlanItem(from: $0, to: to > $0 ? to - 1 : to)) } }
             } header: { serviceHeader }
             Section(Strings.text("Library")) {
                 TextField(Strings.text("Search Songs"), text: Binding(get: { state.librarySearch }, set: { state.perform(.setLibrarySearch($0)) }))
@@ -37,14 +38,38 @@ struct Sidebar: View {
         .environment(\.defaultMinListRowHeight, 28)
     }
 
-    /// A plan item: headers in secondary text; clicking an item previews its slides in Live without putting them on air.
+    /// A plan item: headers in secondary text; clicking an item edits it in Prepare, and in Live previews its slides without putting them on air.
     private func serviceRow(_ item: Int) -> some View {
         let isHeader = state.program.plan.items[item].kind == .header, mark = item == state.liveItem ? "LIVE" : item == state.nextItem ? "NEXT" : nil
-        return Button { state.perform(.previewItem(item)) } label: { HStack(spacing: 6) {
-            Text(state.program.title(of: item)).fontWeight(isHeader ? .semibold : .regular).foregroundColor(isHeader ? .secondary : .primary).lineLimit(1)
+        let isSelected = state.mode == .prepare && item == state.selectedPlanItem
+        return Button { state.perform(state.mode == .prepare ? .selectPlanItem(item) : .previewItem(item)) } label: { HStack(spacing: 6) {
+            Text(state.program.title(of: item)).fontWeight(isHeader || isSelected ? .semibold : .regular).foregroundColor(isHeader ? .secondary : .primary).lineLimit(1)
             Spacer(minLength: 4)
             if let mark { Text(Strings.text(mark)).font(.system(size: 10, weight: .bold)).foregroundColor((mark == "LIVE" ? Appearance.live : Appearance.next).color) }
         }.contentShape(Rectangle()) }.buttonStyle(.plain)
+        .listRowBackground(isSelected ? RoundedRectangle(cornerRadius: 5).fill(Appearance.controlHover.color).padding(.horizontal, 8) : nil)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .contextMenu {
+            Button(Strings.text("Move Up")) { state.perform(.movePlanItem(from: item, to: item - 1)) }.disabled(item == 0)
+            Button(Strings.text("Move Down")) { state.perform(.movePlanItem(from: item, to: item + 1)) }.disabled(item == state.program.plan.items.count - 1)
+            Divider()
+            Button(Strings.text("Remove from Service")) { state.perform(.removePlanItem(at: item)) }.disabled(item == state.liveItem)
+        }
+    }
+
+    /// The Add menu of the Service section: a new item after the item being edited, or at the end, opened in Prepare's editor.
+    private var addMenu: some View {
+        Menu {
+            ForEach(PlanEditing.newKinds, id: \.menu) { kind in
+                Button(Strings.text(kind.menu)) {
+                    let index = (state.mode == .prepare ? state.selectedPlanItem : nil).map { $0 + 1 } ?? state.program.plan.items.count
+                    state.perform(.insertPlanItem(PlanEditing.newItem(kind.kind), at: index))
+                    if state.mode == .prepare { state.perform(.selectPlanItem(index)) }
+                }
+            }
+        } label: { Image(systemName: "plus") }
+        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+        .help(Strings.text("Add to Service")).accessibilityLabel(Strings.text("Add to Service"))
     }
 
     /// The service's title and date, and "Unsaved" in words while it has unsaved changes.
@@ -53,6 +78,8 @@ struct Sidebar: View {
             Text(state.program.plan.title).lineLimit(1).truncationMode(.tail)
             if let date = ServiceDate.display(state.program.plan.date) { Text(date).foregroundColor(.secondary).lineLimit(1).layoutPriority(1) }
             if state.hasUnsavedServiceChanges { Text(Strings.text("Unsaved")).foregroundColor(.secondary).lineLimit(1).layoutPriority(1) }
+            Spacer(minLength: 4)
+            addMenu
         }
     }
 

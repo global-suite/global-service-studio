@@ -55,14 +55,18 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
     @objc func goToPreviousSlide(_ sender: Any?) { state.perform(.previousSlide) }
 
     /// In Live mode, Space and Right arrow go to the next slide, Left arrow to the previous one, F1 clears the slide and F3 clears all.
-    /// In Prepare mode, outside the words editor, Left and Right arrows select the previous or next part and Delete removes it from the order.
-    /// Returns nil when the key was used.
+    /// In Prepare mode, outside the words editor, Left and Right arrows select the previous or next part and Delete removes it from the order;
+    /// with a plan item selected, Option-Up and Option-Down move it in the service and Delete removes it instead. Returns nil when the key was used.
     func handleKey(_ event: NSEvent) -> NSEvent? {
-        let part = state.selectedPart
-        let commands: [UInt16: AppCommand] = state.mode == .live ? [49: .nextSlide, 124: .nextSlide, 123: .previousSlide, 122: .clearSlide, 120: .clearBackground, 99: .clearAll]
+        let part = state.selectedPart, option = event.modifierFlags.contains(.option)
+        var commands: [UInt16: AppCommand] = state.mode == .live ? [49: .nextSlide, 124: .nextSlide, 123: .previousSlide, 122: .clearSlide, 120: .clearBackground, 99: .clearAll]
             : [123: .selectPart(part - 1), 124: .selectPart(part + 1), 51: .removeArrangementItem(at: part), 117: .removeArrangementItem(at: part)]
+        if state.mode == .prepare, let item = state.selectedPlanItem {
+            commands = option ? [126: .movePlanItem(from: item, to: item - 1), 125: .movePlanItem(from: item, to: item + 1)] : [51: .removePlanItem(at: item), 117: .removePlanItem(at: item)]
+        }
+        let blocked: NSEvent.ModifierFlags = option && state.mode == .prepare ? [.command, .control] : [.command, .control, .option]
         guard event.window === window, !(window?.firstResponder is NSText),
-              event.modifierFlags.isDisjoint(with: [.command, .control, .option]), let command = commands[event.keyCode] else { return event }
+              event.modifierFlags.isDisjoint(with: blocked), let command = commands[event.keyCode] else { return event }
         state.perform(command)
         return nil
     }
@@ -101,6 +105,8 @@ struct ModeContent: View {
     let appearance: Appearance
 
     var body: some View {
-        if state.mode == .live { LiveView(state: state, appearance: appearance) } else { PrepareView(state: state, appearance: appearance) }
+        if state.mode == .live { LiveView(state: state, appearance: appearance) }
+        else if let item = state.selectedPlanItem, state.program.plan.items.indices.contains(item) { PlanItemEditor(state: state, appearance: appearance, index: item) }
+        else { PrepareView(state: state, appearance: appearance) }
     }
 }

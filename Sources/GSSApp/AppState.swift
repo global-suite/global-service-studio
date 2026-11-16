@@ -73,6 +73,17 @@ public enum AppCommand: Equatable, Sendable {
     case saveService
     /// Changes the title and the `YYYY-MM-DD` date of the service; an empty title or an invalid date is ignored.
     case setServiceInfo(title: String, date: String)
+
+    /// Moves a plan item to a final place; the live slide, the preview and the selection stay on their items.
+    case movePlanItem(from: Int, to: Int)
+    /// Removes a plan item; the item on air is never removed, and a removed selection is cleared.
+    case removePlanItem(at: Int)
+    /// Inserts an item into the plan; an item that makes the plan invalid, such as one with a used id, is ignored.
+    case insertPlanItem(PlanItem, at: Int)
+    /// Chooses the plan item Prepare edits, or nil for the song builder.
+    case selectPlanItem(Int?)
+    /// Replaces a plan item, for this service only: a song item's sequence or arrangement never changes the song. Invalid items are ignored.
+    case updatePlanItem(at: Int, PlanItem)
 }
 
 /// A file of the library the list cannot show, with the localized reason.
@@ -150,6 +161,8 @@ public final class AppState: ObservableObject {
     @Published public private(set) var serviceFile: URL?
     /// Whether the plan changed since the service was opened, started or saved.
     @Published public private(set) var hasUnsavedServiceChanges = false
+    /// The plan item Prepare edits instead of the prepared song; nil shows the song builder.
+    @Published public private(set) var selectedPlanItem: Int?
 
     /// The background of the media layer, which slide changes and Clear Slide leave alone.
     @Published public private(set) var background: Background = .none
@@ -231,6 +244,7 @@ public final class AppState: ObservableObject {
         case .openPlan(let plan, let songs):
             program = Program(plan: plan, songs: Dictionary(songs.map { ($0.id, $0) }) { first, _ in first }, mode: repetitionMode)
             (programIndex, previewItem) = (-1, nil)
+            if selectedPlanItem != nil { selectedPlanItem = nil }
             syncLiveIndex()
         case .previewItem(let item):
             guard let item, item != liveItem else { if previewItem != nil { previewItem = nil }; return }
@@ -289,7 +303,7 @@ public final class AppState: ObservableObject {
         }
     }
 
-    /// The service commands: new, from a template, open, save and its title and date.
+    /// The service commands: new, from a template, open, save, its title and date, and the edits of its items.
     private func performService(_ command: AppCommand) {
         switch command {
         case .newService: startService(Plan(title: Strings.text("Service"), date: ServiceDate.today, items: []), file: nil)
@@ -315,8 +329,45 @@ public final class AppState: ObservableObject {
             (plan.title, plan.date) = (title.trimmingCharacters(in: .whitespacesAndNewlines), date)
             guard !plan.title.isEmpty, (try? plan.validate()) != nil, plan != program.plan else { return }
             planChanged(plan)
+        case .movePlanItem(let from, let to):
+            var plan = program.plan
+            guard plan.items.indices.contains(from), plan.items.indices.contains(to), from != to else { return }
+            plan.items.insert(plan.items.remove(at: from), at: to)
+            editPlan(plan) { PlanEditing.moved($0, from: from, to: to) }
+        case .removePlanItem(let index):
+            var plan = program.plan
+            guard plan.items.indices.contains(index), index != liveItem else { return }
+            plan.items.remove(at: index)
+            editPlan(plan) { $0 == index ? nil : $0 > index ? $0 - 1 : $0 }
+        case .insertPlanItem(let item, let index):
+            var plan = program.plan
+            guard (0...plan.items.count).contains(index) else { return }
+            plan.items.insert(item, at: index)
+            editPlan(plan) { $0 >= index ? $0 + 1 : $0 }
+        case .selectPlanItem(let index):
+            if index.map(program.plan.items.indices.contains) ?? true, index != selectedPlanItem { selectedPlanItem = index }
+        case .updatePlanItem(let index, let item):
+            var plan = program.plan
+            guard plan.items.indices.contains(index), plan.items[index] != item else { return }
+            plan.items[index] = item
+            editPlan(plan) { $0 }
         default: break
         }
+    }
+
+    /// Applies a valid edited plan whose items moved as `moved` says (nil for a removed one), keeping the live slide, the preview and the selection on their items.
+    private func editPlan(_ plan: Plan, moved: (Int) -> Int?) {
+        guard (try? plan.validate()) != nil else { return }
+        let live = liveItem, offset = live.map { programIndex - program.range(of: $0).lowerBound } ?? 0
+        let (preview, selected) = (previewItem.flatMap(moved), selectedPlanItem.flatMap(moved))
+        if preview != previewItem { previewItem = preview }
+        if selected != selectedPlanItem { selectedPlanItem = selected }
+        planChanged(plan)
+        // `rebuildProgram` keeps the live slide at the item's old place; a moved live item keeps its slides, so it goes to the same slide at its new place.
+        guard let live, let item = moved(live), item != live else { return }
+        let range = program.range(of: item), index = range.lowerBound + min(offset, range.count - 1)
+        if index != programIndex { programIndex = index }
+        syncLiveIndex()
     }
 
     /// Reads a plan file and passes it on; a file that cannot be read is reported in `alert`.
