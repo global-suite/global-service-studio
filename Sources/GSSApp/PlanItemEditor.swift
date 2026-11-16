@@ -49,6 +49,8 @@ struct PlanItemEditor: View {
                         .pickerStyle(.segmented).labelsHidden().fixedSize()
                     }
                 }
+                if let song { sequence(song) }
+                notes
             }
             .padding(EdgeInsets(top: 18, leading: 24, bottom: 16, trailing: 24))
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -60,6 +62,69 @@ struct PlanItemEditor: View {
         .onChange(of: length) { text in
             if text.isEmpty { update { $0.length = nil } } else if let seconds = PlanEditing.seconds(text) { update { $0.length = seconds } }
         }
+    }
+
+    /// The parts of a song item for this service, as chips moved with ◀ ▶; the song order until one is changed.
+    private func sequence(_ song: Song) -> some View {
+        let order = PlanEditing.sequence(of: item, song: song)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(Strings.text("Sequence for this service")).font(.system(size: 13, weight: .semibold)).foregroundColor(Appearance.label.color)
+                if item.sequence == nil { Text(Strings.text("Song order")).font(.system(size: 11)).foregroundColor(Appearance.labelSecondary.color) }
+                if item.sequence != nil { Button(Strings.text("Use Song Order")) { edit(song, .useSongOrder) }.buttonStyle(.link).font(.system(size: 11)) }
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Array(order.enumerated()), id: \.offset) { index, id in
+                        HStack(spacing: 4) {
+                            chipButton("chevron.left", "Move Left", disabled: index == 0) { edit(song, .move(from: index, to: index - 1)) }
+                            Text(song.sections.first { $0.id == id }.map { Strings.sectionName($0) } ?? id).font(.system(size: 13, weight: .semibold)).foregroundColor(Appearance.label.color)
+                            chipButton("chevron.right", "Move Right", disabled: index == order.count - 1) { edit(song, .move(from: index, to: index + 1)) }
+                            chipButton("xmark", "Remove from Order", disabled: order.count < 2) { edit(song, .remove(index)) }
+                        }
+                        .lineLimit(1).padding(.horizontal, 8).frame(height: 32)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Appearance.control.color))
+                    }
+                    Menu {
+                        ForEach(song.sections, id: \.id) { section in Button(Strings.sectionName(section)) { edit(song, .add(section.id)) } }
+                    } label: { Label(Strings.text("Add Part"), systemImage: "plus") }
+                    .menuStyle(.borderlessButton).fixedSize().padding(.horizontal, 10).frame(height: 32)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Appearance.control.color))
+                }
+            }
+        }
+    }
+
+    /// The notes for each team: a category, typed or chosen from the teams, and the text.
+    private var notes: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(Strings.text("Notes")).font(.system(size: 13, weight: .semibold)).foregroundColor(Appearance.label.color)
+            ForEach(Array((item.notes ?? []).enumerated()), id: \.offset) { index, note in
+                HStack(spacing: 6) {
+                    TextField(Strings.text("Team"), text: Binding(get: { PlanEditing.categoryText(note.category) },
+                                                                 set: { text in setNote(index) { $0.category = PlanEditing.category(typed: text) } })).frame(width: 120)
+                    Menu { ForEach(PlanEditing.teams, id: \.self) { team in Button(Strings.text(team)) { setNote(index) { $0.category = team } } } } label: { Image(systemName: "chevron.up.chevron.down") }
+                        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(Strings.text("Team")).accessibilityLabel(Strings.text("Team"))
+                    TextField(Strings.text("Note for this team"), text: Binding(get: { note.text }, set: { text in setNote(index) { $0.text = text } })).frame(maxWidth: 480)
+                    chipButton("minus.circle", "Remove Note", disabled: false) { state.perform(.updatePlanItem(at: self.index, PlanEditing.edited(item, .remove(index)))) }
+                }
+            }
+            Button { state.perform(.updatePlanItem(at: index, PlanEditing.edited(item, .add))) } label: { Label(Strings.text("Add Note"), systemImage: "plus") }
+        }
+    }
+
+    /// Changes one note through `updatePlanItem`.
+    private func setNote(_ at: Int, _ change: (inout PlanNote) -> Void) {
+        guard let notes = item.notes, notes.indices.contains(at) else { return }
+        var note = notes[at]
+        change(&note)
+        state.perform(.updatePlanItem(at: index, PlanEditing.edited(item, .set(at, note))))
+    }
+
+    private func edit(_ song: Song, _ edit: PlanEditing.SequenceEdit) { state.perform(.updatePlanItem(at: index, PlanEditing.edited(item, song: song, edit))) }
+
+    private func chipButton(_ symbol: String, _ label: String, disabled: Bool, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) { Image(systemName: symbol) }.buttonStyle(.borderless).disabled(disabled).help(Strings.text(label)).accessibilityLabel(Strings.text(label))
     }
 
     private func update(_ change: (inout PlanItem) -> Void) {

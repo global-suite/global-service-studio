@@ -25,18 +25,28 @@ enum ServiceFile {
     static func questions(unsaved: Bool, onAir: Bool, quitting: Bool) -> [Question] {
         (unsaved ? [.saveChanges] : []) + (onAir && !quitting ? [.endAir] : [])
     }
+
+    /// The dated services most recently changed, newest first; templates are left out.
+    static func recent(_ listing: PlanListing, limit: Int = 5) -> [StoredPlan] {
+        Array(listing.services.sorted { $0.modified > $1.modified }.prefix(limit))
+    }
 }
 
-/// The New Service from Template submenu, listing the library's templates by title each time it opens.
+/// The New Service from Template submenu, listing the library's templates by title, and the Open Recent Service submenu, each time one opens.
 final class ServiceMenus: NSObject, NSMenuDelegate {
-    let state: AppState, templates = NSMenu()
+    let state: AppState, templates = NSMenu(), recent = NSMenu()
 
     init(state: AppState) { self.state = state }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         let listing = Library.exists(at: state.libraryFolder) ? try? Library.open(state.libraryFolder).plans() : nil
-        menu.items = (listing?.templates ?? []).map { stored in
-            let item = NSMenuItem(title: stored.plan.title, action: #selector(MainWindowController.newServiceFromTemplate(_:)), keyEquivalent: "")
+        let isRecent = menu === recent
+        let plans = isRecent ? listing.map { ServiceFile.recent($0) } ?? [] : listing?.templates ?? []
+        menu.items = plans.map { stored in
+            let date = ServiceDate.display(stored.plan.date)
+            let title = isRecent ? String(format: Strings.text("%1$@ — %2$@"), stored.plan.title, date ?? "") : stored.plan.title
+            let action = isRecent ? #selector(MainWindowController.openRecentService(_:)) : #selector(MainWindowController.newServiceFromTemplate(_:))
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
             item.representedObject = stored.url
             return item
         }
@@ -68,6 +78,10 @@ extension MainWindowController: NSOpenSavePanelDelegate {
     /// File > New Service from Template > a template.
     @objc func newServiceFromTemplate(_ sender: NSMenuItem) {
         if let url = sender.representedObject as? URL, mayReplaceService() { state.perform(.newServiceFromTemplate(url)) }
+    }
+    /// File > Open Recent Service > a service: the same questions and opening as Open Service….
+    @objc func openRecentService(_ sender: NSMenuItem) {
+        if let url = sender.representedObject as? URL, mayReplaceService() { state.perform(.openService(url)) }
     }
     /// File > Save Service.
     @objc func saveService(_ sender: Any?) { state.perform(.saveService) }

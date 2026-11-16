@@ -200,3 +200,16 @@
 /* Prepare item editor: position before the service starts. */ "Pre" = "Antes";
 /* Prepare item editor: position during the service. */ "During" = "Durante";
 /* Prepare item editor: position after the service ends. */ "Post" = "Después";
+/* Prepare item editor: heading of the parts of a song item, in the order they are sung in this service. */ "Sequence for this service" = "Secuencia para este servicio";
+/* Prepare item editor: link that returns the sequence of a song item to the song's order. */ "Use Song Order" = "Usar el orden de la canción";
+/* Prepare item editor: heading of the notes for each team. */ "Notes" = "Notas";
+/* Prepare item editor: team of a note, for the singers. */ "Vocals" = "Voces";
+/* Prepare item editor: team of a note, for the musicians. */ "Band" = "Banda";
+/* Prepare item editor: team of a note, for the people running the slides and videos. */ "Media" = "Medios";
+/* Prepare item editor: team of a note, for the lighting operators. */ "Lighting" = "Luces";
+/* Prepare item editor: placeholder of a note's team field and help of its team menu. */ "Team" = "Equipo";
+/* Prepare item editor: placeholder of a note's text field. */ "Note for this team" = "Nota para este equipo";
+/* Prepare item editor: button that adds a note for a team. */ "Add Note" = "Agregar nota";
+/* Prepare item editor: help of the button that removes a note. */ "Remove Note" = "Quitar nota";
+/* File menu: submenu of the services changed most recently. */ "Open Recent Service" = "Abrir servicio reciente";
+/* File > Open Recent Service item: %1$@ is the service title, %2$@ its date. */ "%1$@ — %2$@" = "%1$@ — %2$@";
