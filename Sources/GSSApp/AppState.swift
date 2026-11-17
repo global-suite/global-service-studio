@@ -100,6 +100,12 @@ public enum AppCommand: Equatable, Sendable {
     case selectPlanItem(Int?)
     /// Replaces a plan item, for this service only: a song item's sequence or arrangement never changes the song. Invalid items are ignored.
     case updatePlanItem(at: Int, PlanItem)
+
+    // Presentation import (ADR 0010, issue #112).
+    /// Imports a Keynote or PowerPoint file into the library's presentations off the main thread; progress is in `presentationImport`, failures in `alert`.
+    case importPresentation(URL)
+    /// Stops the import in progress, leaving nothing behind and showing no alert.
+    case cancelPresentationImport
 }
 
 /// A file of the library the list cannot show, with the localized reason.
@@ -169,6 +175,15 @@ public final class AppState: ObservableObject {
     private var invalidFiles: [LibraryProblem] = []
     /// Counts index loads, so a load that finishes after the library changed is dropped.
     private var libraryLoads = 0
+
+    // Presentation import (ADR 0010, issue #112): the import in progress, nil when idle.
+    @Published public private(set) var presentationImport: PresentationImport?
+    /// The presentation file the last import saved.
+    @Published public private(set) var importedPresentation: URL?
+    var deckExporter: DeckExporter = KeynoteExporter()
+    private var importTask: Task<Void, Never>?
+    /// Counts imports, so the result of a cancelled one is dropped.
+    private var importRuns = 0
 
     /// The library file the current song was opened from or saved to; nil for a song from elsewhere.
     @Published public private(set) var openSongFile: URL?
@@ -398,7 +413,36 @@ public final class AppState: ObservableObject {
             guard plan.items.indices.contains(index), plan.items[index] != item else { return }
             plan.items[index] = item
             editPlan(plan) { $0 }
-        default: break
+        default: performPresentationImport(command)
+        }
+    }
+
+    /// The presentation import commands: one import at a time, run off the main thread and published here on the main thread.
+    private func performPresentationImport(_ command: AppCommand) {
+        if case .cancelPresentationImport = command, let task = importTask {
+            task.cancel()
+            (importTask, importRuns, presentationImport) = (nil, importRuns + 1, nil)
+        }
+        guard case .importPresentation(let source) = command, importTask == nil else { return }
+        importRuns += 1
+        let run = importRuns, exporter = deckExporter, folder = libraryFolder, owner = WeakReference(self), title = source.deletingPathExtension().lastPathComponent
+        presentationImport = PresentationImport(title: title)
+        let progress: @Sendable (Int, Int) -> Void = { slide, count in
+            DispatchQueue.main.async { if let state = owner.value, run == state.importRuns { state.presentationImport = PresentationImport(title: title, slide: slide, count: count) } }
+        }
+        importTask = Task.detached {
+            let result: Result<URL, Error>
+            do { result = .success(try await DeckImport.run(source, into: Library.open(folder), exporter: exporter, progress: progress)) } catch { result = .failure(error) }
+            DispatchQueue.main.async { owner.value?.finishPresentationImport(run, result) }
+        }
+    }
+
+    private func finishPresentationImport(_ run: Int, _ result: Result<URL, Error>) {
+        guard run == importRuns else { return }
+        (importTask, presentationImport) = (nil, nil)
+        if case .success(let url) = result { importedPresentation = url }
+        if case .failure(let error) = result, let message = DeckImport.message(for: error) {
+            alert = AppAlert(title: Strings.text("The presentation could not be imported."), message: message)
         }
     }
 

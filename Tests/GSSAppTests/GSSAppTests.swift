@@ -582,9 +582,10 @@ final class GSSAppTests: XCTestCase {
         XCTAssertNil(state.alert)
         let menu = MainMenu.make(output: NSMenu(), services: ServiceMenus(state: state))
         let file = try XCTUnwrap(menu.items.first { $0.title == Strings.text("File") }?.submenu)
-        XCTAssertEqual(file.items.map(\.keyEquivalent), ["n", "", "", "", "S", "", "", "o", "s", ""])
-        let songItems = file.items.suffix(3).map(\.action)
-        XCTAssertEqual(songItems, [#selector(MainWindowController.openSong(_:)), #selector(MainWindowController.saveSong(_:)), #selector(MainWindowController.chooseLibraryFolder(_:))])
+        XCTAssertEqual(file.items.map(\.keyEquivalent), ["n", "", "", "", "S", "", "", "o", "s", "", ""])
+        let songItems = file.items.suffix(4).map(\.action)
+        XCTAssertEqual(songItems, [#selector(MainWindowController.openSong(_:)), #selector(MainWindowController.saveSong(_:)), #selector(MainWindowController.importPresentation(_:)), #selector(MainWindowController.chooseLibraryFolder(_:))])
+        XCTAssertEqual([file.items.suffix(2).first?.title, Strings.text("Import Presentation…", language: "es")], [Strings.text("Import Presentation…"), "Importar presentación…"])
         XCTAssertEqual(["Save Song", "Choose Library Folder…"].map { Strings.text($0, language: "es") }, ["Guardar canción", "Elegir carpeta de biblioteca…"])
     }
 
