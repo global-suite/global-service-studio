@@ -98,4 +98,98 @@ final class LibraryMediaTests: XCTestCase {
     func testAnEmptyMediaFolderListsNothing() throws {
         XCTAssertEqual(try Library.open(temporaryFolder()).media(), [])
     }
+
+    private func data(_ contents: String) -> Data { Data(contents.utf8) }
+
+    private func contents(_ library: Library, _ path: String) throws -> Data {
+        try Data(contentsOf: library.folder.appendingPathComponent(path))
+    }
+
+    func testImportingDataWritesItIntoMediaAndReturnsItsPathAndHash() throws {
+        let library = try Library.open(temporaryFolder())
+        let reference = try library.importMedia(data: data("slide bytes"), fileExtension: "png", suggestedName: "Slide 1")
+        XCTAssertEqual(reference, MediaReference(path: "Media/Slide 1.png", sha256: hex("slide bytes")))
+        XCTAssertEqual(try contents(library, "Media/Slide 1.png"), data("slide bytes"))
+        XCTAssertEqual(try mediaNames(library), ["Slide 1.png"])
+    }
+
+    func testImportingTheSameDataTwiceWritesItOnce() throws {
+        let library = try Library.open(temporaryFolder())
+        let first = try library.importMedia(data: data("same"), fileExtension: "png", suggestedName: "One")
+        let second = try library.importMedia(data: data("same"), fileExtension: "png", suggestedName: "Two")
+        XCTAssertEqual(second, first)
+        XCTAssertEqual(try mediaNames(library), ["One.png"])
+    }
+
+    func testDataWithATakenNameAndDifferentContentGetsANumberedName() throws {
+        let library = try Library.open(temporaryFolder())
+        _ = try library.importMedia(data: data("first"), fileExtension: "jpg", suggestedName: "Slide")
+        let second = try library.importMedia(data: data("second"), fileExtension: "jpg", suggestedName: "Slide")
+        XCTAssertEqual(second, MediaReference(path: "Media/Slide 2.jpg", sha256: hex("second")))
+        XCTAssertEqual(try contents(library, "Media/Slide 2.jpg"), data("second"))
+    }
+
+    func testDataNamesLoseLeadingDotsAndSlashes() throws {
+        let library = try Library.open(temporaryFolder())
+        let hidden = try library.importMedia(data: data("a"), fileExtension: "png", suggestedName: "..Hidden")
+        let slashed = try library.importMedia(data: data("b"), fileExtension: "png", suggestedName: "a/b")
+        XCTAssertEqual([hidden.path, slashed.path], ["Media/Hidden.png", "Media/a-b.png"])
+    }
+
+    func testDataIntoASubfolderCreatesItAndReturnsTheNestedPath() throws {
+        let library = try Library.open(temporaryFolder())
+        let reference = try library.importMedia(data: data("slide"), fileExtension: "png", suggestedName: "Slide 1",
+                                                in: "Presentations/abc")
+        XCTAssertEqual(reference, MediaReference(path: "Media/Presentations/abc/Slide 1.png", sha256: hex("slide")))
+        XCTAssertTrue(reference.hasLibraryRelativePath)
+        XCTAssertEqual(try contents(library, reference.path), data("slide"))
+    }
+
+    func testDedupeLooksOnlyInsideTheTargetFolder() throws {
+        let library = try Library.open(temporaryFolder())
+        let top = try library.importMedia(data: data("same"), fileExtension: "png", suggestedName: "Slide")
+        let nested = try library.importMedia(data: data("same"), fileExtension: "png", suggestedName: "Slide", in: "Sub")
+        XCTAssertEqual([top.path, nested.path], ["Media/Slide.png", "Media/Sub/Slide.png"])
+        XCTAssertEqual(try contents(library, nested.path), data("same"))
+    }
+
+    func testAnInvalidFolderThrowsAndLeavesTheDiskUnchanged() throws {
+        let library = try Library.open(temporaryFolder())
+        _ = try library.importMedia(data: data("kept"), fileExtension: "png", suggestedName: "Kept")
+        let before = try files.subpathsOfDirectory(atPath: library.folder.path)
+        for folder in ["../x", "/abs", "a//b", ".", "", "a/./b", "a/"] {
+            XCTAssertThrowsError(try library.importMedia(data: data("new"), fileExtension: "png", suggestedName: "New",
+                                                         in: folder), folder) {
+                XCTAssertEqual($0 as? LibraryMediaError, .invalidFolder, folder)
+            }
+            XCTAssertThrowsError(try library.importMedia(source("New.png", "new"), in: folder), folder) {
+                XCTAssertEqual($0 as? LibraryMediaError, .invalidFolder, folder)
+            }
+        }
+        XCTAssertEqual(try files.subpathsOfDirectory(atPath: library.folder.path), before)
+    }
+
+    func testDataWithARefusedExtensionThrowsAndWritesNothing() throws {
+        let library = try Library.open(temporaryFolder())
+        for ext in ["txt", "mp3", "", "a/png"] {
+            XCTAssertThrowsError(try library.importMedia(data: data("x"), fileExtension: ext, suggestedName: "X")) {
+                XCTAssertEqual($0 as? LibraryMediaError, .notMedia)
+            }
+        }
+        XCTAssertEqual(try mediaNames(library), [])
+    }
+
+    func testAFileImportsIntoASubfolder() throws {
+        let library = try Library.open(temporaryFolder())
+        let reference = try library.importMedia(source("Sunrise.png", "sun"), in: "Presentations/abc")
+        XCTAssertEqual(reference, MediaReference(path: "Media/Presentations/abc/Sunrise.png", sha256: hex("sun")))
+        XCTAssertEqual(try contents(library, reference.path), data("sun"))
+    }
+
+    func testMediaDoesNotListFilesInSubfolders() throws {
+        let library = try Library.open(temporaryFolder())
+        _ = try library.importMedia(data: data("top"), fileExtension: "png", suggestedName: "Top")
+        _ = try library.importMedia(data: data("nested"), fileExtension: "png", suggestedName: "Nested", in: "Presentations/abc")
+        XCTAssertEqual(try library.media().map(\.path), ["Media/Top.png"])
+    }
 }
