@@ -78,12 +78,14 @@ struct AudienceOutputView: View {
 
     /// The lines on the output: the live slide's, none while cleared; past the last slide the last one stays.
     static func lines(_ state: AppState) -> [String] { state.shownLines }
+    /// The slide layer: a presentation slide's image with its scaling, its bands transparent over the media layer, else the lines.
+    static func content(_ state: AppState) -> SlideContent { SlideContent(state) }
 
     var body: some View {
         ZStack {
             Self.background.color
             MediaLayer(fill: state.mediaFill(for: .audience, theme: theme))
-            SlideLayer(lines: Self.lines(state), slot: OutputThemes.lyricsSlot(of: theme))
+            SlideContentLayer(content: Self.content(state), slot: OutputThemes.lyricsSlot(of: theme), libraryFolder: state.libraryFolder)
         }
     }
 }
@@ -95,11 +97,13 @@ struct KeyOutputView: View {
 
     static func lines(_ state: AppState) -> [String] { state.shownLines }
     static func background(_ state: AppState) -> RGBA { (KeyColor(hex: state.keyColor) ?? .green).rgba }
+    /// The slide layer: a presentation slide full frame ("Se muestra completa"), so fit becomes fill; else the lines.
+    static func content(_ state: AppState) -> SlideContent { SlideContent(state) { $0 == .fit ? .fill : $0 } }
 
     var body: some View {
         ZStack {
             Self.background(state).color
-            SlideLayer(lines: Self.lines(state), slot: OutputThemes.lyricsSlot(of: theme), shadow: true)
+            SlideContentLayer(content: Self.content(state), slot: OutputThemes.lyricsSlot(of: theme), libraryFolder: state.libraryFolder, shadow: true)
         }
     }
 }
@@ -128,8 +132,11 @@ final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValida
     private let screens: () -> [ScreenInfo]
     private var subscription: AnyCancellable?
     private var observer: NSObjectProtocol?
+    private var preloading: AnyCancellable?
 
-    init(state: AppState, role: OutputRole = .audience, operatorWindow: NSWindow?, screens: @escaping () -> [ScreenInfo] = ScreenInfo.connected) {
+    /// The audience controller preloads the next slide's image into `imageCache` whenever the live slide or the program changes.
+    init(state: AppState, role: OutputRole = .audience, operatorWindow: NSWindow?, screens: @escaping () -> [ScreenInfo] = ScreenInfo.connected,
+         imageCache: SlideImageCache = .shared) {
         (self.state, self.role, self.operatorWindow, self.screens) = (state, role, operatorWindow, screens)
         menu = NSMenu(title: Strings.text(Self.texts[role]!.title))
         super.init()
@@ -138,6 +145,11 @@ final class AudienceOutputController: NSObject, NSMenuDelegate, NSMenuItemValida
         let shown = [.key: state.$isKeyOutputShown, .stage: state.$isStageOutputShown][role] ?? state.$isAudienceOutputShown
         let screen = [.key: state.$keyOutputScreen, .stage: state.$stageOutputScreen][role] ?? state.$outputScreen
         subscription = shown.combineLatest(screen).sink { [weak self] in self?.update(shown: $0, screen: $1) }
+        if role == .audience {
+            // Published before the change; the main queue hop reads the new live slide.
+            preloading = state.$programIndex.combineLatest(state.$program).receive(on: DispatchQueue.main)
+                .sink { [weak state] _ in state?.preloadNextSlideImage(cache: imageCache) }
+        }
         observer = NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             self?.screensChanged()
         }

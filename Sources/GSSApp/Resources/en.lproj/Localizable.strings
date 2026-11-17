@@ -277,3 +277,6 @@
 /* Live and Prepare: shown on a presentation slide while its image loads. */ "Loading slide…" = "Loading slide…";
 /* Live and Prepare: shown on a presentation slide whose image is missing or cannot be read. */ "Slide image not found" = "Slide image not found";
 /* Alert title when a presentation's scaling cannot be saved in the library. */ "The presentation could not be saved." = "The presentation could not be saved.";
+/* Stage output: heading on a presentation slide; %1$@ is the presentation's title, %2$ld the slide's number, %3$ld the number of slides. */ "%1$@ · Slide %2$ld of %3$ld" = "%1$@ · Slide %2$ld of %3$ld";
+/* Stage output: a presentation slide's number when it has no notes; %1$ld is the slide's number, %2$ld the number of slides. */ "Slide %1$ld of %2$ld" = "Slide %1$ld of %2$ld";
+/* Stage output: hint under a presentation slide that has no speaker notes. */ "No notes" = "No notes";
