@@ -31,4 +31,6 @@ A library is a folder the user chooses, laid out as decided in [ADR 0007](adr/00
 - Listing reads every `*.song.json` in `Songs/`; a file that cannot be read is reported with its error, never skipped.
 - A plan is saved the same way to `Plans/<slug>-<first 8 hex digits of its id>.plan.json`, such as `sunday-gathering-d51b0c3e.plan.json`, with the slug made from its title, or `plan` when nothing is left ([ADR 0009](adr/0009-service-plan-format.md)).
 - Listing plans reports unreadable files like songs, and shows dated services newest first and templates (plans without a date) by title.
+- A presentation is saved the same way to `Presentations/<slug>-<first 8 hex digits of its id>.presentation.json`, with `presentation` when the title leaves nothing, and listed like plans.
+- An imported deck's slide images live in `Media/Presentations/<presentation id>/001.png`, `002.png`, … ([ADR 0010](adr/0010-importing-keynote-powerpoint-and-pdf.md)). Importing it again replaces that folder only; the media bin lists only the top level of `Media/`.
 - Resolving a plan finds the song of each song item by `id`; a missing song or arrangement is reported on that item, never as an error of the whole plan.

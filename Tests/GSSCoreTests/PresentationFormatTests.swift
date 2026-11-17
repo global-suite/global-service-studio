@@ -85,10 +85,35 @@ final class PresentationFormatTests: XCTestCase {
         XCTAssertNil(presentation.slides[0].notes)
         XCTAssertNil(presentation.slides[0].elements[0].frame)
         XCTAssertNil(presentation.slides[0].elements[1].font)
+        XCTAssertNil(presentation.slides[0].elements[1].scaling)
+        XCTAssertEqual(presentation.slides[0].elements[1].effectiveScaling, .fit)
         let text = String(decoding: try presentation.encoded(), as: UTF8.self)
-        for key in ["theme", "notes", "font", "color", "align", "externalIds", "extensions"] {
+        for key in ["theme", "notes", "font", "color", "align", "scaling", "externalIds", "extensions"] {
             XCTAssertFalse(text.contains("\"\(key)\""), key)
         }
+    }
+
+    private func scalingEdit(_ value: String) -> [(String, String)] {
+        [(#""sha256": "…" }"#, #""sha256": "…" }, "scaling": ""# + value + #"""#)]
+    }
+
+    func testEachScalingValueRoundTrips() throws {
+        let values: [PresentationImageScaling] = [.fit, .fill, .stretch]
+        for value in values {
+            let edits = scalingEdit(value.rawValue)
+            try assertRoundTrips(edits)
+            let element = try decodePresentation(edits).slides[0].elements[1]
+            XCTAssertEqual(element.scaling, value)
+            XCTAssertEqual(element.effectiveScaling, value)
+        }
+    }
+
+    func testUnknownScalingIsPreservedAndReadAsFit() throws {
+        let edits = scalingEdit("zoom-blur")
+        try assertRoundTrips(edits)
+        let element = try decodePresentation(edits).slides[0].elements[1]
+        XCTAssertEqual(element.scaling, PresentationImageScaling(rawValue: "zoom-blur"))
+        XCTAssertEqual(element.effectiveScaling, .fit)
     }
 
     func testNewerVersionIsRejected() {
