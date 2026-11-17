@@ -192,6 +192,17 @@ button.thumb:hover .slide{box-shadow:0 0 0 2px var(--accent)}
 .airline b{color:var(--label);font-weight:600}
 .clr{display:flex;gap:8px}
 .lyr-off [data-lyr]{visibility:hidden}
+/* On screen: what the audience sees right now, in plain words. Text carries the state; color is never the only cue. */
+.onscreen{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;min-width:0;padding:6px 8px 6px 10px;border-radius:6px;background:var(--control);line-height:1.35}
+.onscreen>.ic{color:var(--label)}
+.onscreen .os-k{font-weight:700;white-space:nowrap}
+.onscreen .os-t{flex:1;min-width:0;color:var(--label-2)}
+.onscreen .os-t b{color:var(--label);font-weight:600}
+.onscreen .push{height:24px;padding:0 8px;gap:6px}
+.onscreen.fs-on{box-shadow:inset 3px 0 0 var(--live)}
+.dt .note.how .ic{color:var(--label)}
+/* Key caps drawn on a control fill (On screen action, tabs): label text keeps AA (label-2 there is 3.4 to 4.5:1) */
+.onscreen .kbd,.tabs .kbd{color:var(--label)}
 
 /* Media thumbnails: pictures drawn from token colors on black */
 [data-art]{background:#000000}
@@ -348,12 +359,13 @@ button.thumb:hover .slide{box-shadow:0 0 0 2px var(--accent)}
 .g5{grid-template-columns:repeat(5,1fr)}
 .binhead .count{display:none}
 .drawer{--tile:150px}
-.bottombar{border-top:1px solid var(--sep);display:flex;align-items:flex-end;gap:20px;padding:10px 20px 12px}
+.bottombar{border-top:1px solid var(--sep);display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:end;gap:10px 20px;padding:10px 20px 12px}
+.bottombar .onscreen{grid-column:1/-1}
 .outputs h2{font:500 11px/1 var(--font);color:var(--label-2);margin-bottom:8px}
 .outputs ul{display:flex;gap:12px}
 .mon{width:118px}
-.mlnote{width:210px;font-size:11px;padding-bottom:4px}
-.clearbox{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:10px;padding-bottom:4px}
+.mlnote{max-width:280px;font-size:11px;padding-bottom:4px}
+.clearbox{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:10px;padding-bottom:4px}
 .airline{font-size:12px;justify-content:flex-end}
 .prep-mode .bottombar{display:none}
 
@@ -456,7 +468,7 @@ button.thumb:hover .slide{box-shadow:0 0 0 2px var(--accent)}
     </header>
     <main class="mainA" aria-label="Live">
       <div class="stage" data-view="live"><section class="pane now" aria-labelledby="h-now">
-          <h3><span class="flag live">LIVE</span><span id="h-now">On the screens now</span><span class="where"><b>Great Is the Light</b> · Chorus 2 of 2</span></h3>
+          <h3><span class="flag live">LIVE</span><span id="h-now">On the screens now</span><span class="where" data-now-where><b>Great Is the Light</b> · Chorus 2 of 2</span></h3>
           <div class="slide" data-air-art role="img" data-air-aria="Live: Great is the light, bright is the day"><p data-lyr>Great is the light<br>Bright is the day</p></div>
         </section><section class="pane next" aria-labelledby="h-next">
           <h3><span id="h-next">Next</span><span class="flag next">NEXT</span><span class="where"><b>Verse 2</b> · 1 of 2</span></h3>
@@ -516,10 +528,10 @@ button.thumb:hover .slide{box-shadow:0 0 0 2px var(--accent)}
       <section class="drawer" aria-label="Slides and media drawer">
         <div class="dhead">
           <div class="tabs" role="tablist" aria-label="Drawer">
-            <button type="button" role="tab" aria-selected="false" aria-controls="tab-slides" id="t-slides" data-tab="slides" aria-keyshortcuts="Meta+1"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg>Slides</button><button type="button" role="tab" aria-selected="true" aria-controls="tab-media" id="t-media" data-tab="media" aria-keyshortcuts="Meta+2"><svg class="ic" aria-hidden="true"><use href="#i-film"/></svg>Media</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="tab-slides" id="t-slides" data-tab="slides" aria-keyshortcuts="Meta+1"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg>Slides<span class="kbd">⌘1</span></button><button type="button" role="tab" aria-selected="true" aria-controls="tab-media" id="t-media" data-tab="media" aria-keyshortcuts="Meta+2"><svg class="ic" aria-hidden="true"><use href="#i-film"/></svg>Images &amp; Videos<span class="kbd">⌘2</span></button>
           </div>
           <div class="binhead">
-          <span class="sr" id="h-bin">Media</span><span class="count num" data-count></span>
+          <span class="sr" id="h-bin">Images and videos</span><span class="count num" data-count></span>
           
           <div class="seg" role="group" aria-label="Show" data-filters>
             <button type="button" aria-pressed="true" data-filter="all">All<span class="c" data-c="all"></span></button><button type="button" aria-pressed="false" data-filter="image">Images<span class="c" data-c="image"></span></button><button type="button" aria-pressed="false" data-filter="video">Videos<span class="c" data-c="video"></span></button>
@@ -531,22 +543,23 @@ button.thumb:hover .slide{box-shadow:0 0 0 2px var(--accent)}
         </div>
         <div data-tabpanel="media" id="tab-media" role="tabpanel" aria-labelledby="t-media" style="display:flex;flex-direction:column;min-height:0;flex:1">
           <div class="fs bar" data-fsbox="bar" hidden></div>
-          <div class="pickwrap" data-pickwrap><div class="pick" data-pick hidden><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><span>Choosing the background for <b data-pick-part>Chorus</b> of <b>Morning Light</b>. Click a media item or press Return. Nothing goes on the screens in Prepare.</span><span class="sp"></span><button class="push" type="button" data-pick-cancel aria-keyshortcuts="Escape">Cancel<span class="kbd">esc</span></button></div></div>
+          <div class="pickwrap" data-pickwrap><div class="pick" data-pick hidden><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><span>Choosing the background for <b data-pick-part>Chorus</b> of <b>Morning Light</b>. Click an image or video, or press Return. Nothing goes on the screens in Prepare.</span><span class="sp"></span><button class="push" type="button" data-pick-cancel aria-keyshortcuts="Escape">Cancel<span class="kbd">esc</span></button></div></div>
           <div class="dbody">
-            <div class="binscroll" data-dropzone><div class="drop" data-drop hidden><svg class="ic" aria-hidden="true"><use href="#i-import"/></svg><strong>Drop 3 files to import them</strong><span>They are copied into <b>Library › Media</b>. The originals stay where they are.</span></div><div data-bin="tile"></div></div>
+            <div class="binscroll" data-dropzone><div class="drop" data-drop hidden><svg class="ic" aria-hidden="true"><use href="#i-import"/></svg><strong>Let go to add these 3 files</strong><span>They are copied into <b>Library › Media</b>. The originals stay where they are.</span></div><div data-bin="tile"></div></div>
             <aside class="dside" aria-label="Selected media"><div class="dt" data-details></div></aside>
           </div>
         </div>
         <div class="dbody slides" data-tabpanel="slides" id="tab-slides" role="tabpanel" aria-labelledby="t-slides" hidden><ol class="sgrid g5" aria-label="Slides of Great Is the Light"><li><button class="thumb done" type="button" aria-label="Verse 1, slide 1"><span class="slide"><p>Over the mountains<br>Over the sea</p></span><small><span>1</span><span class="sec">Verse 1</span><b></b></small></button></li><li><button class="thumb done" type="button" aria-label="Verse 1, slide 2"><span class="slide"><p>Light of the morning<br>Rising for me</p></span><small><span>2</span><span class="sec">Verse 1</span><b></b></small></button></li><li><button class="thumb done" type="button" aria-label="Chorus, slide 3"><span class="slide"><p>Great is the light<br>Bright is the day</p></span><small><span>3</span><span class="sec">Chorus</span><b></b></small></button></li><li><button class="thumb is-live" type="button" aria-current="true" aria-label="Chorus, slide 4, live"><span class="slide"><p>Nothing can dim it<br>Nothing can fade</p></span><small><span>4</span><span class="sec">Chorus</span><b>● LIVE</b></small></button></li><li><button class="thumb is-next" type="button" aria-label="Verse 2, slide 5, next"><span class="slide"><p>Into the valley<br>Down to the shore</p></span><small><span>5</span><span class="sec">Verse 2</span><b>NEXT</b></small></button></li><li><button class="thumb" type="button" aria-label="Verse 2, slide 6"><span class="slide"><p>Light of the morning<br>Now and evermore</p></span><small><span>6</span><span class="sec">Verse 2</span><b></b></small></button></li><li><button class="thumb" type="button" aria-label="Chorus, slide 7"><span class="slide"><p>Great is the light<br>Bright is the day</p></span><small><span>7</span><span class="sec">Chorus</span><b></b></small></button></li><li><button class="thumb" type="button" aria-label="Chorus, slide 8"><span class="slide"><p>Nothing can dim it<br>Nothing can fade</p></span><small><span>8</span><span class="sec">Chorus</span><b></b></small></button></li><li><button class="thumb" type="button" aria-label="Bridge, slide 9"><span class="slide"><p>Higher than the heavens<br>Deeper than the sea</p></span><small><span>9</span><span class="sec">Bridge</span><b></b></small></button></li><li><button class="thumb" type="button" aria-label="Chorus, slide 10"><span class="slide"><p>Great is the light<br>Bright is the day</p></span><small><span>10</span><span class="sec">Chorus</span><b></b></small></button></li></ol></div>
       </section>
     </main>
-    <footer class="bottombar" aria-label="Outputs and clear actions">
+    <footer class="bottombar" aria-label="On screen, outputs and clear actions">
+      <p class="onscreen" data-onscreen tabindex="-1"></p>
       <section class="outputs" aria-labelledby="h-out"><h2 id="h-out">Outputs</h2><ul><li class="mon"><div class="scr" data-out="aud" aria-hidden="true"><p data-lyr style="font-size:7.5px">Great is the light<br>Bright is the day</p></div><div class="name"><b>Center</b><span class="status">Live</span></div><div class="role">Media: <b>yes</b></div></li>
         <li class="mon"><div class="scr" data-out="aud" aria-hidden="true"><p data-lyr style="font-size:7.5px">Great is the light<br>Bright is the day</p></div><div class="name"><b>Sides</b><span class="status">Live</span></div><div class="role">Media: <b>yes</b></div></li>
         <li class="mon"><div class="scr tele" aria-hidden="true" style="padding:4px 6px;font-size:6px"><div class="clk"><span>Great Is the Light</span><b style="font-size:8px">10:12</b></div><div class="cur" data-lyr style="font-size:9px">Great is the light<br>Bright is the day</div><div class="nx">Into the valley / Down to the shore</div></div><div class="name"><b>Stage</b><span class="status">Live</span></div><div class="role">Media: no</div></li>
         <li class="mon"><div class="scr keyout" aria-hidden="true" style="padding:0 8px 6px"><div data-lyr style="font-size:6.5px;padding:3px 4px">Great is the light<br>Bright is the day</div></div><div class="name"><b>Key</b><span class="status">Live</span></div><div class="role">Media: <b>never</b></div></li></ul></section>
-      <p class="mlnote"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg><span>Media layer: <b>Center</b> and <b>Sides</b> show it. <b>Key never shows it</b>; the switcher gets only the lyrics over the key color. Stage shows its own layout.<br><span class="chk" aria-hidden="true"></span>Checkerboard = no background (transparent).</span></p>
-      <section class="clearbox" aria-label="Clear"><p class="airline" data-airline></p><div class="clr"><button class="push" type="button" aria-keyshortcuts="F1" data-clear="slide">Clear Slide<span class="kbd">F1</span></button>
+      <p class="mlnote"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg><span><b>Center</b> and <b>Sides</b> show backgrounds and videos. <b>Key never does</b>: the switcher gets only the lyrics.<br><span class="chk" aria-hidden="true"></span>Checkerboard = no background (transparent).</span></p>
+      <section class="clearbox" aria-label="Clear"><div class="clr"><button class="push" type="button" aria-keyshortcuts="F1" data-clear="slide">Clear Slide<span class="kbd">F1</span></button>
           <button class="push" type="button" aria-keyshortcuts="F2" data-clear="bg">Clear Background<span class="kbd">F2</span></button>
           <button class="push danger" type="button" aria-keyshortcuts="F3" data-clear="all">Clear All<span class="kbd">F3</span></button></div></section>
     </footer>
@@ -599,7 +612,7 @@ var M=[
 var PARTS={"default":"Song default",v1:"Verse 1",chorus:"Chorus",v2:"Verse 2",bridge:"Bridge"};
 var AUDIO="X32 USB · Ch 1–2";
 var S;
-function reset(){S={mode:"live",filter:"all",q:"",sel:"waves",air:"light",fs:null,pick:null,empty:false,drop:false,lyrOff:false,
+function reset(){S={mode:"live",filter:"all",q:"",sel:"waves",air:"light",fs:null,pick:null,empty:false,drop:false,lyrOff:false,lyrPrev:false,
   parts:{"default":"waves",v1:null,chorus:"sunrise",v2:null,bridge:"candle"}}}
 reset();
 function $(s,r){return (r||document).querySelector(s)}
@@ -610,11 +623,11 @@ function mmss(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+":"+String(
 function esc(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;")}
 function ok(m){return m&&!m.bad&&m.importing==null}
 function typeShort(m){return m.k==="image"?"Image":m.loop?"Loop":m.sound?"Sound":"Video"}
-function typeLong(m){return m.k==="image"?"Image":m.loop?"Video · loops muted as a background":m.sound?"Video with sound · plays once, full screen":"Video"}
+function typeLong(m){return m.k==="image"?"Image":m.loop?"Video loop · no sound":m.sound?"Video with sound":"Video"}
 function res(m){return m.res+" · "+m.codec+(m.fps?" · "+m.fps+" fps":"")}
 function vis(){if(S.empty)return [];var q=S.q.trim().toLowerCase();
   return M.filter(function(m){if(S.filter!=="all"&&m.k!==S.filter)return false;if(q&&m.n.toLowerCase().indexOf(q)<0)return false;return true})}
-function airText(m){if(S.mode!=="live")return "";if(S.fs&&S.fs.id===m.id)return "ON AIR · Full screen";if(S.air===m.id)return S.fs?"Background · after the video":"ON AIR · Background";return ""}
+function airText(m){if(S.mode!=="live")return "";if(S.fs&&S.fs.id===m.id)return "ON AIR · Full screen";if(S.air===m.id)return S.fs?"Back after the video":"ON AIR · Background";return ""}
 function aria(m){var a=[m.n,typeShort(m)];if(m.dur)a.push(m.dur);a.push(m.res+", "+m.codec);
   if(m.heavy)a.push("heavy on this Mac, no hardware decoding");if(m.bad)a.push("can't play");if(m.importing!=null)a.push("importing, "+m.importing+" percent");
   var t=airText(m);if(t)a.push(t.toLowerCase());if(S.mode==="live"&&ok(m)&&!t)a.push("press Return to show as background"+(m.k==="video"?", Command Return to play full screen":""));
@@ -635,7 +648,7 @@ function inner(m,variant){var t=airText(m),h='<span class="art" data-art="'+m.id
 function cls(m,base){var t=airText(m);return base+(S.sel===m.id?" sel":"")+(t.indexOf("ON AIR")===0?" on":"")+(m.bad?" bad":"")+(m.importing!=null?" imp":"")}
 function renderBins(){var list=vis();
   $$("[data-bin]").forEach(function(box){var variant=box.dataset.bin,h="";
-    if(S.empty){h='<div class="empty"><svg class="ic bigic" aria-hidden="true"><use href="#i-film"/></svg><h4>No media yet</h4><p>Drag images and videos here, or choose Import…. Files are copied into this library’s Media folder, so the service still plays if the originals move.</p><div class="acts"><button class="push primary" type="button" data-import>Import…<span class="kbd">⇧⌘I</span></button></div><p>Plays best: H.264 or HEVC video · JPEG, PNG or HEIC images</p></div>'}
+    if(S.empty){h='<div class="empty"><svg class="ic bigic" aria-hidden="true"><use href="#i-film"/></svg><h4>No images or videos yet</h4><p>Drag your images and videos here, or click Import…</p><div class="acts"><button class="push primary" type="button" data-import>Import…<span class="kbd">⇧⌘I</span></button></div><p>They are copied into this library, so the service still plays if the originals move. Works best: MP4 or MOV videos (H.264 or HEVC) and JPEG, PNG or HEIC images.</p></div>'}
     else if(!list.length){var what=S.filter==="image"?"images":S.filter==="video"?"videos":"media";
       h='<div class="empty"><h4>No '+what+' match “'+esc(S.q)+'”</h4><p>Search looks at media names only.</p><div class="acts"><button class="push" type="button" data-clearq>Clear Search</button>'+(S.filter!=="all"?'<button class="push" type="button" data-showall>Show All Types</button>':"")+'</div></div>'}
     else{h='<ul class="bin" role="list" aria-labelledby="h-bin">'+list.map(function(m){
@@ -662,18 +675,29 @@ function details(){var m=byId(S.sel),h="";if(!m||S.empty){$$("[data-details]").f
   else if(S.pick)h+='<button class="push primary" type="button" data-act="use">Use for '+PARTS[S.pick]+'<span class="kbd">↩</span></button>';
   else if(S.mode==="live"){h+=(S.air===m.id&&!S.fs?'<button class="push" type="button" disabled>On air as the background</button>':'<button class="push primary" type="button" data-act="bg">Show as Background<span class="kbd">↩</span></button>');
     if(S.fs&&S.fs.id===m.id)h+='<button class="push" type="button" disabled>Playing full screen · use the transport</button>';
-    else if(m.k==="video")h+='<button class="push" type="button" data-act="fs"><span><svg class="ic" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><use href="#i-play"/></svg>Play Full Screen'+(m.sound?" with Sound":"")+'</span><span class="kbd">⌘↩</span></button>'}
+    else if(m.k==="video")h+='<button class="push" type="button" data-act="fs"><span><svg class="ic" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><use href="#i-play"/></svg>Play Full Screen'+(m.sound?" with Sound":"")+'</span><span class="kbd">⌘↩</span></button>';
+    h+='<p class="note how"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><span>'+(m.k==="image"?'A click or Return shows it <b>behind the lyrics</b>.':'A click or Return plays it <b>behind the lyrics, muted and looping</b>. <b>Play Full Screen</b> plays it once with sound; the lyrics hide until it ends.')+'</span></p>'}
   h+='</div>'+facts;
   $$("[data-details]").forEach(function(d){d.innerHTML=h})}
 function airCur(){return S.fs?S.fs.id:S.air}
 function renderAir(){var cur=S.mode==="live"?airCur():null,m=byId(cur),bg=byId(S.air);
   $$("[data-air-art],[data-out=aud]").forEach(function(e){if(cur)e.setAttribute("data-art",cur);else e.setAttribute("data-art","none")});
-  $$("[data-airline]").forEach(function(e){var h;
-    if(S.fs)h='<span class="flag live">ON AIR · Full screen</span><b>'+esc(byId(S.fs.id).n)+'</b><span>'+(bg?"· "+esc(bg.n)+" returns after":"· no background after")+'</span>';
-    else if(bg)h='Background<span class="flag live">ON AIR</span><b>'+esc(bg.n)+'</b><span class="num">· '+(bg.loop?"loops, muted":bg.k==="image"?"image":"video, muted")+'</span>';
-    else h='Background <b>cleared</b><span>· pick one in Media</span>';e.innerHTML=h});
+  $$("[data-now-where]").forEach(function(e){e.innerHTML=S.fs?'<b>Full-screen video</b> · '+esc(byId(S.fs.id).n):'<b>Great Is the Light</b> · Chorus 2 of 2'});
+  $$("[data-onscreen]").forEach(function(e){var t,act="";
+    if(S.fs){t='<b>Full-screen video: '+esc(byId(S.fs.id).n)+'</b> · lyrics hidden until it ends · then '+backList();
+      act='<button class="push" type="button" data-tp="stop"><svg class="ic" aria-hidden="true"><use href="#i-stop"/></svg>Stop Video</button>'}
+    else{var bgt=bg?'Background: <b>'+esc(bg.n)+'</b> ('+(bg.k==="image"?"image":"video, muted, looping")+')':"";
+      if(!S.lyrOff&&bg)t='<b>Lyrics</b> · Chorus 2 of 2 · '+bgt;
+      else if(bg)t=bgt+' · <b>no lyrics</b> (cleared; Next shows them again)';
+      else if(!S.lyrOff)t='<b>Lyrics</b> · Chorus 2 of 2 · <b>no background</b> (black behind the lyrics)';
+      else t='<b>Nothing</b> · the audience screens are black';
+      if(bg)act='<button class="push" type="button" data-clear="bg" aria-keyshortcuts="F2">Clear Background<span class="kbd">F2</span></button>'}
+    e.classList.toggle("fs-on",!!S.fs);
+    e.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="os-k">On screen:</span><span class="os-t">'+t+'</span>'+act});
   document.body.classList.toggle("lyr-off",S.lyrOff);
 }
+function backList(){var p=[];if(!S.lyrPrev)p.push("the lyrics");var bg=byId(S.air);if(bg)p.push("<b>"+esc(bg.n)+"</b>");return !p.length?"the screens go black":p.join(" and ")+(p.length>1||!S.lyrPrev?" come back":" comes back")}
+function backSay(){var p=[];if(!S.lyrOff)p.push("the lyrics");var bg=byId(S.air);if(bg)p.push(bg.n);return p.length?"Back on the screens: "+p.join(" and ")+".":"The audience screens are black."}
 function renderFS(){var m=S.fs&&byId(S.fs.id),bg=byId(S.air);
   $$("[data-fsbox]").forEach(function(box){box.hidden=!m;if(!m)return;var total=secs(m.dur),compact=box.dataset.fsbox==="mini";
     box.innerHTML='<div class="top"><span class="flag live">ON AIR · Full screen</span><b>'+esc(m.n)+'</b>'+(compact?"":'<span class="l2 num">'+res(m)+' · with sound</span>')+'</div>'+
@@ -682,14 +706,14 @@ function renderFS(){var m=S.fs&&byId(S.fs.id),bg=byId(S.air);
     '<button class="tb" type="button" data-tp="fwd" aria-label="Forward 10 seconds" aria-keyshortcuts="Alt+ArrowRight" title="Forward 10 s (⌥→)"><svg class="ic" aria-hidden="true"><use href="#i-fwd"/></svg></button>'+
     (compact?'</div><div class="ctl">':"")+
     '<span class="tm num" data-el aria-label="Elapsed">'+mmss(S.fs.t)+'</span><input type="range" min="0" max="'+total+'" value="'+S.fs.t+'" data-scrub aria-label="Position in '+esc(m.n)+'" aria-valuetext="'+mmss(S.fs.t)+' of '+m.dur+'"><span class="tm num" data-rem aria-label="Remaining">−'+mmss(total-S.fs.t)+'</span>'+
-    (compact?"</div>":'<button class="push" type="button" data-tp="stop">'+'<svg class="ic" aria-hidden="true"><use href="#i-stop"/></svg>Stop</button></div>')+
+    (compact?"</div>":'<button class="push" type="button" data-tp="stop">'+'<svg class="ic" aria-hidden="true"><use href="#i-stop"/></svg>Stop Video</button></div>')+
     '<p class="snd"><svg class="ic" aria-hidden="true"><use href="#i-speaker"/></svg>Sound to <b>'+AUDIO+'</b><button class="linkbtn" type="button">Change in Settings…</button></p>'+
-    '<p class="note">Replaces the background while it plays. '+(bg?'<b>'+esc(bg.n)+'</b> returns when it ends or you stop it.':'No background returns after it.')+' Lyrics stay on top: F1 clears them.</p>'+
-    (compact?'<button class="push" type="button" data-tp="stop"><svg class="ic" aria-hidden="true"><use href="#i-stop"/></svg>Stop</button>':"")});
+    '<p class="note"><b>The lyrics are hidden</b> and the background waits while it plays. When it ends or you press Stop Video, '+backList()+'.</p>'+
+    (compact?'<button class="push" type="button" data-tp="stop"><svg class="ic" aria-hidden="true"><use href="#i-stop"/></svg>Stop Video</button>':"")});
   $$("[data-fs-hide]").forEach(function(e){e.hidden=!!m});
 }
 function tick(){if(!S.fs||!S.fs.playing)return;var m=byId(S.fs.id),total=secs(m.dur);S.fs.t++;
-  if(S.fs.t>=total){var bg=byId(S.air);S.fs=null;render();say("Video ended. "+(bg?bg.n+" is back on air.":"Nothing on the media layer."));return}
+  if(S.fs.t>=total){S.fs=null;S.lyrOff=S.lyrPrev;render();say("Video ended. "+backSay());return}
   $$("[data-el]").forEach(function(e){e.textContent=mmss(S.fs.t)});$$("[data-rem]").forEach(function(e){e.textContent="−"+mmss(total-S.fs.t)});
   $$("[data-scrub]").forEach(function(e){if(document.activeElement!==e){e.value=S.fs.t;e.setAttribute("aria-valuetext",mmss(S.fs.t)+" of "+m.dur)}})}
 setInterval(tick,1000);
@@ -717,9 +741,12 @@ function say(t){$$("[data-say]").forEach(function(e){e.textContent="";setTimeout
 function activate(id){var m=byId(id);S.sel=id;if(!ok(m)){render();say(m.bad?m.n+" can’t play: the format is not supported.":m.n+" is still importing.");return}
   if(S.pick){var p=S.pick;S.parts[p]=id;S.pick=null;render();say(m.n+" is now the background for "+PARTS[p]+" of Morning Light. Nothing changed on the screens.");var b=$('[data-choose="'+p+'"]');if(b)b.focus();return}
   if(S.mode!=="live"){render();return}
-  S.air=id;render();say(S.fs?m.n+" is the background now; it shows after the full-screen video.":m.n+" on air as the background."+(m.heavy?" Heavy on this Mac: it may drop frames.":""))}
-function playFS(id){var m=byId(id);if(!ok(m)||m.k!=="video"||S.mode!=="live")return;S.sel=id;S.fs={id:id,t:0,playing:true};render();say(m.n+" playing full screen with sound. It replaces the background until it ends.")}
-function clear(what){if(what!=="bg")S.lyrOff=true;if(what!=="slide"){S.air=null;S.fs=null}render();
+  S.air=id;render();say(S.fs?m.n+" is the background now; it shows after the full-screen video.":m.n+" on air as the background"+(m.k==="video"?", muted and looping.":".")+(m.heavy?" Heavy on this Mac: it may drop frames.":""))}
+function playFS(id){var m=byId(id);if(!ok(m)||m.k!=="video"||S.mode!=="live")return;S.sel=id;if(!S.fs)S.lyrPrev=S.lyrOff;S.lyrOff=true;S.fs={id:id,t:0,playing:true};render();say(m.n+" is playing full screen with sound. The lyrics are hidden until it ends.")}
+function clear(what){
+  if(S.fs){if(what==="slide"){S.lyrPrev=true;render();say("Lyrics cleared. They stay hidden after the video.");return}
+    S.fs=null;S.air=null;S.lyrOff=what==="all"?true:S.lyrPrev;render();say(what==="all"?"Video, slide and background cleared.":"Video stopped and background cleared. "+backSay());return}
+  if(what!=="bg")S.lyrOff=true;if(what!=="slide"){S.air=null;S.fs=null}render();
   say(what==="slide"?"Slide cleared. The background stays.":what==="bg"?"Background cleared. The words stay.":"Slide and background cleared.")}
 function moveFocus(cur,key){var items=$$("[data-bin] [data-id]"),i=items.indexOf(cur);if(i<0)return;var t=null;
   if(key==="ArrowRight")t=items[i+1];else if(key==="ArrowLeft")t=items[i-1];
@@ -742,8 +769,11 @@ document.addEventListener("click",function(e){var b;
   if((b=e.target.closest("[data-tp]"))){var t=b.dataset.tp,m=S.fs&&byId(S.fs.id);if(!m)return;
     if(t==="pp"){S.fs.playing=!S.fs.playing;renderFS();$('[data-tp="pp"]').focus();say(S.fs.playing?"Playing":"Paused. The paused frame stays on the screens.")}
     else if(t==="back"||t==="fwd"){S.fs.t=Math.max(0,Math.min(secs(m.dur)-1,S.fs.t+(t==="back"?-10:10)));renderFS()}
-    else if(t==="stop"){var bg=byId(S.air);S.fs=null;render();say("Video stopped. "+(bg?bg.n+" is back on air.":"Nothing on the media layer."))}return}
+    else if(t==="stop"){S.fs=null;S.lyrOff=S.lyrPrev;render();say("Video stopped. "+backSay())}return}
+  if(e.target.closest(".go-next,.go-prev")){if(S.lyrOff&&!S.fs){S.lyrOff=false;render();say("The lyrics are back on the screens.")}return}
 });
+/* An action inside the On screen line rebuilds it: keep keyboard focus on the line. */
+document.addEventListener("click",function(e){if(e.target.closest&&e.target.closest("[data-onscreen] button"))setTimeout(function(){var o=$("[data-onscreen]");if(o)o.focus()},0)},true);
 document.addEventListener("input",function(e){if(e.target.matches("[data-q]")){S.q=e.target.value;var at=e.target;renderBins();details();at.focus()}
   else if(e.target.matches("[data-scrub]")&&S.fs){S.fs.t=+e.target.value;var m=byId(S.fs.id);$$("[data-el]").forEach(function(x){x.textContent=mmss(S.fs.t)});$$("[data-rem]").forEach(function(x){x.textContent="−"+mmss(secs(m.dur)-S.fs.t)})}});
 document.addEventListener("focusin",function(e){var b=e.target.closest&&e.target.closest("[data-bin] [data-id]");if(b&&S.sel!==b.dataset.id){S.sel=b.dataset.id;$$("[data-bin] [data-id]").forEach(function(o){o.classList.toggle("sel",o===b)});details();if(window.onRender)window.onRender()}});
@@ -757,7 +787,7 @@ document.addEventListener("keydown",function(e){var b=e.target.closest&&e.target
 document.addEventListener("drop",function(e){e.preventDefault();S.drop=false;render();say("Importing. Files are copied into the library’s Media folder.")});
 document.addEventListener("dragleave",function(e){if(!e.relatedTarget&&S.drop){S.drop=false;render()}});
 function setState(s){reset();
-  if(s==="fullscreen"){S.fs={id:"baptism",t:72,playing:true};S.sel="baptism"}
+  if(s==="fullscreen"){S.fs={id:"baptism",t:72,playing:true};S.sel="baptism";S.lyrOff=true}
   else if(s==="prepare"){S.mode="prepare";S.pick="chorus";S.sel="sunrise"}
   else if(s==="drop"){S.drop=true}
   else if(s==="empty"){S.empty=true;S.air=null}
