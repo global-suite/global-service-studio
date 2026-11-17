@@ -23,7 +23,7 @@ func onScreenText(_ state: AppState, language: String = Strings.language) -> Str
     }
 }
 
-/// The "On screen" line above the outputs, with Clear Background (F2) while a background is on.
+/// The "On screen" line above the outputs, with Clear Background (F2) while a background is on, and the transport under it while a full-screen video plays.
 struct OnScreenLine: View {
     @ObservedObject var state: AppState
     /// The button goes under the text in a narrow column.
@@ -35,6 +35,13 @@ struct OnScreenLine: View {
     }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            line
+            if state.fullScreenVideo != nil { VideoTransport(state: state, clock: state.videoClock) }
+        }
+    }
+
+    @ViewBuilder private var line: some View {
         let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(spacing: 10))
         layout {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -42,7 +49,7 @@ struct OnScreenLine: View {
                 Text(onScreenText(state)).foregroundColor(Appearance.label.color).fixedSize(horizontal: false, vertical: true)
             }
             if !stacked { Spacer(minLength: 0) }
-            if state.background != .none {
+            if state.background != .none, state.fullScreenVideo == nil {
                 Button { state.perform(.clearBackground) } label: {
                     HStack(spacing: 6) { Text(Strings.text("Clear Background")); KeyCap(label: "F2", fill: Appearance.controlHover.color) }
                 }

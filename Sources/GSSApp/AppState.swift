@@ -67,6 +67,12 @@ public enum AppCommand: Equatable, Sendable {
     /// Plays a local video once, full screen with sound, over the audience outputs; anything but a playable video is ignored.
     /// It is prepared before it shows; the lyrics hide and the background waits, paused, until it ends or Stop Video. Another one replaces it.
     case playFullScreen(URL)
+    /// Pauses or resumes the full-screen video.
+    case toggleVideoPause
+    /// Moves the full-screen video by some seconds, or to a position in seconds, clamped to the video.
+    /// (Two cases named `seekVideo` cannot be matched apart by Swift's patterns, so the second has its own name.)
+    case seekVideo(by: Double)
+    case setVideoPosition(Double)
     /// Stops the full-screen video; the lyrics, unless cleared, and the background come back.
     case stopVideo
 
@@ -194,6 +200,9 @@ public final class AppState: ObservableObject {
 
     /// The video playing full screen with sound, or nil; while it plays the lyrics hide without a clear and the background waits.
     @Published public private(set) var fullScreenVideo: URL?
+    @Published public private(set) var isVideoPaused = false
+    /// The elapsed and total seconds of the full-screen video, for the transport.
+    let videoClock = VideoClock()
     /// The player of the full-screen video, prepared before `fullScreenVideo` is published.
     private(set) var fullScreenPlayer: FullScreenVideo?
     /// A full-screen video being prepared; it plays when ready unless stopped or replaced first.
@@ -329,6 +338,12 @@ public final class AppState: ObservableObject {
         case .loadMedia: loadMedia()
         case .importMedia(let files): importMedia(files)
         case .playFullScreen(let url): playFullScreen(url)
+        case .toggleVideoPause:
+            guard let player = fullScreenPlayer?.player else { return }
+            isVideoPaused ? player.play() : player.pause()
+            isVideoPaused.toggle()
+        case .seekVideo(let seconds): seekFullScreen(to: videoClock.elapsed + seconds)
+        case .setVideoPosition(let seconds): seekFullScreen(to: seconds)
         case .stopVideo: stopFullScreen()
         default: performService(command)
         }
@@ -536,7 +551,7 @@ public final class AppState: ObservableObject {
 
     /// Opens and prepares a full-screen video, then plays it in place of any other, with the background paused.
     private func playFullScreen(_ url: URL) {
-        guard pendingFullScreen?.url != url, let video = FullScreenVideo(url: url) else { return }
+        guard pendingFullScreen?.url != url, let video = FullScreenVideo(url: url, audioOutputDeviceUID: settings?.audioOutputDeviceUID) else { return }
         pendingFullScreen?.stop()
         pendingFullScreen = video
         video.prepare { [weak self, weak video] ready in
@@ -546,10 +561,19 @@ public final class AppState: ObservableObject {
             self.fullScreenPlayer?.stop()
             self.fullScreenPlayer = video
             self.backgroundVideo?.player.pause()
+            (self.videoClock.elapsed, self.videoClock.duration) = (0, video.duration)
+            video.onTime = { [weak self] in self?.videoClock.elapsed = $0 }
             video.onEnd = { [weak self, weak video] in if let video, self?.fullScreenPlayer === video { self?.stopFullScreen() } }
             video.start()
+            if self.isVideoPaused { self.isVideoPaused = false }
             self.fullScreenVideo = url
         }
+    }
+
+    private func seekFullScreen(to seconds: Double) {
+        guard let video = fullScreenPlayer else { return }
+        video.seek(to: seconds)
+        videoClock.elapsed = min(max(seconds, 0), video.duration)
     }
 
     /// Stops and releases the full-screen video, or one being prepared; the background resumes and the lyrics show unless cleared.
@@ -559,6 +583,8 @@ public final class AppState: ObservableObject {
         guard let video = fullScreenPlayer else { return }
         video.stop()
         fullScreenPlayer = nil
+        (videoClock.elapsed, videoClock.duration) = (0, 0)
+        if isVideoPaused { isVideoPaused = false }
         fullScreenVideo = nil
         backgroundVideo?.start()
     }
