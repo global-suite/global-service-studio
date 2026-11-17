@@ -568,7 +568,7 @@ public final class AppState: ObservableObject {
     // MARK: Background cues (ADR 0008)
 
     /// Where the live slide is, as background cues see it; nil when nothing is on air.
-    var cuePosition: ProgramPosition? { program.cuePosition(at: programIndex, mode: repetitionMode) }
+    var cuePosition: ProgramPosition? { program.cuePosition(at: programIndex) }
 
     /// Puts the song or part background on air when the program moved from `previous` into it, through `setBackground`,
     /// which keeps the same media playing. A missing file is skipped; no cue fires while a full-screen video plays.
