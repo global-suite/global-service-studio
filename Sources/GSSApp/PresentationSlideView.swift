@@ -19,20 +19,6 @@ extension AppState {
     }
 }
 
-/// Where a slide image is drawn in its container, by its scaling (ADR 0010).
-enum SlideImageLayout {
-    /// Fit scales the whole image in, centered, leaving transparent bands; fill covers the container, centered, to be clipped;
-    /// stretch covers it without keeping the proportion. An empty image covers the container.
-    static func rect(image: CGSize, in container: CGSize, scaling: PresentationImageScaling) -> CGRect {
-        let full = CGRect(origin: .zero, size: container)
-        guard image.width > 0, image.height > 0, scaling != .stretch else { return full }
-        let across = container.width / image.width, down = container.height / image.height
-        let scale = scaling == .fill ? max(across, down) : min(across, down)
-        let size = CGSize(width: image.width * scale, height: image.height * scale)
-        return CGRect(x: (container.width - size.width) / 2, y: (container.height - size.height) / 2, width: size.width, height: size.height)
-    }
-}
-
 /// A 16:9 presentation slide over the preview backdrop. The image is decoded off the main thread through the shared cache at
 /// `maxPixelSize`; until then, or when it cannot be read, a quiet line says so.
 struct PresentationSlideView: View {
@@ -52,7 +38,7 @@ struct PresentationSlideView: View {
 
     @ViewBuilder private func face(_ size: CGSize) -> some View {
         if let loaded {
-            let rect = SlideImageLayout.rect(image: CGSize(width: loaded.width, height: loaded.height), in: size, scaling: picture.scaling)
+            let rect = PresentationSlideLayer.scaledRect(imageSize: CGSize(width: loaded.width, height: loaded.height), outputSize: size, scaling: picture.scaling)
             Image(decorative: loaded, scale: 1).resizable().frame(width: rect.width, height: rect.height).position(x: rect.midX, y: rect.midY)
         } else {
             Text(Strings.text(isLoading ? "Loading slide…" : "Slide image not found"))

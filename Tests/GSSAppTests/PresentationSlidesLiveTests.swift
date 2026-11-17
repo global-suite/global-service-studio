@@ -91,13 +91,13 @@ final class PresentationSlidesLiveTests: XCTestCase {
 
     func testFitLeavesTransparentBandsFillCropsAndStretchCoversTheContainer() {
         let container = CGSize(width: 160, height: 90)
-        XCTAssertEqual(SlideImageLayout.rect(image: CGSize(width: 200, height: 100), in: container, scaling: .fit), CGRect(x: 0, y: 5, width: 160, height: 80))
-        XCTAssertEqual(SlideImageLayout.rect(image: CGSize(width: 100, height: 200), in: container, scaling: .fit), CGRect(x: 57.5, y: 0, width: 45, height: 90))
-        XCTAssertEqual(SlideImageLayout.rect(image: CGSize(width: 200, height: 100), in: container, scaling: .fill), CGRect(x: -10, y: 0, width: 180, height: 90))
-        XCTAssertEqual(SlideImageLayout.rect(image: CGSize(width: 100, height: 200), in: container, scaling: .fill), CGRect(x: 0, y: -115, width: 160, height: 320))
-        XCTAssertEqual(SlideImageLayout.rect(image: CGSize(width: 100, height: 200), in: container, scaling: .stretch), CGRect(x: 0, y: 0, width: 160, height: 90))
-        XCTAssertEqual(SlideImageLayout.rect(image: CGSize(width: 32, height: 18), in: container, scaling: .fit), CGRect(x: 0, y: 0, width: 160, height: 90))
-        XCTAssertEqual(SlideImageLayout.rect(image: .zero, in: container, scaling: .fit), CGRect(x: 0, y: 0, width: 160, height: 90))
+        XCTAssertEqual(PresentationSlideLayer.scaledRect(imageSize: CGSize(width: 200, height: 100), outputSize: container, scaling: .fit), CGRect(x: 0, y: 5, width: 160, height: 80))
+        XCTAssertEqual(PresentationSlideLayer.scaledRect(imageSize: CGSize(width: 100, height: 200), outputSize: container, scaling: .fit), CGRect(x: 57.5, y: 0, width: 45, height: 90))
+        XCTAssertEqual(PresentationSlideLayer.scaledRect(imageSize: CGSize(width: 200, height: 100), outputSize: container, scaling: .fill), CGRect(x: -10, y: 0, width: 180, height: 90))
+        XCTAssertEqual(PresentationSlideLayer.scaledRect(imageSize: CGSize(width: 100, height: 200), outputSize: container, scaling: .fill), CGRect(x: 0, y: -115, width: 160, height: 320))
+        XCTAssertEqual(PresentationSlideLayer.scaledRect(imageSize: CGSize(width: 100, height: 200), outputSize: container, scaling: .stretch), CGRect(x: 0, y: 0, width: 160, height: 90))
+        XCTAssertEqual(PresentationSlideLayer.scaledRect(imageSize: CGSize(width: 32, height: 18), outputSize: container, scaling: .fit), CGRect(x: 0, y: 0, width: 160, height: 90))
+        XCTAssertEqual(PresentationSlideLayer.scaledRect(imageSize: .zero, outputSize: container, scaling: .fit), CGRect(x: 0, y: 0, width: 160, height: 90))
     }
 
     func testScalingNamesAreLocalized() {
