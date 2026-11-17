@@ -99,14 +99,18 @@ extension MainWindowController: NSOpenSavePanelDelegate {
 
     func panel(_ sender: Any, shouldEnable url: URL) -> Bool { url.hasDirectoryPath || url.lastPathComponent.hasSuffix(".plan.json") }
 
-    /// File > Service Info…: edits the title and date of the service.
+    /// File > Service Info…: edits the title, date and start time of the service.
     @objc func showServiceInfo(_ sender: Any?) {
         guard let window else { return }
         let alert = NSAlert(), title = NSTextField(string: state.program.plan.title), picker = NSDatePicker()
         (picker.datePickerStyle, picker.datePickerElements, picker.locale) = (.textFieldAndStepper, .yearMonthDay, Locale(identifier: Strings.language))
         picker.dateValue = state.program.plan.date.flatMap(ServiceDate.date(from:)) ?? Date()
+        let start = NSTextField(string: state.program.plan.times?.first?.start ?? "")
+        (start.placeholderString, start.toolTip) = (Strings.text("HH:MM"), Strings.text("The time the service starts, in 24-hour hours and minutes. Leave it empty for none."))
         title.widthAnchor.constraint(equalToConstant: 260).isActive = true
-        let grid = NSGridView(views: [[NSTextField(labelWithString: Strings.text("Title")), title], [NSTextField(labelWithString: Strings.text("Date")), picker]])
+        start.widthAnchor.constraint(equalToConstant: 72).isActive = true
+        let grid = NSGridView(views: [[NSTextField(labelWithString: Strings.text("Title")), title], [NSTextField(labelWithString: Strings.text("Date")), picker],
+                                      [NSTextField(labelWithString: Strings.text("Start Time")), start]])
         grid.frame.size = grid.fittingSize
         (alert.messageText, alert.accessoryView) = (Strings.text("Service Info"), grid)
         for button in ["OK", "Cancel"] { alert.addButton(withTitle: Strings.text(button)) }
@@ -114,7 +118,7 @@ extension MainWindowController: NSOpenSavePanelDelegate {
         alert.window.initialFirstResponder = title
         alert.beginSheetModal(for: window) { [weak self] response in
             guard response == .alertFirstButtonReturn else { return }
-            self?.state.perform(.setServiceInfo(title: title.stringValue, date: ServiceDate.string(from: picker.dateValue)))
+            self?.state.perform(.setServiceInfo(title: title.stringValue, date: ServiceDate.string(from: picker.dateValue), start: start.stringValue))
         }
     }
 }

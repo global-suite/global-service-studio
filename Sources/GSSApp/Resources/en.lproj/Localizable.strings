@@ -213,3 +213,12 @@
 /* Prepare item editor: help of the button that removes a note. */ "Remove Note" = "Remove Note";
 /* File menu: submenu of the services changed most recently. */ "Open Recent Service" = "Open Recent Service";
 /* File > Open Recent Service item: %1$@ is the service title, %2$@ its date. */ "%1$@ — %2$@" = "%1$@ — %2$@";
+/* Prepare view switch: shows the selected plan item. */ "Item" = "Item";
+/* Prepare view switch: shows the whole service as a run sheet. */ "Run Sheet" = "Run Sheet";
+/* Prepare view switch: help of the switch. */ "Show the selected item or the whole service as a run sheet" = "Show the selected item or the whole service as a run sheet";
+/* Run sheet: column of the time each item starts. */ "Start" = "Start";
+/* Run sheet footer: label of the length of the whole service. */ "Total Length" = "Total Length";
+/* Run sheet footer: label of the time the service ends. */ "Ends" = "Ends";
+/* Service Info dialog: label of the start time field. */ "Start Time" = "Start Time";
+/* Service Info dialog: placeholder of the start time field (hours and minutes). */ "HH:MM" = "HH:MM";
+/* Service Info dialog: help of the start time field. */ "The time the service starts, in 24-hour hours and minutes. Leave it empty for none." = "The time the service starts, in 24-hour hours and minutes. Leave it empty for none.";

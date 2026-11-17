@@ -56,9 +56,16 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
 
     /// In Live mode, Space and Right arrow go to the next slide, Left arrow to the previous one, F1 clears the slide and F3 clears all.
     /// In Prepare mode, outside the words editor, Left and Right arrows select the previous or next part and Delete removes it from the order;
-    /// with a plan item selected, Option-Up and Option-Down move it in the service and Delete removes it instead. Returns nil when the key was used.
+    /// with a plan item selected, Option-Up and Option-Down move it in the service and Delete removes it instead.
+    /// With a Library song open, Command-Return adds it after the selected plan item and Option-Command-Return at the end. Returns nil when the key was used.
     func handleKey(_ event: NSEvent) -> NSEvent? {
         let part = state.selectedPart, option = event.modifierFlags.contains(.option)
+        let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        if [36, 76].contains(event.keyCode), flags == .command || flags == [.command, .option], state.openSongFile != nil,
+           event.window === window, !(window?.firstResponder is NSText) {
+            state.addOpenSongToService(atEnd: option)
+            return nil
+        }
         var commands: [UInt16: AppCommand] = state.mode == .live ? [49: .nextSlide, 124: .nextSlide, 123: .previousSlide, 122: .clearSlide, 120: .clearBackground, 99: .clearAll]
             : [123: .selectPart(part - 1), 124: .selectPart(part + 1), 51: .removeArrangementItem(at: part), 117: .removeArrangementItem(at: part)]
         if state.mode == .prepare, let item = state.selectedPlanItem {
@@ -100,13 +107,31 @@ final class MainWindowController: NSWindowController, NSWindowDelegate, NSToolba
     }
 }
 
+extension AppState {
+    /// Adds the Library song open in the sidebar after the plan item selected in Prepare, at the end when none is or when `atEnd`; it never goes on air.
+    func addOpenSongToService(atEnd: Bool) {
+        guard let url = openSongFile else { return }
+        let count = program.plan.items.count, after = atEnd || mode != .prepare ? nil : selectedPlanItem
+        perform(.addToService(url, position: .end))
+        if let after, program.plan.items.count == count + 1 { perform(.movePlanItem(from: count, to: after + 1)) }
+    }
+}
+
 struct ModeContent: View {
     @ObservedObject var state: AppState
     let appearance: Appearance
+    /// Whether Prepare shows the whole service as a run sheet instead of the selected item.
+    @State private var showsRunSheet = false
 
     var body: some View {
         if state.mode == .live { LiveView(state: state, appearance: appearance) }
-        else if let item = state.selectedPlanItem, state.program.plan.items.indices.contains(item) { PlanItemEditor(state: state, appearance: appearance, index: item) }
-        else { PrepareView(state: state, appearance: appearance) }
+        else {
+            VStack(spacing: 0) {
+                if !state.program.plan.items.isEmpty { PrepareViewBar(showsRunSheet: $showsRunSheet).background(appearance.window.color) }
+                if showsRunSheet && !state.program.plan.items.isEmpty { RunSheetView(state: state, appearance: appearance) }
+                else if let item = state.selectedPlanItem, state.program.plan.items.indices.contains(item) { PlanItemEditor(state: state, appearance: appearance, index: item) }
+                else { PrepareView(state: state, appearance: appearance) }
+            }
+        }
     }
 }
