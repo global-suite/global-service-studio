@@ -9,6 +9,13 @@ struct LiveView: View {
     @ObservedObject var state: AppState
     let appearance: Appearance
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The drawer tab over the slide grid; in Wide the images and videos sit under the grid instead.
+    @State private var tab: DrawerTab
+
+    init(state: AppState, appearance: Appearance, tab: DrawerTab = .default) {
+        (self.state, self.appearance) = (state, appearance)
+        _tab = State(initialValue: tab)
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -48,10 +55,22 @@ struct LiveView: View {
                 VStack(alignment: .leading, spacing: 12) { nextPanel(width: nextWidth); buttons(width: nextWidth) }.frame(width: nextWidth)
             }
             .frame(height: max(liveHeight, 96 + nextWidth * 9 / 16))
-            allSlides(size)
+            drawer(size)
         }
         .padding(EdgeInsets(top: 18, leading: 32, bottom: 14, trailing: 32))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    /// Compact and Regular: Slides | Images & Videos tabs over the grid area. Wide: the slide grid with the images and videos under it.
+    @ViewBuilder private func drawer(_ size: SizeClass) -> some View {
+        if size == .wide {
+            allSlides(size)
+            MediaBin(state: state).padding(12).background(RoundedRectangle(cornerRadius: 8).fill(appearance.contentRaised.color))
+        } else {
+            Picker("", selection: $tab) { ForEach(DrawerTab.allCases, id: \.self) { Text($0.title()).tag($0) } }
+                .pickerStyle(.segmented).labelsHidden().fixedSize()
+            if tab == .slides { allSlides(size) } else { MediaBin(state: state) }
+        }
     }
 
     /// In Wide, the outputs column takes the width the top row leaves over (Live at its cap, Next as wide as Live), from 440 to 640.
@@ -61,9 +80,10 @@ struct LiveView: View {
     }
 
     private func outputsColumn(width: CGFloat, height: CGFloat) -> some View {
-        // Monitors fill the column width, or shrink to fit four in the height; height left over spreads between them.
-        let monitorWidth = min(width - 44, max(120, (height - 420) / 4 * 16 / 9))
+        // Monitors fill the column width, or shrink to fit four in the height under the On screen line; height left over spreads between them.
+        let monitorWidth = min(width - 44, max(120, (height - 500) / 4 * 16 / 9))
         return VStack(alignment: .leading, spacing: 8) {
+            OnScreenLine(state: state, stacked: true)
             sectionTitle
             ForEach(LiveOutput.samples) { OutputMonitor(output: $0, state: state, width: monitorWidth).frame(maxWidth: .infinity); Spacer(minLength: 6) }
             ClearActions(state: state, stacked: true)
@@ -73,13 +93,16 @@ struct LiveView: View {
     }
 
     private var bottomBar: some View {
-        HStack(alignment: .bottom, spacing: 24) {
-            VStack(alignment: .leading, spacing: 8) {
-                sectionTitle
-                HStack(alignment: .top, spacing: 14) { ForEach(LiveOutput.samples) { OutputMonitor(output: $0, state: state, width: 136) } }
+        VStack(alignment: .leading, spacing: 10) {
+            OnScreenLine(state: state, stacked: false)
+            HStack(alignment: .bottom, spacing: 24) {
+                VStack(alignment: .leading, spacing: 8) {
+                    sectionTitle
+                    HStack(alignment: .top, spacing: 14) { ForEach(LiveOutput.samples) { OutputMonitor(output: $0, state: state, width: 136) } }
+                }
+                Spacer(minLength: 0)
+                ClearActions(state: state, stacked: false).padding(.bottom, 20)
             }
-            Spacer(minLength: 0)
-            ClearActions(state: state, stacked: false).padding(.bottom, 20)
         }
         .padding(EdgeInsets(top: 14, leading: 32, bottom: 16, trailing: 32))
     }
