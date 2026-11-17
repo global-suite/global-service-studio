@@ -37,6 +37,7 @@ struct LiveView: View {
         }
         .font(.system(size: 13))
         .background(appearance.window.color)
+        .environment(\.previewBackdrop, previewBackdrop(state: state, role: .audience))
     }
 
     private func content(_ size: SizeClass, width: CGFloat, height: CGFloat) -> some View {
@@ -269,15 +270,18 @@ struct SlideThumbnail: View {
     }
 }
 
-/// A 16:9 black slide with its lines centered in white.
+/// A 16:9 slide with its lines centered in white, with a subtle shadow, over the preview backdrop.
 struct SlideFace: View {
     let lines: [String]
     let size: CGFloat
+    @Environment(\.previewBackdrop) private var backdrop
 
     var body: some View {
-        Color.black
+        PreviewBackdropView(backdrop: backdrop)
             .aspectRatio(16 / 9, contentMode: .fit)
-            .overlay(Text(lines.joined(separator: "\n")).font(.system(size: size, weight: .semibold)).foregroundColor(.white).multilineTextAlignment(.center).padding(6))
+            .clipped()
+            .overlay(Text(lines.joined(separator: "\n")).font(.system(size: size, weight: .semibold)).foregroundColor(.white).multilineTextAlignment(.center)
+                .shadow(color: .black.opacity(0.6), radius: 2, y: 1).padding(6))
     }
 }
 
