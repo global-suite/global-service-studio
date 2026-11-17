@@ -35,7 +35,7 @@ Every source becomes a PDF first, and the app renders that PDF itself.
 An imported deck is an ordinary `gss.presentation` file in the library's `Presentations/` folder, version 1:
 
 - Each slide becomes one `PresentationSlide` with a single `image` element. Its `frame` covers the whole canvas (`x` 0, `y` 0, `width` 1, `height` 1), which the format's validation already accepts (`Sources/GSSCore/Presentation/PresentationValidation.swift:20-31`).
-- The rendered image is stored in the library's `Media/` folder and referenced with a `MediaReference`: a library-relative path plus its `sha256` (`Sources/GSSCore/Format/SharedValues.swift:13-30`). Identical images are stored once.
+- The rendered images are stored in a folder of their own per presentation, `Media/Presentations/<presentation id>/`, named by slide number (`001.png`, `002.png`, …), and referenced with a `MediaReference`: a library-relative path plus its `sha256` (`Sources/GSSCore/Format/SharedValues.swift:13-30`). The media bin lists only the top level of `Media/`, so imported slides never crowd the operator's images and videos. Importing a deck again replaces its folder.
 - Speaker notes go in the slide's existing `notes` field (`Sources/GSSCore/Presentation/PresentationParts.swift:8`). A PDF has no notes.
 - Hidden (skipped) slides are not imported.
 
@@ -47,7 +47,7 @@ An imported deck is an ordinary `gss.presentation` file in the library's `Presen
       "id": "e1",
       "kind": "image",
       "frame": { "x": 0, "y": 0, "width": 1, "height": 1 },
-      "media": { "path": "Media/…", "sha256": "…" },
+      "media": { "path": "Media/Presentations/…/001.png", "sha256": "…" },
       "scaling": "fit"
     }
   ],
