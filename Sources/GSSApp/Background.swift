@@ -14,10 +14,12 @@ public enum Background: Equatable, Sendable {
 }
 
 /// What an output draws in its media layer, ready to draw: the image is already decoded and the video player prepared.
+/// A full-screen video is drawn whole, with black bars, never cropped.
 enum MediaFill: Equatable {
     case color(RGBA)
     case image(CGImage)
     case video(AVPlayer)
+    case fullScreenVideo(AVPlayer)
 }
 
 /// Decodes background images when a command is applied, never on the render path or in a view body.
@@ -38,9 +40,11 @@ enum BackgroundImageLoader {
 }
 
 extension AppState {
-    /// What an output with a role draws in its media layer; nil when the role never shows it, as the key output, or there is no background.
+    /// What an output with a role draws in its media layer: the full-screen video while it plays, else the background;
+    /// nil when the role never shows it, as the key output, or there is no background.
     func mediaFill(for role: OutputRole) -> MediaFill? {
         guard role.shows(.media) else { return nil }
+        if let video = fullScreenPlayer { return .fullScreenVideo(video.player) }
         switch background {
         case .none: return nil
         case .color(let hex): return KeyColor(hex: hex).map { .color($0.rgba) }
@@ -59,7 +63,7 @@ extension AppState {
     }
 }
 
-/// The media layer: the background color, or the image or video filling the output (aspect fill); transparent without one.
+/// The media layer: the background color, or the image or video filling the output (aspect fill), or the full-screen video whole over black; transparent without one.
 struct MediaLayer: View {
     let fill: MediaFill?
 
@@ -71,6 +75,7 @@ struct MediaLayer: View {
                 Image(decorative: image, scale: 1).resizable().aspectRatio(contentMode: .fill)
                     .frame(width: geometry.size.width, height: geometry.size.height).clipped()
             case .video(let player): VideoLayerView(player: player)
+            case .fullScreenVideo(let player): ZStack { Color.black; VideoLayerView(player: player, gravity: .resizeAspect) }
             case nil: Color.clear
             }
         }

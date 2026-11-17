@@ -64,6 +64,17 @@ public enum AppCommand: Equatable, Sendable {
     case loadMedia
     /// Copies images and videos into the library off the main thread, then lists them; the files that could not be added are named in one alert.
     case importMedia([URL])
+    /// Plays a local video once, full screen with sound, over the audience outputs; anything but a playable video is ignored.
+    /// It is prepared before it shows; the lyrics hide and the background waits, paused, until it ends or Stop Video. Another one replaces it.
+    case playFullScreen(URL)
+    /// Pauses or resumes the full-screen video.
+    case toggleVideoPause
+    /// Moves the full-screen video by some seconds, or to a position in seconds, clamped to the video.
+    /// (Two cases named `seekVideo` cannot be matched apart by Swift's patterns, so the second has its own name.)
+    case seekVideo(by: Double)
+    case setVideoPosition(Double)
+    /// Stops the full-screen video; the lyrics, unless cleared, and the background come back.
+    case stopVideo
 
     /// Starts an empty service titled "Service" dated today; it is not saved until Save Service.
     case newService
@@ -202,6 +213,16 @@ public final class AppState: ObservableObject {
     /// Counts media lists, so a list that finishes after a newer one is dropped.
     private var mediaLoads = 0
 
+    /// The video playing full screen with sound, or nil; while it plays the lyrics hide without a clear and the background waits.
+    @Published public private(set) var fullScreenVideo: URL?
+    @Published public private(set) var isVideoPaused = false
+    /// The elapsed and total seconds of the full-screen video, for the transport.
+    let videoClock = VideoClock()
+    /// The player of the full-screen video, prepared before `fullScreenVideo` is published.
+    private(set) var fullScreenPlayer: FullScreenVideo?
+    /// A full-screen video being prepared; it plays when ready unless stopped or replaced first.
+    private var pendingFullScreen: FullScreenVideo?
+
     public init(settings: AppSettings? = nil, indexURL: ((Library) throws -> URL)? = nil, indexQueue: DispatchQueue = DispatchQueue(label: "GSS library index")) {
         (self.indexURL, self.indexQueue) = (indexURL, indexQueue)
         let mode = settings?.repetitionMode ?? .separateSlides, parts = SongPart.parts(of: SampleSong.song, mode: mode)
@@ -229,11 +250,12 @@ public final class AppState: ObservableObject {
     public var nextSlide: LiveSlide? { program.slides.indices.contains(programIndex + 1) ? program.slides[programIndex + 1].slide : nil }
     public var previousSlide: LiveSlide? { programIndex > 0 ? program.slides[programIndex - 1].slide : nil }
     /// The lines the outputs show: none while cleared.
-    public var shownLines: [String] { isCleared ? [] : liveSlide.lines }
+    public var shownLines: [String] { isCleared || fullScreenVideo != nil ? [] : liveSlide.lines }
 
     /// Applies a command; moves outside the song and words that leave a part empty are ignored, other moves end a clear. Clear All also clears the background.
     /// The audience output shows only with a display chosen, and clearing the display hides it.
     public func perform(_ command: AppCommand) {
+        if fullScreenVideo != nil || pendingFullScreen != nil, endsFullScreenVideo(command) { stopFullScreen() }
         switch command {
         case .setMode(let mode): if mode != self.mode { self.mode = mode }
         case .nextSlide: goToSlide(programIndex + 1)
@@ -330,6 +352,14 @@ public final class AppState: ObservableObject {
         case .clearBackground: setBackground(.none)
         case .loadMedia: loadMedia()
         case .importMedia(let files): importMedia(files)
+        case .playFullScreen(let url): playFullScreen(url)
+        case .toggleVideoPause:
+            guard let player = fullScreenPlayer?.player else { return }
+            isVideoPaused ? player.play() : player.pause()
+            isVideoPaused.toggle()
+        case .seekVideo(let seconds): seekFullScreen(to: videoClock.elapsed + seconds)
+        case .setVideoPosition(let seconds): seekFullScreen(to: seconds)
+        case .stopVideo: stopFullScreen()
         default: performService(command)
         }
     }
@@ -538,7 +568,8 @@ public final class AppState: ObservableObject {
     private func show(_ new: Background, image: CGImage?, video: BackgroundVideo?) {
         backgroundVideo?.stop()
         (backgroundImage, backgroundVideo) = (image, video)
-        video?.start()
+        // A background chosen during a full-screen video waits for it to end.
+        if fullScreenPlayer == nil { video?.start() }
         background = new
     }
 
@@ -550,6 +581,57 @@ public final class AppState: ObservableObject {
 
     /// Whether a media file is the background on the outputs.
     public func isOnAir(_ file: MediaFile) -> Bool { background == background(for: file) }
+
+    /// Whether a command ends the full-screen video: Clear All, Clear Background, and a move to another slide.
+    private func endsFullScreenVideo(_ command: AppCommand) -> Bool {
+        switch command {
+        case .clearAll, .clearBackground: return true
+        case .nextSlide: return program.slides.indices.contains(programIndex + 1)
+        case .previousSlide: return program.slides.indices.contains(programIndex - 1)
+        case .goToSlide(let index): return program.slides.indices.contains(index)
+        default: return false
+        }
+    }
+
+    /// Opens and prepares a full-screen video, then plays it in place of any other, with the background paused.
+    private func playFullScreen(_ url: URL) {
+        guard pendingFullScreen?.url != url, let video = FullScreenVideo(url: url, audioOutputDeviceUID: settings?.audioOutputDeviceUID) else { return }
+        pendingFullScreen?.stop()
+        pendingFullScreen = video
+        video.prepare { [weak self, weak video] ready in
+            guard let self, let video, self.pendingFullScreen === video else { return }
+            self.pendingFullScreen = nil
+            guard ready else { return video.stop() }
+            self.fullScreenPlayer?.stop()
+            self.fullScreenPlayer = video
+            self.backgroundVideo?.player.pause()
+            (self.videoClock.elapsed, self.videoClock.duration) = (0, video.duration)
+            video.onTime = { [weak self] in self?.videoClock.elapsed = $0 }
+            video.onEnd = { [weak self, weak video] in if let video, self?.fullScreenPlayer === video { self?.stopFullScreen() } }
+            video.start()
+            if self.isVideoPaused { self.isVideoPaused = false }
+            self.fullScreenVideo = url
+        }
+    }
+
+    private func seekFullScreen(to seconds: Double) {
+        guard let video = fullScreenPlayer else { return }
+        video.seek(to: seconds)
+        videoClock.elapsed = min(max(seconds, 0), video.duration)
+    }
+
+    /// Stops and releases the full-screen video, or one being prepared; the background resumes and the lyrics show unless cleared.
+    private func stopFullScreen() {
+        pendingFullScreen?.stop()
+        pendingFullScreen = nil
+        guard let video = fullScreenPlayer else { return }
+        video.stop()
+        fullScreenPlayer = nil
+        (videoClock.elapsed, videoClock.duration) = (0, 0)
+        if isVideoPaused { isVideoPaused = false }
+        fullScreenVideo = nil
+        backgroundVideo?.start()
+    }
 
     private func loadMedia() {
         mediaLoads += 1

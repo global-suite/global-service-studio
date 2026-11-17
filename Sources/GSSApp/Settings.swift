@@ -1,4 +1,5 @@
 import AppKit
+import CoreAudio
 import SwiftUI
 
 /// The interface language: the system's, or one the app is translated into.
@@ -56,6 +57,11 @@ public struct AppSettings {
         get { defaults.url(forKey: "libraryFolder") ?? Self.defaultLibraryFolder }
         nonmutating set { defaults.set(newValue, forKey: "libraryFolder") }
     }
+    /// The Core Audio UID of the device full-screen videos play their sound on; nil is the system default.
+    public var audioOutputDeviceUID: String? {
+        get { defaults.string(forKey: "audioOutputDeviceUID") }
+        nonmutating set { defaults.set(newValue, forKey: "audioOutputDeviceUID") }
+    }
 }
 
 /// The General settings: the interface language, applied the next time the app opens, and how repeated parts show in Live.
@@ -63,10 +69,13 @@ struct SettingsView: View {
     @ObservedObject var state: AppState
     let settings: AppSettings
     @State private var language: InterfaceLanguage
+    @State private var audioDevice: String?
+    private let audioDevices = AudioOutputDevice.all()
 
     init(state: AppState, settings: AppSettings) {
         (self.state, self.settings) = (state, settings)
         _language = State(initialValue: settings.language)
+        _audioDevice = State(initialValue: settings.audioOutputDeviceUID)
     }
 
     var body: some View {
@@ -82,6 +91,14 @@ struct SettingsView: View {
             .pickerStyle(.radioGroup)
             .padding(.top, 12)
             KeyColorPicker(state: state).padding(.top, 12)
+            Picker(Strings.text("Video sound"), selection: $audioDevice) {
+                Text(Strings.text("System default")).tag(String?.none)
+                ForEach(audioDevices, id: \.uid) { Text($0.name).tag(Optional($0.uid)) }
+            }
+            .onChange(of: audioDevice) { settings.audioOutputDeviceUID = $0 }
+            .padding(.top, 12)
+            Text(Strings.text("Full-screen videos play their sound on this device. Backgrounds are always muted."))
+                .font(.system(size: 11)).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(20)
         .frame(width: 460)
@@ -118,6 +135,36 @@ struct KeyColorPicker: View {
             Text(Strings.text("The Key output shows the lyrics over this color, for a video switcher to remove. It never shows backgrounds."))
                 .font(.system(size: 11)).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
         }
+    }
+}
+
+/// An audio device with output streams, from Core Audio.
+struct AudioOutputDevice: Equatable {
+    let uid, name: String
+
+    /// The connected devices that can play sound; none when Core Audio cannot list them.
+    static func all() -> [AudioOutputDevice] {
+        let system = AudioObjectID(kAudioObjectSystemObject)
+        var address = Self.address(kAudioHardwarePropertyDevices), size: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(system, &address, 0, nil, &size) == noErr else { return [] }
+        var ids = [AudioObjectID](repeating: 0, count: Int(size) / MemoryLayout<AudioObjectID>.size)
+        guard AudioObjectGetPropertyData(system, &address, 0, nil, &size, &ids) == noErr else { return [] }
+        return ids.compactMap { id in
+            var streams = Self.address(kAudioDevicePropertyStreams, scope: kAudioDevicePropertyScopeOutput), count: UInt32 = 0
+            guard AudioObjectGetPropertyDataSize(id, &streams, 0, nil, &count) == noErr, count > 0,
+                  let uid = string(id, kAudioDevicePropertyDeviceUID), let name = string(id, kAudioObjectPropertyName) else { return nil }
+            return AudioOutputDevice(uid: uid, name: name)
+        }
+    }
+
+    private static func address(_ selector: AudioObjectPropertySelector, scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal) -> AudioObjectPropertyAddress {
+        AudioObjectPropertyAddress(mSelector: selector, mScope: scope, mElement: kAudioObjectPropertyElementMain)
+    }
+
+    private static func string(_ id: AudioObjectID, _ selector: AudioObjectPropertySelector) -> String? {
+        var address = address(selector), value: Unmanaged<CFString>?, size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+        guard AudioObjectGetPropertyData(id, &address, 0, nil, &size, &value) == noErr else { return nil }
+        return value?.takeRetainedValue() as String?
     }
 }
 

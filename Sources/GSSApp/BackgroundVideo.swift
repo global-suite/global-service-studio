@@ -58,20 +58,25 @@ final class BackgroundVideo {
     }
 }
 
-/// Draws a shared player into an output, filling it (aspect fill). The video is decoded once, however many outputs show it.
+/// Draws a shared player into an output, filling it (aspect fill) or, for a full-screen video, whole (aspect fit).
+/// The video is decoded once, however many outputs show it.
 struct VideoLayerView: NSViewRepresentable {
     let player: AVPlayer
+    var gravity: AVLayerVideoGravity = .resizeAspectFill
 
-    func makeNSView(context: Context) -> PlayerView { PlayerView(player: player) }
-    func updateNSView(_ view: PlayerView, context: Context) { if view.playerLayer.player !== player { view.playerLayer.player = player } }
+    func makeNSView(context: Context) -> PlayerView { PlayerView(player: player, gravity: gravity) }
+    func updateNSView(_ view: PlayerView, context: Context) {
+        if view.playerLayer.player !== player { view.playerLayer.player = player }
+        if view.playerLayer.videoGravity != gravity { view.playerLayer.videoGravity = gravity }
+    }
 
     /// A view backed by an AVPlayerLayer.
     final class PlayerView: NSView {
         let playerLayer = AVPlayerLayer()
 
-        init(player: AVPlayer) {
+        init(player: AVPlayer, gravity: AVLayerVideoGravity = .resizeAspectFill) {
             super.init(frame: .zero)
-            (playerLayer.player, playerLayer.videoGravity) = (player, .resizeAspectFill)
+            (playerLayer.player, playerLayer.videoGravity) = (player, gravity)
             layer = playerLayer
             wantsLayer = true
         }

@@ -72,7 +72,7 @@ struct OutputMonitor: View {
     }
 }
 
-/// Clear Slide (F1), Clear Background (F2) and Clear All (F3), in a row or a column; Clear Background needs a background.
+/// Clear Slide (F1), Clear Background (F2) and Clear All (F3), in a row or a column; Clear Background needs a background or a full-screen video, which it stops.
 struct ClearActions: View {
     @ObservedObject var state: AppState
     let stacked: Bool
@@ -84,8 +84,8 @@ struct ClearActions: View {
             pair {
                 button("Clear Slide", "F1", danger: false) { state.perform(.clearSlide) }
                 button("Clear Background", "F2", danger: false) { state.perform(.clearBackground) }
-                    .disabled(state.background == .none)
-                    .opacity(state.background == .none ? 0.45 : 1)
+                    .disabled(state.background == .none && state.fullScreenVideo == nil)
+                    .opacity(state.background == .none && state.fullScreenVideo == nil ? 0.45 : 1)
             }
             button("Clear All", "F3", danger: true) { state.perform(.clearAll) }
         }

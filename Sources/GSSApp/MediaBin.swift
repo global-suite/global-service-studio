@@ -83,7 +83,9 @@ struct MediaBin: View {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 260), spacing: 12)], alignment: .leading, spacing: 16) {
                     ForEach(files, id: \.path) { file in
-                        MediaTile(file: file, url: state.libraryFolder.appendingPathComponent(file.path), onAir: state.isOnAir(file), selected: selected == file.path) { choose(file) }
+                        let url = state.libraryFolder.appendingPathComponent(file.path)
+                        MediaTile(file: file, url: url, onAir: state.isOnAir(file), selected: selected == file.path,
+                                  playFullScreen: file.kind == .video ? { selected = file.path; state.perform(.playFullScreen(url)) } : nil) { choose(file) }
                     }
                 }
                 .padding(4)
@@ -118,8 +120,10 @@ struct MediaBin: View {
 }
 
 /// One image or video: its preview, made off the main thread, its name, kind, length and size, and "On screen" with an accent ring when on air.
+/// A video also has Play Full Screen, in its footer and its context menu.
 struct MediaTile: View {
     let file: MediaFile, url: URL, onAir: Bool, selected: Bool
+    var playFullScreen: (() -> Void)?
     let action: () -> Void
     @State private var preview: MediaPreview?
 
@@ -143,6 +147,13 @@ struct MediaTile: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .overlay(alignment: .bottomTrailing) {
+            if let playFullScreen {
+                Button(action: playFullScreen) { Image(systemName: "play.rectangle.fill") }
+                    .buttonStyle(.borderless).help(Strings.text("Play Full Screen")).accessibilityLabel(Strings.text("Play Full Screen"))
+            }
+        }
+        .contextMenu { if let playFullScreen { Button(Strings.text("Play Full Screen"), action: playFullScreen) } }
         .task(id: "\(url.path)|\(file.modified.timeIntervalSinceReferenceDate)") {
             preview = await MediaThumbnails.shared.preview(of: url, kind: file.kind, modified: file.modified)
         }
