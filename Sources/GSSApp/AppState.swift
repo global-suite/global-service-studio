@@ -71,8 +71,9 @@ public enum AppCommand: Equatable, Sendable {
     case openLaunchService
     /// Saves the service in the library, creating the library the first time; a failure is reported in `alert`.
     case saveService
-    /// Changes the title and the `YYYY-MM-DD` date of the service; an empty title or an invalid date is ignored.
-    case setServiceInfo(title: String, date: String)
+    /// Changes the title, the `YYYY-MM-DD` date and, unless nil, the `HH:MM` start time of the service, saved as the first of its times
+    /// (an empty one removes it); an empty title, an invalid date or an invalid start time is ignored.
+    case setServiceInfo(title: String, date: String, start: String? = nil)
 
     /// Moves a plan item to a final place; the live slide, the preview and the selection stay on their items.
     case movePlanItem(from: Int, to: Int)
@@ -324,9 +325,10 @@ public final class AppState: ObservableObject {
                 serviceFile = try Library.open(libraryFolder).save(program.plan)
                 hasUnsavedServiceChanges = false
             }
-        case .setServiceInfo(let title, let date):
+        case .setServiceInfo(let title, let date, let start):
             var plan = program.plan
             (plan.title, plan.date) = (title.trimmingCharacters(in: .whitespacesAndNewlines), date)
+            if let start { plan.times = times(plan.times, start: start.trimmingCharacters(in: .whitespaces)) }
             guard !plan.title.isEmpty, (try? plan.validate()) != nil, plan != program.plan else { return }
             planChanged(plan)
         case .movePlanItem(let from, let to):
@@ -353,6 +355,13 @@ public final class AppState: ObservableObject {
             editPlan(plan) { $0 }
         default: break
         }
+    }
+
+    /// The times with the first one starting at `start`, a new one named "Service" when there is none; an empty start removes the first one.
+    private func times(_ times: [PlanTime]?, start: String) -> [PlanTime]? {
+        var times = times ?? []
+        if start.isEmpty { times = Array(times.dropFirst()) } else if times.isEmpty { times = [PlanTime(name: Strings.text("Service"), start: start)] } else { times[0].start = start }
+        return times.isEmpty ? nil : times
     }
 
     /// Applies a valid edited plan whose items moved as `moved` says (nil for a removed one), keeping the live slide, the preview and the selection on their items.
