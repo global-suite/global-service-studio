@@ -75,6 +75,22 @@ Rule: use `accent-strong` for every filled accent shape that carries text, and `
 | `shadow-segment` | `0 1px 2px rgba(0,0,0,0.5)` | The selected segment of a segmented control |
 | `shadow-live` | `0 0 0 3px live, 0 0 48px rgba(255,69,58,0.24)` | The live panel in Live mode |
 
+### Transparent (added with the media bin design, 2026-11-16)
+
+Source: the owner's feedback on `design/media-bin/` (2026-11-16): a slide with no background is transparent, drawn the way pro presentation apps draw transparency. Shared by every appearance.
+
+| Token | Value | Use |
+|---|---|---|
+| `transparent` | Checkerboard of `#2A2A2C` and `#1E1E1E` squares: `repeating-conic-gradient(#2A2A2C 0 25%, #1E1E1E 0 50%)`, tile `max(8px, 7.1429%)` × `max(8px, 12.6984%)` of a 16:9 preview (a square of about 8 px on a 220 px thumbnail, scaling with the preview, never under 4 px) | The background of any operator preview of a slide with nothing behind it: slide grid thumbnails, the Live and Next panels, the Prepare background previews set to none, the background layer chip, and the audience output monitors when nothing is on the media layer |
+
+Rules:
+
+- The checkerboard appears **only in operator previews**. The real audience output shows the screen color (black) behind a transparent slide, and the Key output always shows `key-green`, so the Key monitor keeps its key color too. The Stage monitor shows its own layout on black.
+- A slide or monitor with a background image or loop shows that background, never the checkerboard. When the background is cleared (F2), the previews switch to the checkerboard.
+- Slide text over the checkerboard keeps the slide's white text with a subtle shadow (`0 1px 2px rgba(0,0,0,0.6)` in thumbnails). White on `#2A2A2C` is 14.32:1 and on `#1E1E1E` 16.67:1 (WCAG AA and AAA). The two squares differ by only 1.16:1, so the pattern stays quiet behind the text.
+- Where the clear actions are explained, a small swatch with the caption "Checkerboard = no background (transparent)" tells the operator what it means.
+- It is a static pattern: no motion.
+
 ### Mockup backdrop
 
 | Token | Midnight (default) | Graphite | Black | Use |
@@ -143,6 +159,6 @@ No empty regions: when the current item's slides do not fill the grid, it contin
 - **Segmented control**: one rounded container in `control` fill; the selected segment is a lighter rounded fill with a soft shadow. Used for the Prepare / Live switch and for small choices.
 - **Push button**: `control` fill, radius 6, 13px title. Primary uses `accent-strong` (see Additional tokens). Destructive live actions use a red tint and a text label.
 - **Inspector**: right pane on the sidebar material, with grouped sections and disclosure headers.
-- **Slide thumbnail**: 16:9, radius 6, black background, centered white text; the section name and index below in Subheadline. Live: 3px `live` ring plus a "LIVE" label. Next: 2px `next` ring plus a "NEXT" label. Selected: 3px `accent` ring.
+- **Slide thumbnail**: 16:9, radius 6, `transparent` (checkerboard) background when the slide has none, centered white text; the section name and index below in Subheadline. Live: 3px `live` ring plus a "LIVE" label. Next: 2px `next` ring plus a "NEXT" label. Selected: 3px `accent` ring.
 - **Output monitor**: a 16:9 preview with its name, role and a status dot plus text.
 - **Keyboard hints**: a small rounded key cap in `control` fill next to the action it triggers.

@@ -1,0 +1,49 @@
+{
+  "title": "Media bin",
+  "brief": "The media bin for Global Service Studio (T5, ADR 0008), fitted into the chosen service-plan Live and Prepare layout. Live: images and videos as thumbnails with type, length, resolution, codec and a 'Heavy on this Mac' mark for formats without hardware decoding; one click or Return sends an image or looping video to the background; the item on the media layer is marked with text (ON AIR · Background), never color alone; Clear Slide F1, Clear Background F2 and Clear All F3 stay visible. A separate Play Full Screen action (⌘↩) shows a transport (play/pause, back and forward 10 s, scrub, elapsed and remaining, audio device) and says it replaces the background while it plays and the background returns after. The outputs state that Center and Sides show the media layer and Key never does. Prepare: a song default background and a different one per part (Chorus) picked from the same bin. Import by dragging files in or Import… (⇧⌘I), copied into the library Media folder, with empty, importing, cannot-play, drop and no-results states; All / Images / Videos filters and a name search. Three structurally different directions, each at 1440×900 and 3440×1440; every artboard has a Preview states control for Live, Full-screen video, Prepare, Dragging files in, Empty bin and No results.",
+  "feature": "odd/tasks/media.md",
+  "artboards": [
+    {
+      "file": "01-drawer-live.html",
+      "title": "A · Media drawer under the slides · Live",
+      "tradeoff": "The slide grid becomes a drawer with Slides | Media tabs (⌘1 ⌘2), so the bin sits where the operator already looks, with large thumbnails, visible Play Full Screen buttons and a details column; the transport docks at the top of the drawer and Prepare reuses the same drawer as the picker. Most discoverable for a volunteer and cheapest to explain; at 1440 the operator cannot see the slides and the media at the same time, and the full-screen transport takes one row of thumbnails",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "02-drawer-live-wide.html",
+      "title": "A · Media drawer under the slides · Live (ultrawide)",
+      "tradeoff": "At 3440 the tabs give way to a split: slides on top and the media drawer under them (hide with ⌘M), five large thumbnails per row and a 380 px details column, with the outputs column and clear actions untouched. Slides and media are both visible with no extra window; the slide grid loses about half its height to the drawer, so long songs scroll sooner",
+      "width": 3440,
+      "height": 1440
+    },
+    {
+      "file": "03-sidebar-media-live.html",
+      "title": "B · Media section in the sidebar · Live",
+      "tradeoff": "Media becomes a third sidebar section next to Service and Library (Library collapses to make room): compact rows with a small thumbnail, type, length, resolution and codec; a click shows it as the background, ⓘ or ⌘Y opens a preview popover that never goes on air, and the full-screen transport docks at the bottom of the sidebar. Keeps the Live layout of 04 exactly as it is and matches the Library pattern; the 240 px sidebar makes thumbnails tiny and truncates long names, and the popover covers part of the live panes while it is open",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "04-sidebar-media-live-wide.html",
+      "title": "B · Media section in the sidebar · Live (ultrawide)",
+      "tradeoff": "The same sidebar section at 3440 with Library expanded above it, the 08 Live layout untouched and a larger 560 px preview popover. Cheapest to build on Sidebar.swift and the most consistent across window sizes; the sidebar stays 240 px in every class, so on an ultrawide the bin uses the least space of the three and shows about eight rows",
+      "width": 3440,
+      "height": 1440
+    },
+    {
+      "file": "05-layers-panel-live.html",
+      "title": "C · Layers panel · Live",
+      "tradeoff": "The bottom bar turns into a Layers panel (Messages, Slide, Background), each row saying what is on air, which outputs show it (Center, Sides · never Key) and its own Clear key; Change… (⌘B) opens the bin as a drawer from the right over the slide grid, and full-screen video expands inside the Background row with its transport. Teaches the ADR 0008 layer model directly and makes Key never showing media impossible to miss; it adds a concept volunteers must learn, the outputs shrink to a 2×2 strip, and the drawer hides half of the slide grid while open",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "06-layers-panel-live-wide.html",
+      "title": "C · Layers panel · Live (ultrawide)",
+      "tradeoff": "The outputs column holds the Layers panel and a 'Where each layer shows' table (Background on Key: Never); the bin is a 1180 px drawer over the slide grid with a details column, and the full-screen transport lives in the Background layer card. The clearest picture of what each screen gets, ready for per-output looks in Phase 2; the four monitors become a 2×2 grid instead of the stacked large previews the system asks for, and the bin is hidden until Change… opens it",
+      "width": 3440,
+      "height": 1440
+    }
+  ]
+}
