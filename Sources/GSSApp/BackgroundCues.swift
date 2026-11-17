@@ -21,21 +21,14 @@ func backgroundCue(previous: ProgramPosition?, current: ProgramPosition) -> Them
 }
 
 extension Program {
-    /// The cue position of a program slide, from its plan item's song as Program builds it; nil outside the program.
-    func cuePosition(at index: Int, mode: RepetitionMode) -> ProgramPosition? {
+    /// The cue position of a program slide: its plan item, and for a song slide the part Program recorded on it with the backgrounds the song names.
+    /// Presentation, plain and stop slides have no part, so they cue nothing; nil outside the program.
+    func cuePosition(at index: Int) -> ProgramPosition? {
         guard slides.indices.contains(index) else { return nil }
-        let itemIndex = slides[index].item, item = plan.items[itemIndex], offset = index - range(of: itemIndex).lowerBound
-        guard item.kind == .song, var song = item.song.flatMap({ songs[$0] }) else {
+        let slide = slides[index], item = plan.items[slide.item]
+        guard item.kind == .song, let part = slide.partIndex, let section = slide.sectionID, let song = item.song.flatMap({ songs[$0] }) else {
             return ProgramPosition(item: item.id, part: 0, section: "", songBackground: nil, partBackground: nil)
         }
-        // The same order for this service as Program's slides: the item's sequence or arrangement.
-        if let sequence = item.sequence {
-            (song.arrangements, song.defaultArrangement) = ([SongArrangement(id: "", name: "", sequence: sequence)], "")
-        } else if let arrangement = item.arrangement, song.arrangements?.contains(where: { $0.id == arrangement }) == true {
-            song.defaultArrangement = arrangement
-        }
-        let parts = SongPart.parts(of: song, mode: mode), part = parts.firstIndex { $0.slideRange.contains(offset) } ?? 0
-        let section = parts.indices.contains(part) ? parts[part].section.id : ""
         return ProgramPosition(item: item.id, part: part, section: section, songBackground: song.backgrounds?.defaultBackground,
                                partBackground: song.backgrounds?.sections?[section])
     }

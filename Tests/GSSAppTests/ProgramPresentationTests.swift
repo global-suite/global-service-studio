@@ -61,8 +61,8 @@ final class ProgramPresentationTests: XCTestCase {
             XCTAssertEqual(program.slides.map(\.slide), expected)
             XCTAssertEqual(program.slides.map(\.image), Array(repeating: nil, count: expected.count))
             for index in program.slides.indices.dropLast() {
-                XCTAssertEqual(program.slides[index].partIndex, program.cuePosition(at: index, mode: mode)?.part)
-                XCTAssertEqual(program.slides[index].sectionID, program.cuePosition(at: index, mode: mode)?.section)
+                XCTAssertEqual(program.slides[index].partIndex, program.cuePosition(at: index)?.part)
+                XCTAssertEqual(program.slides[index].sectionID, program.cuePosition(at: index)?.section)
             }
         }
     }

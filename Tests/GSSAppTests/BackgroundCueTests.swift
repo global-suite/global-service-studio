@@ -175,4 +175,23 @@ final class BackgroundCueTests: XCTestCase {
         state.perform(.previousSlide)
         XCTAssertEqual(state.background, .color("#0B1F3A"), "the next transition after it fires")
     }
+
+    func testPresentationAndPlainSlidesCueNothing() {
+        let deck = Presentation(title: "Invented Deck", slides: [PresentationSlide(id: "s1", elements: [])])
+        let morning = song("Morning Invented", SongBackgrounds(defaultBackground: navy))
+        let plan = Plan(title: "Invented", items: [PlanItem(id: "morning", kind: .song, song: morning.id),
+                                                   PlanItem(id: "deck", kind: .presentation, presentation: deck.id),
+                                                   PlanItem(id: "talk", kind: .item, title: "Talk")])
+        let program = Program(plan: plan, songs: [morning.id: morning], presentations: [deck.id: deck], mode: .separateSlides)
+        let song = program.cuePosition(at: 0), slides = program.slides.indices.filter { program.slides[$0].item > 0 }
+        XCTAssertEqual(song?.songBackground, navy)
+        XCTAssertEqual(song?.section, program.slides[0].sectionID)
+        for index in slides {
+            let position = program.cuePosition(at: index)
+            XCTAssertNil(position?.songBackground)
+            XCTAssertNil(position?.partBackground)
+            XCTAssertNil(backgroundCue(previous: song, current: position!), "a presentation or plain item leaves the background")
+        }
+        XCTAssertNil(program.cuePosition(at: program.slides.count))
+    }
 }
