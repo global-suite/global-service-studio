@@ -4,6 +4,9 @@ import SwiftUI
 /// "On screen: Lyrics · Chorus · 2 of 2 · Background: Waves (video, muted, looping)".
 func onScreenText(_ state: AppState, language: String = Strings.language) -> String {
     let text = { Strings.text($0, language: language) }
+    if let video = state.fullScreenVideo {
+        return String(format: text("On screen: Full-screen video: %@ · lyrics hidden until it ends"), OnScreenLine.name(of: video))
+    }
     let lyrics = !state.shownLines.isEmpty, part = state.liveSlide.position(language: language)
     let background: String?
     switch state.background {
