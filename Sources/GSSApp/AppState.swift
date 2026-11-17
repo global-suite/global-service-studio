@@ -60,6 +60,10 @@ public enum AppCommand: Equatable, Sendable {
     case setBackground(Background)
     /// Takes the background off and leaves the slide.
     case clearBackground
+    /// Lists the images and videos of the library off the main thread; a missing library lists none.
+    case loadMedia
+    /// Copies images and videos into the library off the main thread, then lists them; the files that could not be added are named in one alert.
+    case importMedia([URL])
 
     /// Starts an empty service titled "Service" dated today; it is not saved until Save Service.
     case newService
@@ -173,6 +177,15 @@ public final class AppState: ObservableObject {
     private(set) var backgroundVideo: BackgroundVideo?
     /// A video background being prepared; it shows when ready unless another background is chosen first.
     private var pendingVideo: BackgroundVideo?
+
+    /// The images and videos of the library's Media folder, loaded when Live opens and after an import.
+    @Published public private(set) var mediaFiles: [MediaFile] = []
+    /// Whether files are being copied into the library.
+    @Published public private(set) var isImportingMedia = false
+    /// The serial queue media is listed and imported on, off the main thread.
+    private let mediaQueue = DispatchQueue(label: "GSS media")
+    /// Counts media lists, so a list that finishes after a newer one is dropped.
+    private var mediaLoads = 0
 
     public init(settings: AppSettings? = nil, indexURL: ((Library) throws -> URL)? = nil, indexQueue: DispatchQueue = DispatchQueue(label: "GSS library index")) {
         (self.indexURL, self.indexQueue) = (indexURL, indexQueue)
@@ -300,6 +313,8 @@ public final class AppState: ObservableObject {
             }
         case .setBackground(let background): setBackground(background)
         case .clearBackground: setBackground(.none)
+        case .loadMedia: loadMedia()
+        case .importMedia(let files): importMedia(files)
         default: performService(command)
         }
     }
@@ -481,6 +496,50 @@ public final class AppState: ObservableObject {
         (backgroundImage, backgroundVideo) = (image, video)
         video?.start()
         background = new
+    }
+
+    /// The background a media file of the library shows as: the image, or the video muted and looping.
+    public func background(for file: MediaFile) -> Background {
+        let url = libraryFolder.appendingPathComponent(file.path)
+        return file.kind == .image ? .image(url) : .video(url)
+    }
+
+    /// Whether a media file is the background on the outputs.
+    public func isOnAir(_ file: MediaFile) -> Bool { background == background(for: file) }
+
+    private func loadMedia() {
+        mediaLoads += 1
+        let load = mediaLoads, folder = libraryFolder
+        mediaQueue.async {
+            let listed = Library.exists(at: folder) ? (try? Library.open(folder).media()) ?? [] : []
+            DispatchQueue.main.async { [weak self] in self?.showMedia(listed, load: load) }
+        }
+    }
+
+    /// Copies each file into the library, creating it the first time, then lists the media; the others still import when one fails.
+    private func importMedia(_ files: [URL]) {
+        guard !files.isEmpty else { return }
+        mediaLoads += 1
+        let load = mediaLoads, folder = libraryFolder
+        isImportingMedia = true
+        mediaQueue.async {
+            let library = try? Library.open(folder)
+            let refused = files.filter { file in library.map { (try? $0.importMedia(file)) == nil } ?? true }.map(\.lastPathComponent)
+            let listed = (try? library?.media()) ?? []
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.isImportingMedia = false
+                self.showMedia(listed, load: load)
+                guard !refused.isEmpty else { return }
+                self.alert = AppAlert(title: Strings.text("Some files could not be added."),
+                                      message: String(format: Strings.text("These files are not images or videos, or could not be read:\n%@"), refused.joined(separator: "\n")))
+            }
+        }
+    }
+
+    /// Publishes a media list unless a newer list or import started after it.
+    private func showMedia(_ files: [MediaFile], load: Int) {
+        if load == mediaLoads, files != mediaFiles { mediaFiles = files }
     }
 
     /// Opens and reconciles the index off the main thread, then shows it on the main thread; until then the list is empty.

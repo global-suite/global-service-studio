@@ -222,3 +222,9 @@
 /* Service Info dialog: label of the start time field. */ "Start Time" = "Hora de inicio";
 /* Service Info dialog: placeholder of the start time field (hours and minutes). */ "HH:MM" = "HH:MM";
 /* Service Info dialog: help of the start time field. */ "The time the service starts, in 24-hour hours and minutes. Leave it empty for none." = "La hora en que empieza el servicio, en horas y minutos de 24 horas. Déjala vacía si no tiene.";
+/* Media bin: the kind of a still image file. */ "Image" = "Imagen";
+/* Media bin: size of an image or video in pixels; %1$ld is the width and %2$ld the height. */ "%1$ld × %2$ld" = "%1$ld × %2$ld";
+/* Media bin caption: %1$@ is the kind (Image) and %2$@ the size in pixels. */ "%1$@ · %2$@" = "%1$@ · %2$@";
+/* Media bin caption: %1$@ is the kind (Video), %2$@ its length and %3$@ its size in pixels. */ "%1$@ · %2$@ · %3$@" = "%1$@ · %2$@ · %3$@";
+/* Alert title after an import where some files were not added. */ "Some files could not be added." = "Algunos archivos no se pudieron agregar.";
+/* Alert text after an import; %@ is the list of file names, one per line. */ "These files are not images or videos, or could not be read:\n%@" = "Estos archivos no son imágenes ni videos, o no se pudieron leer:\n%@";
