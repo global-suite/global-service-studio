@@ -11,6 +11,7 @@ struct PlanItemEditor: View {
 
     private var item: PlanItem { state.program.plan.items[index] }
     private var song: Song? { item.kind == .song ? item.song.flatMap { state.program.songs[$0] } : nil }
+    private var deck: Presentation? { item.kind == .presentation ? item.presentation.flatMap { state.program.presentations[$0] } : nil }
 
     var body: some View {
         ScrollView {
@@ -42,6 +43,7 @@ struct PlanItemEditor: View {
                         TextField("0:00", text: $length).frame(width: 72)
                         Text(Strings.text("Minutes:seconds")).font(.system(size: 11)).foregroundColor(Appearance.labelSecondary.color)
                     }
+                    if let deck { field("Scaling") { scaling(deck) } }
                     field("Position") {
                         Picker("", selection: Binding(get: { item.position }, set: { position in update { $0.position = position } })) {
                             ForEach([("Pre", PlanItemPosition.pre), ("During", .during), ("Post", .post)], id: \.0) { Text(Strings.text($0.0)).tag(Optional($0.1)) }
@@ -50,6 +52,7 @@ struct PlanItemEditor: View {
                     }
                 }
                 if let song { sequence(song) }
+                if deck != nil { slides }
                 notes
             }
             .padding(EdgeInsets(top: 18, leading: 24, bottom: 16, trailing: 24))
@@ -90,6 +93,33 @@ struct PlanItemEditor: View {
                     } label: { Label(Strings.text("Add Part"), systemImage: "plus") }
                     .menuStyle(.borderlessButton).fixedSize().padding(.horizontal, 10).frame(height: 32)
                     .background(RoundedRectangle(cornerRadius: 6).fill(Appearance.control.color))
+                }
+            }
+        }
+    }
+
+    /// How the whole presentation fills the screen, saved in its library file; Live follows at once.
+    private func scaling(_ deck: Presentation) -> some View {
+        let current = deck.slides.lazy.flatMap(\.elements).first { $0.kind == .image }?.effectiveScaling ?? .fit
+        return VStack(alignment: .leading, spacing: 4) {
+            Picker("", selection: Binding(get: { current }, set: { state.perform(.setPresentationScaling(id: deck.id, $0)) })) {
+                ForEach([("Fit", PresentationImageScaling.fit), ("Fill", .fill), ("Stretch", .stretch)], id: \.0) { Text(Strings.text($0.0)).tag($0.1) }
+            }
+            .pickerStyle(.segmented).labelsHidden().fixedSize()
+            Text(Strings.text("Fit shows the whole slide, with the background in the bands. Fill crops the edges. Stretch fills the screen without keeping the proportion."))
+                .font(.system(size: 11)).foregroundColor(Appearance.labelSecondary.color).fixedSize(horizontal: false, vertical: true).frame(maxWidth: 480, alignment: .leading)
+        }
+    }
+
+    /// The presentation's slides, small, as Live shows them.
+    private var slides: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(Strings.text("Slides")).font(.system(size: 13, weight: .semibold)).foregroundColor(Appearance.label.color)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 140, maximum: 220), spacing: 10)], alignment: .leading, spacing: 10) {
+                ForEach(Array(state.program.range(of: index)), id: \.self) { slide in
+                    if let picture = state.presentationPicture(at: slide) {
+                        PresentationSlideView(picture: picture, maxPixelSize: 480).clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
                 }
             }
         }

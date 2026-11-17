@@ -38,6 +38,20 @@ struct LiveView: View {
         .font(.system(size: 13))
         .background(appearance.window.color)
         .environment(\.previewBackdrop, previewBackdrop(state: state, role: .audience))
+        .task(id: state.programIndex) { await preloadAhead() }
+    }
+
+    /// Starts decoding the next slide's image at full size, for the outputs, and the one after at panel size, for Next once it moves.
+    private func preloadAhead() async {
+        for (offset, size) in [(1, nil), (2, 1280)] as [(Int, Int?)] {
+            guard let picture = state.presentationPicture(at: state.programIndex + offset), let image = picture.image else { continue }
+            await SlideImageCache.shared.preload(image, libraryFolder: picture.libraryFolder, maxPixelSize: size)
+        }
+    }
+
+    /// A presentation slide's picture, or a song slide's lines.
+    @ViewBuilder private func face(_ picture: PresentationPicture?, lines: [String], size: CGFloat) -> some View {
+        if let picture { PresentationSlideView(picture: picture, maxPixelSize: 1280) } else { SlideFace(lines: lines, size: size) }
     }
 
     private func content(_ size: SizeClass, width: CGFloat, height: CGFloat) -> some View {
@@ -137,7 +151,7 @@ struct LiveView: View {
             .padding(.horizontal, 10)
             .frame(height: 28)
             .background(Appearance.live.color)
-            SlideFace(lines: state.shownLines, size: max(24, width / 20))
+            face(state.isCleared || state.fullScreenVideo != nil ? nil : state.presentationPicture(at: state.programIndex), lines: state.shownLines, size: max(24, width / 20))
         }
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Appearance.live.color, lineWidth: 3))
@@ -153,7 +167,7 @@ struct LiveView: View {
                 Text(state.nextSlide?.position ?? "").font(.system(size: 11)).foregroundColor(Appearance.labelSecondary.color).lineLimit(1)
             }
             .frame(height: 20)
-            SlideFace(lines: state.nextSlide?.lines ?? [Strings.text("End of service")], size: max(19, width / 30))
+            face(state.presentationPicture(at: state.programIndex + 1), lines: state.nextSlide?.lines ?? [Strings.text("End of service")], size: max(19, width / 30))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Appearance.next.color, lineWidth: 2))
         }
@@ -237,19 +251,22 @@ struct LiveView: View {
     private func thumbnail(_ index: Int, textSize: CGFloat) -> some View {
         let isLive = index == state.programIndex, isNext = index == state.programIndex + 1
         return SlideThumbnail(number: index + 1, slide: state.program.slides[index].slide, textSize: textSize, ring: isLive ? Appearance.live : isNext ? Appearance.next : appearance.separator,
-                              ringWidth: isLive ? 3 : isNext ? 2 : 1, badge: isLive ? "LIVE" : isNext ? "NEXT" : nil, dimmed: index < state.programIndex) { state.perform(.goToSlide(index)) }
+                              ringWidth: isLive ? 3 : isNext ? 2 : 1, badge: isLive ? "LIVE" : isNext ? "NEXT" : nil, dimmed: index < state.programIndex,
+                              picture: state.presentationPicture(at: index), notes: state.program.slides[index].notes) { state.perform(.goToSlide(index)) }
     }
 }
 
-/// A slide in a grid: its face with a ring, its number and section, and an optional label in the ring color.
+/// A slide in a grid: its face (a presentation slide's picture at thumbnail size) with a ring, its number and section, an optional label in the
+/// ring color, and a presentation slide's notes as one line.
 struct SlideThumbnail: View {
     let number: Int, slide: LiveSlide, textSize: CGFloat, ring: RGBA, ringWidth: CGFloat, badge: String?, dimmed: Bool
+    var picture: PresentationPicture? = nil, notes: String? = nil
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 6) {
-                SlideFace(lines: slide.lines, size: textSize)
+                Group { if let picture { PresentationSlideView(picture: picture, maxPixelSize: 480) } else { SlideFace(lines: slide.lines, size: textSize) } }
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .opacity(dimmed ? 0.6 : 1)
                     .overlay(RoundedRectangle(cornerRadius: 6).stroke(ring.color, lineWidth: ringWidth))
@@ -263,6 +280,9 @@ struct SlideThumbnail: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(Appearance.labelSecondary.color)
                 .lineLimit(1)
+                if let notes {
+                    Text(notes).font(.system(size: 11)).foregroundColor(Appearance.labelTertiary.color).lineLimit(1).truncationMode(.tail).help(notes)
+                }
             }
             .contentShape(Rectangle())
         }

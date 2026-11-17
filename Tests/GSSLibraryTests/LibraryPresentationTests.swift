@@ -131,4 +131,18 @@ final class LibraryPresentationTests: XCTestCase {
         let url = try library.save(presentation)
         XCTAssertEqual(try library.loadPresentation(at: url), presentation)
     }
+
+    func testSettingTheScalingRewritesEveryImageElementAndSavesTheFile() throws {
+        let library = try Library.open(temporaryFolder())
+        let id = UUID(), references = try library.writeSlideImages([Data("a".utf8), Data("b".utf8)], for: id)
+        var deck = Presentation.importedDeck(id: id, title: "Invented Deck", images: references)
+        deck.slides[1].elements.append(PresentationElement(id: "t", kind: .text, slot: "lyrics", text: ["en": "Invented line"]))
+        let url = try library.save(deck)
+        let edited = try XCTUnwrap(library.setScaling(.stretch, ofPresentation: id))
+        XCTAssertEqual(edited.slides.flatMap(\.elements).map(\.scaling), [.stretch, .stretch, nil])
+        XCTAssertEqual(try library.loadPresentation(at: url), edited)
+        XCTAssertEqual(try names(library.presentationsFolder), [url.lastPathComponent])
+        XCTAssertNil(try library.setScaling(.fill, ofPresentation: UUID()))
+        XCTAssertEqual(try library.loadPresentation(at: url), edited)
+    }
 }

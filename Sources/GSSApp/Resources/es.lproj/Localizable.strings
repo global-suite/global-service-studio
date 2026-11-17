@@ -269,6 +269,14 @@
 /* Prepare: button of the part background row that removes the part's own background, so it uses the song's. */ "Use the song's background" = "Usar el fondo de la canción";
 /* Sidebar: header of the library's presentations, under the songs. */ "Presentations" = "Presentaciones";
 /* Alert title when a presentation file cannot be added to the service. */ "The presentation could not be opened." = "No se pudo abrir la presentación.";
+/* Prepare: label of a presentation item's choice of how its slides fill the screen. */ "Scaling" = "Ajuste";
+/* Prepare: scaling choice that shows the whole slide, with transparent bands where its proportion differs from the screen. */ "Fit" = "Encajar";
+/* Prepare: scaling choice that covers the screen and crops the slide's edges. */ "Fill" = "Rellenar";
+/* Prepare: scaling choice that covers the screen without keeping the slide's proportion. */ "Stretch" = "Estirar";
+/* Prepare: help under the scaling choice of a presentation item. */ "Fit shows the whole slide, with the background in the bands. Fill crops the edges. Stretch fills the screen without keeping the proportion." = "Encajar muestra la diapositiva completa, con el fondo en las bandas. Rellenar recorta los bordes. Estirar llena la pantalla sin mantener la proporción.";
+/* Live and Prepare: shown on a presentation slide while its image loads. */ "Loading slide…" = "Cargando diapositiva…";
+/* Live and Prepare: shown on a presentation slide whose image is missing or cannot be read. */ "Slide image not found" = "No se encontró la imagen de la diapositiva";
+/* Alert title when a presentation's scaling cannot be saved in the library. */ "The presentation could not be saved." = "No se pudo guardar la presentación.";
 /* Stage output: heading on a presentation slide; %1$@ is the presentation's title, %2$ld the slide's number, %3$ld the number of slides. */ "%1$@ · Slide %2$ld of %3$ld" = "%1$@ · Diapositiva %2$ld de %3$ld";
 /* Stage output: a presentation slide's number when it has no notes; %1$ld is the slide's number, %2$ld the number of slides. */ "Slide %1$ld of %2$ld" = "Diapositiva %1$ld de %2$ld";
 /* Stage output: hint under a presentation slide that has no speaker notes. */ "No notes" = "Sin notas";

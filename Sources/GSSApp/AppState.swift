@@ -103,6 +103,9 @@ public enum AppCommand: Equatable, Sendable {
     case selectPlanItem(Int?)
     /// Replaces a plan item, for this service only: a song item's sequence or arrangement never changes the song. Invalid items are ignored.
     case updatePlanItem(at: Int, PlanItem)
+    /// Sets how every image of a presentation of the service fills the screen, saved in its library file; the program follows at once and the
+    /// live slide stays. A presentation not in the service is ignored; a failure is reported in `alert` and changes nothing.
+    case setPresentationScaling(id: UUID, PresentationImageScaling)
 
     /// Sets the prepared song's background, saved with the song: a nil section is the song default, a section id that part's, and a nil file removes it.
     /// A file outside the library is imported first; a refused file is reported in `alert` and changes nothing. Nothing goes on air.
@@ -423,6 +426,15 @@ public final class AppState: ObservableObject {
             guard plan.items.indices.contains(index), plan.items[index] != item else { return }
             plan.items[index] = item
             editPlan(plan) { $0 }
+        case .setPresentationScaling(let id, let scaling):
+            guard program.presentations[id] != nil else { return }
+            library("The presentation could not be saved.") {
+                guard Library.exists(at: libraryFolder), let edited = try Library.open(libraryFolder).setScaling(scaling, ofPresentation: id) else {
+                    throw CocoaError(.fileNoSuchFile)
+                }
+                rebuildProgram(presentations: program.presentations.merging([id: edited]) { $1 })
+                loadPresentations()
+            }
         default: break
         }
     }

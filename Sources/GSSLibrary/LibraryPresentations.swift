@@ -46,6 +46,20 @@ extension Library {
         return PresentationListing(presentations: stored, problems: read.problems)
     }
 
+    /// Sets how every image of the presentation file holding `id` fills the screen, saves the file through `save`, and returns the presentation;
+    /// nil when no valid file holds it, with nothing written.
+    public func setScaling(_ scaling: PresentationImageScaling, ofPresentation id: UUID) throws -> Presentation? {
+        guard let stored = try presentations().presentations.first(where: { $0.presentation.id == id }) else { return nil }
+        var edited = stored.presentation
+        for slide in edited.slides.indices {
+            for element in edited.slides[slide].elements.indices where edited.slides[slide].elements[element].kind == .image {
+                edited.slides[slide].elements[element].scaling = scaling
+            }
+        }
+        if edited != stored.presentation { try save(edited) }
+        return edited
+    }
+
     /// Writes slide images, in order, as `Media/Presentations/<id>/001.png`, `002.png` and so on, and returns each one's
     /// library-relative path and SHA-256. The images go to a hidden folder first, which then replaces the presentation's
     /// folder, so a re-import leaves no old slides and a failed one leaves the previous images in place.
