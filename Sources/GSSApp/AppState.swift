@@ -463,7 +463,7 @@ public final class AppState: ObservableObject {
 
     /// Rebuilds the program keeping the live slide on its item: on `liveIndex` when the item shows the prepared slides, else at its place, clamped.
     private func rebuildProgram(plan: Plan? = nil, songs: [UUID: Song]? = nil) {
-        let item = liveItem, offset = item.map { programIndex - program.range(of: $0).lowerBound } ?? 0
+        let item = liveItem, offset = item.map { programIndex - program.range(of: $0).lowerBound } ?? 0, previous = cuePosition
         program = Program(plan: plan ?? program.plan, songs: songs ?? program.songs, mode: repetitionMode)
         if let item {
             let range = program.range(of: item)
@@ -472,6 +472,8 @@ public final class AppState: ObservableObject {
             if index != programIndex { programIndex = index }
         }
         syncLiveIndex()
+        // An edit never enters another item: a moved live item is put back on its slides by the caller.
+        if cuePosition?.item == previous?.item { applyBackgroundCue(from: previous) }
     }
 
     /// Puts the edited prepared song into the program when the plan holds it.
@@ -537,6 +539,19 @@ public final class AppState: ObservableObject {
 
     /// Whether a media file is the background on the outputs.
     public func isOnAir(_ file: MediaFile) -> Bool { background == background(for: file) }
+
+    // MARK: Background cues (ADR 0008)
+
+    /// Where the live slide is, as background cues see it; nil when nothing is on air.
+    var cuePosition: ProgramPosition? { program.cuePosition(at: programIndex, mode: repetitionMode) }
+
+    /// Puts the song or part background on air when the program moved from `previous` into it, through `setBackground`,
+    /// which keeps the same media playing. A missing file is skipped; no cue fires while a full-screen video plays.
+    private func applyBackgroundCue(from previous: ProgramPosition?) {
+        guard fullScreenPlayer == nil, pendingFullScreen == nil, let current = cuePosition,
+              let cue = backgroundCue(previous: previous, current: current), let background = Background(cue: cue, library: libraryFolder) else { return }
+        setBackground(background)
+    }
 
     /// Whether a command ends the full-screen video: Clear All, Clear Background, and a move to another slide.
     private func endsFullScreenVideo(_ command: AppCommand) -> Bool {
@@ -765,9 +780,11 @@ public final class AppState: ObservableObject {
 
     private func goToSlide(_ index: Int) {
         guard program.slides.indices.contains(index) else { return }
+        let previous = cuePosition
         if index != programIndex { programIndex = index }
         if previewItem != nil { previewItem = nil }
         if isCleared { isCleared = false }
         syncLiveIndex()
+        applyBackgroundCue(from: previous)
     }
 }
