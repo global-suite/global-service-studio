@@ -33,24 +33,27 @@ public struct PresentationElement: Equatable, Sendable, JSONRepresentable {
     public var color: String?
     public var align: ThemeAlignment?
     public var media: MediaReference?
+    /// How an image fills its frame; absent means `fit` (ADR 0010).
+    public var scaling: PresentationImageScaling?
     public var unknown: [String: JSONValue] = [:]
     public init(id: String, kind: PresentationElementKind, slot: String? = nil, frame: ThemeFrame? = nil,
                 text: [String: String]? = nil, font: ThemeFont? = nil, color: String? = nil,
-                align: ThemeAlignment? = nil, media: MediaReference? = nil) {
+                align: ThemeAlignment? = nil, media: MediaReference? = nil, scaling: PresentationImageScaling? = nil) {
         (self.id, self.kind, self.slot, self.frame, self.text) = (id, kind, slot, frame, text)
-        (self.font, self.color, self.align, self.media) = (font, color, align, media)
+        (self.font, self.color, self.align, self.media, self.scaling) = (font, color, align, media, scaling)
     }
     public init(json: JSONValue, at path: String) throws {
         var reader = try JSONObjectReader(json, at: path)
         try self.init(id: reader.required("id"), kind: reader.required("kind"), slot: reader.optional("slot"),
                       frame: reader.optional("frame"), text: reader.optional("text"), font: reader.optional("font"),
                       color: reader.optional("color"), align: reader.optional("align"),
-                      media: reader.optional("media"))
+                      media: reader.optional("media"), scaling: reader.optional("scaling"))
         unknown = reader.unknown
     }
     public var json: JSONValue {
         .object(["id": id.json, "kind": kind.json, "slot": slot?.json, "frame": frame?.json, "text": text?.json,
-                 "font": font?.json, "color": color?.json, "align": align?.json, "media": media?.json],
+                 "font": font?.json, "color": color?.json, "align": align?.json, "media": media?.json,
+                 "scaling": scaling?.json],
                 unknown: unknown)
     }
 }
@@ -60,4 +63,24 @@ public struct PresentationElementKind: OpenStringValue {
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
     public static let text = Self(rawValue: "text"), image = Self(rawValue: "image"), video = Self(rawValue: "video")
+}
+
+/// How an image fills its frame when their proportions differ; unknown values are kept as written.
+public struct PresentationImageScaling: OpenStringValue {
+    public let rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    /// The whole image shows; the leftover bands are transparent.
+    public static let fit = Self(rawValue: "fit")
+    /// The image covers the frame and the overflow is cropped.
+    public static let fill = Self(rawValue: "fill")
+    /// The image covers the frame and is distorted to match it.
+    public static let stretch = Self(rawValue: "stretch")
+}
+
+extension PresentationElement {
+    /// The scaling to display: `scaling` when it is a known value, else `fit`.
+    public var effectiveScaling: PresentationImageScaling {
+        guard let scaling, [.fit, .fill, .stretch].contains(scaling) else { return .fit }
+        return scaling
+    }
 }

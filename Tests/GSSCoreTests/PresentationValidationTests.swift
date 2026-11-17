@@ -78,6 +78,11 @@ final class PresentationValidationTests: XCTestCase {
         try check(nil) { $0[0].color = "#ffffff80" }
     }
 
+    func testScalingIsNotValidated() throws {
+        try check(nil) { $0[1].scaling = .stretch }
+        try check(nil) { $0[1].scaling = PresentationImageScaling(rawValue: "zoom-blur") }
+    }
+
     func testUnknownKindIsOnlyCheckedForFrameFontAndColor() throws {
         let clock = PresentationElement(id: "e2", kind: PresentationElementKind(rawValue: "clock"))
         try check(nil) { $0[1] = clock }
