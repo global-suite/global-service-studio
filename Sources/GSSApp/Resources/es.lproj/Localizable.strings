@@ -249,3 +249,14 @@
 /* On screen line above the outputs: no lyrics and no background. */ "On screen: Nothing · the audience screens are black" = "En pantalla: Nada · las pantallas del público están en negro";
 /* Media bin: button and context menu item on a video that plays it once, full screen with sound, over the audience screens. */ "Play Full Screen" = "Reproducir en pantalla completa";
 /* On screen line above the outputs while a video plays full screen; %@ is the video's name. */ "On screen: Full-screen video: %@ · lyrics hidden until it ends" = "En pantalla: Video a pantalla completa: %@ · letra oculta hasta que termine";
+/* Full-screen video transport: button that stops the video and brings back the lyrics and the background. */ "Stop Video" = "Detener video";
+/* Full-screen video transport: help of the button that resumes the video. */ "Play" = "Reproducir";
+/* Full-screen video transport: help of the button that pauses the video. */ "Pause" = "Pausar";
+/* Full-screen video transport: help of the button that goes back 10 seconds. */ "Back 10 Seconds" = "Retroceder 10 segundos";
+/* Full-screen video transport: help of the button that goes forward 10 seconds. */ "Forward 10 Seconds" = "Avanzar 10 segundos";
+/* Full-screen video transport: accessibility label of the time played so far. */ "Elapsed time" = "Tiempo transcurrido";
+/* Full-screen video transport: accessibility label of the time left. */ "Remaining time" = "Tiempo restante";
+/* Full-screen video transport: accessibility label of the position slider; %@ is the video's name. */ "Position in %@" = "Posición en %@";
+/* Settings: label of the audio device picker for full-screen videos. */ "Video sound" = "Sonido de video";
+/* Settings: the audio device picker's choice that follows the system's output device. */ "System default" = "Predeterminado del sistema";
+/* Settings: help under the audio device picker. */ "Full-screen videos play their sound on this device. Backgrounds are always muted." = "Los videos a pantalla completa reproducen su sonido en este dispositivo. Los fondos siempre van sin sonido.";

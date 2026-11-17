@@ -249,3 +249,14 @@
 /* On screen line above the outputs: no lyrics and no background. */ "On screen: Nothing · the audience screens are black" = "On screen: Nothing · the audience screens are black";
 /* Media bin: button and context menu item on a video that plays it once, full screen with sound, over the audience screens. */ "Play Full Screen" = "Play Full Screen";
 /* On screen line above the outputs while a video plays full screen; %@ is the video's name. */ "On screen: Full-screen video: %@ · lyrics hidden until it ends" = "On screen: Full-screen video: %@ · lyrics hidden until it ends";
+/* Full-screen video transport: button that stops the video and brings back the lyrics and the background. */ "Stop Video" = "Stop Video";
+/* Full-screen video transport: help of the button that resumes the video. */ "Play" = "Play";
+/* Full-screen video transport: help of the button that pauses the video. */ "Pause" = "Pause";
+/* Full-screen video transport: help of the button that goes back 10 seconds. */ "Back 10 Seconds" = "Back 10 Seconds";
+/* Full-screen video transport: help of the button that goes forward 10 seconds. */ "Forward 10 Seconds" = "Forward 10 Seconds";
+/* Full-screen video transport: accessibility label of the time played so far. */ "Elapsed time" = "Elapsed time";
+/* Full-screen video transport: accessibility label of the time left. */ "Remaining time" = "Remaining time";
+/* Full-screen video transport: accessibility label of the position slider; %@ is the video's name. */ "Position in %@" = "Position in %@";
+/* Settings: label of the audio device picker for full-screen videos. */ "Video sound" = "Video sound";
+/* Settings: the audio device picker's choice that follows the system's output device. */ "System default" = "System default";
+/* Settings: help under the audio device picker. */ "Full-screen videos play their sound on this device. Backgrounds are always muted." = "Full-screen videos play their sound on this device. Backgrounds are always muted.";

@@ -82,10 +82,19 @@ final class FullScreenVideoTests: XCTestCase {
         let player = try XCTUnwrap(state.fullScreenPlayer?.player)
         XCTAssertFalse(player.isMuted, "a full-screen video plays with sound")
         XCTAssertEqual(player.rate, 1)
+        XCTAssertGreaterThan(state.videoClock.duration, 20)
         XCTAssertEqual(state.mediaFill(for: .audience), .fullScreenVideo(player))
         XCTAssertNil(state.mediaFill(for: .key), "the key output never shows the video")
         XCTAssertNil(state.mediaFill(for: .stage))
         XCTAssertEqual(VideoLayerView.PlayerView(player: player, gravity: .resizeAspect).playerLayer.videoGravity, .resizeAspect)
+
+        state.perform(.toggleVideoPause)
+        XCTAssertTrue(state.isVideoPaused)
+        XCTAssertEqual(player.rate, 0)
+        state.perform(.setVideoPosition(12))
+        XCTAssertEqual(state.videoClock.elapsed, 12, accuracy: 0.5)
+        state.perform(.seekVideo(by: -10))
+        XCTAssertEqual(state.videoClock.elapsed, 2, accuracy: 0.5)
 
         weak var released = state.fullScreenPlayer
         autoreleasepool { state.perform(.stopVideo) }
@@ -95,6 +104,7 @@ final class FullScreenVideoTests: XCTestCase {
         XCTAssertEqual(state.background, .video(background), "the background comes back")
         XCTAssertEqual(backgroundPlayer.rate, 1, "the background resumes")
         XCTAssertEqual(state.mediaFill(for: .audience), .video(backgroundPlayer))
+        XCTAssertFalse(state.isVideoPaused)
         XCTAssertNotEqual(film, background)
     }
 
@@ -154,5 +164,18 @@ final class FullScreenVideoTests: XCTestCase {
         let (state, _, _) = try playing()
         XCTAssertEqual(onScreenText(state, language: "en"), "On screen: Full-screen video: film · lyrics hidden until it ends")
         XCTAssertEqual(onScreenText(state, language: "es"), "En pantalla: Video a pantalla completa: film · letra oculta hasta que termine")
+        let host = NSHostingView(rootView: OnScreenLine(state: state, stacked: false))
+        host.frame = NSRect(x: 0, y: 0, width: 900, height: 120)
+        host.layoutSubtreeIfNeeded()
+        XCTAssertGreaterThan(host.fittingSize.height, 60, "the transport shows under the line")
+    }
+
+    func testTransportTimesAndStringsAreTranslated() {
+        XCTAssertEqual(VideoTransport.time(72), "1:12")
+        XCTAssertEqual(VideoTransport.time(3725), "1:02:05")
+        for (english, spanish) in [("Stop Video", "Detener video"), ("Play Full Screen", "Reproducir en pantalla completa")] {
+            XCTAssertEqual(Strings.text(english, language: "en"), english)
+            XCTAssertEqual(Strings.text(english, language: "es"), spanish)
+        }
     }
 }
