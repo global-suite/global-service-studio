@@ -63,7 +63,11 @@ struct OutputMonitor: View {
     @ViewBuilder private var screen: some View {
         switch output.kind {
         case .audience:
-            AudienceOutputView(state: state)
+            // The checkerboard instead of the screen's black when nothing is on the media layer; the text keeps a subtle shadow.
+            ZStack {
+                PreviewBackdropView(backdrop: previewBackdrop(state: state, role: .audience))
+                SlideLayer(lines: AudienceOutputView.lines(state), slot: OutputThemes.lyricsSlot(of: OutputThemes.audience), shadow: true)
+            }
         case .stage:
             StageOutputView(state: state)
         case .key:

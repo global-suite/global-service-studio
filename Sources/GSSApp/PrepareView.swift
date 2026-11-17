@@ -48,6 +48,7 @@ struct PrepareView: View {
         }
         .font(.system(size: 13))
         .background(appearance.window.color)
+        .environment(\.previewBackdrop, previewBackdrop(state: state, role: .audience))
         .onAppear { words = text(of: part) }
         .onChange(of: part.section.id) { _ in words = text(of: part) }
         .onChange(of: words) { state.perform(.setLines(sectionID: part.section.id, lines: $0.components(separatedBy: .newlines))) }
