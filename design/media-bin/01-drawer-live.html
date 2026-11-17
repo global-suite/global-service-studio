@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440, initial-scale=1">
+<title>Media bin — A · Media drawer · Live</title>
+<style>
+/* Tokens: design/system.md (Midnight by default, plus the tokens added on 2026-11-14). Nothing outside this list.
+   --focus and --sel are the accent at 50% and 60%. Media thumbnails are content (pictures), drawn on #000000 with token colors only. */
+:root{
+  --window:#1C1C1C; --raised:#242424; --desk:#0B0B0B;
+  --sidebar:rgba(22,22,22,0.90); --titlebar:rgba(28,28,28,0.92);
+  --sep:rgba(255,255,255,0.10); --control:rgba(255,255,255,0.08); --control-hover:rgba(255,255,255,0.13);
+  --label:rgba(255,255,255,0.85); --label-2:rgba(255,255,255,0.55); --label-3:rgba(255,255,255,0.28);
+  --accent:#0A84FF; --live:#FF453A; --next:#FF9F0A; --ok:#32D74B; --key-green:#00B140;
+  --accent-strong:#0071E3; --accent-strong-hover:#0063C8; --on-accent:#FFFFFF;
+  --focus:rgba(10,132,255,0.5); --sel:rgba(10,132,255,0.60);
+  --destructive-fill:rgba(255,69,58,0.16); --destructive-fill-hover:rgba(255,69,58,0.24); --destructive-border:inset 0 0 0 1px rgba(255,69,58,0.24);
+  --shadow-window:inset 0 0 0 1px var(--sep),0 0 0 1px rgba(0,0,0,0.5),0 22px 60px rgba(0,0,0,0.5);
+  --shadow-menu:0 0 0 1px var(--sep),0 12px 32px rgba(0,0,0,0.55);
+  --shadow-popover:0 0 0 1px var(--sep),0 16px 40px rgba(0,0,0,0.6);
+  --shadow-float:0 0 0 1px var(--sep),0 8px 24px rgba(0,0,0,0.5);
+  --shadow-drawer:-12px 0 32px rgba(0,0,0,0.35);
+  --shadow-segment:0 1px 2px rgba(0,0,0,0.5);
+  --shadow-live:0 0 0 3px var(--live),0 0 48px rgba(255,69,58,0.24);
+  --font:-apple-system,"SF Pro Text","Helvetica Neue",sans-serif;
+  --material:blur(30px) saturate(180%);
+  /* transparent: a slide with no background, drawn in operator previews only (design/system.md). Cell about 8 px on a 220 px thumbnail, scales with the preview, never under 4 px */
+  --transparent:repeating-conic-gradient(#2A2A2C 0 25%,#1E1E1E 0 50%) 0 0/max(8px,7.1429%) max(8px,12.6984%);
+}
+html[data-appearance="graphite"]{--window:#1E1E1E;--raised:#2A2A2C;--desk:#2A2A2C;--sidebar:rgba(40,40,42,0.72);--titlebar:rgba(46,46,48,0.86)}
+html[data-appearance="black"]{--window:#000000;--raised:#1C1C1C;--desk:#000000;--sidebar:rgba(10,10,10,0.94);--titlebar:rgba(10,10,10,0.94);--sep:rgba(255,255,255,0.14)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--desk);color:var(--label);font:400 13px/1.3 var(--font);display:grid;place-items:center;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit;background:none;border:0;margin:0;padding:0}
+button{cursor:default}
+ul,ol{list-style:none;margin:0;padding:0}
+h1,h2,h3,h4,p,dl,dd,figure{margin:0}
+:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.num{font-variant-numeric:tabular-nums}
+.l2{color:var(--label-2)}
+.sp{flex:1}
+.kbd{display:inline-grid;place-items:center;min-width:20px;height:18px;padding:0 5px;border-radius:4px;background:var(--control);
+  box-shadow:inset 0 -1px 0 rgba(0,0,0,0.5);font:600 11px/1 var(--font);color:var(--label-2);white-space:nowrap}
+[hidden]{display:none!important}
+
+/* Window, sidebar, toolbar (design/operator-window 04–06, design/service-plan 07–08) */
+.win{border-radius:10px;overflow:hidden;display:grid;background:var(--window);box-shadow:var(--shadow-window);position:relative}
+.sidebar{background:var(--sidebar);-webkit-backdrop-filter:var(--material);backdrop-filter:var(--material);
+  border-right:1px solid var(--sep);display:flex;flex-direction:column;min-height:0;min-width:0}
+.sb-top{height:52px;flex:none;display:flex;align-items:center;padding:0 12px 0 20px}
+.lights{display:flex;gap:8px}.lights i{width:12px;height:12px;border-radius:50%;background:var(--live)}
+.lights i:nth-child(2){background:var(--next)}.lights i:nth-child(3){background:var(--ok)}
+.sb-top .tb{margin-left:auto}
+.sb-h{display:flex;align-items:center;gap:6px;height:28px;padding:0 8px;font:600 11px/1 var(--font);color:var(--label-2)}
+.sb-h .meta{margin-left:auto;font-weight:500}
+.row{display:flex;align-items:center;gap:7px;width:100%;height:28px;padding:0 8px;border-radius:6px;text-align:left;white-space:nowrap;min-width:0}
+.row:hover{background:var(--control)}
+.row .ic{color:var(--accent)}
+.row .nm{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.row .meta{margin-left:auto;padding-left:6px;font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums;flex:none}
+.row[aria-current="page"],.row[aria-selected="true"]{background:var(--sel);color:var(--on-accent);font-weight:600}
+.row[aria-current="page"] .ic,.row[aria-current="page"] .meta{color:var(--on-accent)}
+.grp{display:flex;align-items:center;gap:4px;height:28px;padding:0 8px 0 2px;color:var(--label-2);font-weight:600;width:100%;text-align:left;border-radius:6px}
+.grp .meta{margin-left:auto;font-weight:500;font-size:12px;font-variant-numeric:tabular-nums}
+.disc{width:16px;height:16px;display:grid;place-items:center;border-radius:4px;color:var(--label-2);flex:none}
+.disc .ic{width:12px;height:12px;stroke-width:2}
+[aria-expanded="true"]>.disc .ic{transform:rotate(90deg)}
+.svc .row.item{padding-left:26px}
+.svc .row.done{color:var(--label-2)}
+.svc .row.done .ic{color:var(--label-2)}
+.svc .row.is-live{background:var(--control-hover);font-weight:600;box-shadow:inset 3px 0 0 var(--live)}
+.svc .row .flag{margin-left:auto;padding-left:6px}
+.svc .tot{display:block;line-height:1.4;padding:0 8px 6px;font-size:11px;color:var(--label-2)}
+.svc .tot b{color:var(--label);font-weight:600}
+
+.toolbar{height:52px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:0 12px 0 16px;
+  background:var(--titlebar);-webkit-backdrop-filter:var(--material);backdrop-filter:var(--material);border-bottom:1px solid var(--sep)}
+.tl{display:flex;align-items:center;gap:6px;min-width:0}
+.title{margin-right:10px;line-height:1.15;min-width:0}
+.title h1{font-size:15px;font-weight:600;white-space:nowrap}
+.title p{font-size:11px;font-weight:500;color:var(--label-2);white-space:nowrap}
+.tr{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.tb{width:32px;height:28px;display:grid;place-items:center;border-radius:6px;color:var(--label-2);flex:none}
+.tb .ic{width:18px;height:18px}
+.tb:hover{background:var(--control);color:var(--label)}
+.tb[aria-pressed="true"]{color:var(--label)}
+.clock{font-size:13px;font-weight:600;color:var(--label);padding:0 6px}
+.search{display:flex;align-items:center;gap:6px;height:28px;padding:0 8px;border-radius:6px;background:var(--control);color:var(--label-2)}
+.search .ic{width:14px;height:14px}
+.search input{flex:1;min-width:0;outline:0;color:var(--label)}
+.search input::placeholder{color:var(--label-2)}
+.search:focus-within{box-shadow:0 0 0 3px var(--focus)}
+
+/* Controls */
+.seg{display:inline-flex;padding:2px;border-radius:6px;background:var(--control);gap:2px;flex:none}
+.seg button{height:22px;padding:0 12px;border-radius:5px;color:var(--label-2);font-weight:500;white-space:nowrap}
+.seg button:hover{color:var(--label)}
+.seg button[aria-pressed="true"]{background:var(--control-hover);color:var(--label);box-shadow:var(--shadow-segment)}
+.seg button .c{margin-left:5px;font-size:11px;color:var(--label-2);font-variant-numeric:tabular-nums}
+.seg.mode button{height:24px;min-width:84px}
+.push{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:28px;padding:0 12px;border-radius:6px;background:var(--control);font-weight:500;white-space:nowrap;flex:none}
+.push:hover{background:var(--control-hover)}
+.push.primary{background:var(--accent-strong);color:var(--on-accent);font-weight:600}
+.push.primary:hover{background:var(--accent-strong-hover)}
+.push.primary .kbd{background:var(--window);color:var(--label);box-shadow:none}
+.push.danger{background:var(--destructive-fill);box-shadow:var(--destructive-border)}
+.push.danger:hover{background:var(--destructive-fill-hover)}
+.push .ic{width:14px;height:14px}
+.push:disabled{opacity:.45}
+.linkbtn{color:var(--label);font-weight:500;border-radius:4px;white-space:nowrap;text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:1.5px;text-underline-offset:3px}
+.linkbtn:hover{color:#FFFFFF}
+
+/* State flags: always text plus a dot, never color only */
+.flag{display:inline-flex;align-items:center;gap:5px;font:700 11px/1 var(--font);letter-spacing:.04em;color:var(--label);flex:none;white-space:nowrap}
+.flag::before{content:"";width:8px;height:8px;border-radius:50%;flex:none}
+.flag.live::before{background:var(--live)}
+.flag.next{color:var(--next)}
+.flag.next::before{box-shadow:inset 0 0 0 2px var(--next)}
+
+/* Slides: 16:9, white centered text. A slide with no background is transparent: the checkerboard. In Live the slide sits over the media layer. */
+.slide{aspect-ratio:16/9;width:100%;border-radius:6px;display:grid;place-items:center;text-align:center;overflow:hidden;color:#FFFFFF;background:var(--transparent);position:relative}
+.slide p{font-weight:600;line-height:1.28;text-shadow:0 1px 8px rgba(0,0,0,.6);padding:0 8px;position:relative}
+
+/* Live panes and Next / Previous (design/service-plan/08) */
+.pane h3{display:flex;align-items:center;gap:10px;height:20px;margin-bottom:8px;font:600 15px/1 var(--font);white-space:nowrap}
+.where{margin-left:auto;font:400 11px/1 var(--font);color:var(--label-2);overflow:hidden;text-overflow:ellipsis}
+.where b{font-weight:600;color:var(--label)}
+.pane.now{border-radius:8px;overflow:hidden;box-shadow:var(--shadow-live)}
+.pane.now h3{margin:0;height:28px;padding:0 10px;gap:8px;background:var(--live);color:var(--window);font:700 13px/1 var(--font)}
+.pane.now h3 .flag{color:var(--window);font-weight:800;letter-spacing:.06em}
+.pane.now h3 .flag::before{background:var(--window)}
+.pane.now .where,.pane.now .where b{color:var(--window)}
+.pane.now .slide{border-radius:0}
+.pane.next .slide{box-shadow:0 0 0 2px var(--next)}
+.go{display:flex;flex-direction:column;gap:8px;min-width:0}
+.after{display:flex;align-items:center;justify-content:flex-end;gap:6px;height:20px;font-size:11px;color:var(--label-2)}
+.after b{font-weight:600;color:var(--label)}
+.gobtns{flex:1;display:grid;grid-template-columns:1fr 1.6fr;gap:10px}
+.go .t{display:flex;flex-direction:column;gap:6px;min-width:0}
+.go .dest{font:500 12px/1.25 var(--font)}
+.go-next{display:grid;grid-template-columns:1fr auto;align-content:space-between;padding:14px;border-radius:10px;background:var(--accent-strong);color:var(--on-accent);text-align:left}
+.go-next:hover{background:var(--accent-strong-hover)}
+.go-next strong{font:700 22px/1 var(--font)}
+.go-next .arrow{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round}
+.go-next .keys{grid-column:1/-1;display:inline-flex;gap:4px}
+.go-next .kbd,.go-prev .kbd{background:var(--window);color:var(--label)}
+.go-next:focus-visible{outline-offset:2px}
+.go-prev{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:14px;border-radius:10px;background:var(--control);text-align:left}
+.go-prev:hover{background:var(--control-hover)}
+.go-prev strong{font:600 15px/1 var(--font)}
+.go-prev .dest{color:var(--label-2)}
+
+/* Slide thumbnails of the live item */
+.sgrid{display:grid;gap:12px 10px}
+.sgrid li{min-width:0}
+.thumb{display:block;width:100%;text-align:left;border-radius:6px}
+.thumb .slide{box-shadow:0 0 0 1px var(--sep)}
+.thumb .slide p{font-size:11px;line-height:1.3;text-shadow:0 1px 2px rgba(0,0,0,.6);padding:0 6px}
+.thumb small{display:flex;gap:6px;margin-top:6px;height:12px;font:500 11px/1 var(--font);color:var(--label-2);font-variant-numeric:tabular-nums}
+.thumb small .sec{margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.thumb:hover .slide{box-shadow:0 0 0 2px var(--accent)}
+.thumb.done .slide{opacity:.6}
+.thumb.is-live .slide{box-shadow:0 0 0 3px var(--live)}
+.thumb.is-live small b{color:var(--label);font-weight:700}
+.thumb.is-next .slide{box-shadow:0 0 0 2px var(--next)}
+.thumb.is-next small b{color:var(--next);font-weight:600}
+
+/* Output monitors */
+.scr{aspect-ratio:16/9;border-radius:4px;overflow:hidden;box-shadow:0 0 0 1px var(--sep);color:#FFFFFF;text-align:center;position:relative;display:grid;place-items:center}
+.scr p{font-weight:600;line-height:1.3;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.mon .name{display:flex;align-items:center;gap:6px;margin-top:6px}
+.mon .name b{font-weight:600}
+.mon .role{font-size:11px;color:var(--label-2);line-height:1.35}
+.mon .role b{color:var(--label);font-weight:600}
+.status{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--label)}
+.status::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--live)}
+.tele{background:#000000;display:grid;grid-template-rows:auto 1fr auto;text-align:left;place-items:stretch}
+.tele .clk{display:flex;justify-content:space-between;color:var(--label-2)}
+.tele .clk b{color:#FFFFFF;font-variant-numeric:tabular-nums}
+.tele .cur{font-weight:700;line-height:1.15;align-self:center}
+.tele .nx{color:var(--label-2)}
+.keyout{background:var(--key-green);display:grid;align-content:end;place-items:stretch}
+.keyout div{background:rgba(0,0,0,.72);border-radius:3px;font-weight:600;line-height:1.3;text-align:left}
+.mlnote{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.45;color:var(--label-2)}
+.mlnote .ic{width:16px;height:16px;margin-top:1px;color:var(--label)}
+.mlnote b{color:var(--label);font-weight:600}
+.airline{display:flex;align-items:center;gap:8px;color:var(--label-2);min-width:0;flex-wrap:wrap}
+.airline b{color:var(--label);font-weight:600}
+.clr{display:flex;gap:8px}
+.lyr-off [data-lyr]{visibility:hidden}
+/* On screen: what the audience sees right now, in plain words. Text carries the state; color is never the only cue. */
+.onscreen{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;min-width:0;padding:6px 8px 6px 10px;border-radius:6px;background:var(--control);line-height:1.35}
+.onscreen>.ic{color:var(--label)}
+.onscreen .os-k{font-weight:700;white-space:nowrap}
+.onscreen .os-t{flex:1;min-width:0;color:var(--label-2)}
+.onscreen .os-t b{color:var(--label);font-weight:600}
+.onscreen .push{height:24px;padding:0 8px;gap:6px}
+.onscreen.fs-on{box-shadow:inset 3px 0 0 var(--live)}
+.dt .note.how .ic{color:var(--label)}
+/* Key caps drawn on a control fill (On screen action, tabs): label text keeps AA (label-2 there is 3.4 to 4.5:1) */
+.onscreen .kbd,.tabs .kbd{color:var(--label)}
+
+/* Media thumbnails: pictures drawn from token colors on black */
+[data-art]{background:#000000}
+[data-art="light"]{background:radial-gradient(70% 90% at 28% 22%,rgba(10,132,255,.42),transparent 70%),radial-gradient(60% 70% at 82% 92%,rgba(255,159,10,.26),transparent 70%),#000000}
+[data-art="waves"]{background:radial-gradient(120% 55% at 50% 115%,rgba(10,132,255,.78),transparent 62%),radial-gradient(90% 40% at 20% 100%,rgba(255,255,255,.22),transparent 70%),linear-gradient(180deg,rgba(10,132,255,.18),#000000 70%)}
+[data-art="sunrise"]{background:radial-gradient(60% 34% at 26% 106%,#000000 96%,transparent 100%),radial-gradient(70% 30% at 82% 110%,#000000 96%,transparent 100%),radial-gradient(22% 30% at 55% 64%,rgba(255,159,10,.95),transparent 72%),linear-gradient(180deg,rgba(255,69,58,.28),rgba(255,159,10,.34) 70%,#000000)}
+[data-art="count"]{background:radial-gradient(60% 80% at 50% 50%,rgba(0,113,227,.6),transparent 75%),#000000}
+[data-art="baptism"]{background:radial-gradient(50% 30% at 50% 80%,rgba(255,255,255,.38),transparent 70%),linear-gradient(180deg,rgba(10,132,255,.45),rgba(50,215,75,.18) 65%,#000000)}
+[data-art="candle"]{background:radial-gradient(14% 26% at 50% 50%,rgba(255,255,255,.85),rgba(255,159,10,.75) 35%,rgba(255,69,58,.25) 70%,transparent 100%),#000000}
+[data-art="mist"]{background:radial-gradient(70% 36% at 25% 106%,rgba(0,0,0,.92) 96%,transparent 100%),radial-gradient(60% 46% at 78% 112%,rgba(0,0,0,.7) 96%,transparent 100%),linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.12) 70%,#000000)}
+[data-art="mission"]{background:radial-gradient(40% 50% at 30% 40%,rgba(255,159,10,.45),transparent 70%),radial-gradient(50% 60% at 75% 70%,rgba(50,215,75,.35),transparent 70%),#000000}
+[data-art="ocean"]{background:linear-gradient(180deg,rgba(255,159,10,.35),rgba(255,255,255,.22) 48%,rgba(10,132,255,.45) 50%,#000000)}
+[data-art="bokeh"]{background:radial-gradient(8% 14% at 20% 30%,rgba(255,159,10,.8),transparent),radial-gradient(10% 18% at 70% 40%,rgba(255,69,58,.6),transparent),radial-gradient(7% 12% at 45% 70%,rgba(50,215,75,.6),transparent),radial-gradient(9% 16% at 85% 75%,rgba(255,159,10,.55),transparent),radial-gradient(6% 10% at 35% 50%,rgba(255,255,255,.5),transparent),#000000}
+[data-art="blue"]{background:conic-gradient(from 210deg at 65% 45%,rgba(10,132,255,.7),rgba(0,113,227,.15),rgba(10,132,255,.5),rgba(10,132,255,.7)),#000000}
+/* Nothing on the media layer: transparent in operator previews. The real audience output shows black; Key keeps its key color. */
+[data-art="none"]{background:var(--transparent)}
+.chk{display:inline-block;width:14px;height:10px;margin-right:5px;border-radius:2px;vertical-align:-1px;background:repeating-conic-gradient(#2A2A2C 0 25%,#1E1E1E 0 50%) 0 0/6px 6px;box-shadow:0 0 0 1px var(--sep)}
+.art{position:relative;display:block;aspect-ratio:16/9;border-radius:6px;overflow:hidden;container-type:inline-size}
+.art[data-art="count"]::after{content:"5:00";position:absolute;inset:0;display:grid;place-items:center;font:700 22cqw/1 var(--font);color:#FFFFFF;font-variant-numeric:tabular-nums}
+
+/* The bin: filters, search, import */
+.binhead{display:flex;align-items:center;gap:10px;min-width:0}
+.binhead h2,.binhead h3{font:600 13px/1 var(--font);white-space:nowrap}
+.binhead .count{font:400 11px/1 var(--font);color:var(--label-2);white-space:nowrap}
+.binhead .search{width:220px}
+.bin{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--tile,160px),1fr));gap:16px 12px;align-content:start}
+.bin>li{min-width:0;position:relative}
+.mt{display:block;width:100%;text-align:left;border-radius:6px}
+.mt .art{box-shadow:0 0 0 1px var(--sep)}
+.mt:hover .art{box-shadow:0 0 0 2px var(--accent)}
+.mt.sel .art{box-shadow:0 0 0 3px var(--accent)}
+.mt.on .art{box-shadow:0 0 0 3px var(--live)}
+.mt.on.sel .art{box-shadow:0 0 0 3px var(--live),0 0 0 6px var(--accent)}
+.tag,.dur{position:absolute;bottom:6px;padding:3px 6px;border-radius:4px;background:rgba(0,0,0,.72);color:#FFFFFF;font:600 11px/1 var(--font);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tag{left:6px}.dur{right:6px}
+.tag .ic{width:11px;height:11px;vertical-align:-1px;margin-right:3px}
+.air{position:absolute;left:0;right:0;top:0;height:22px;display:flex;align-items:center;gap:5px;padding:0 8px;background:var(--live);color:var(--window);font:800 11px/1 var(--font);letter-spacing:.04em;white-space:nowrap;overflow:hidden}
+.air::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--window);flex:none}
+.air.wait{background:rgba(0,0,0,.78);color:#FFFFFF;font-weight:600;letter-spacing:0}
+.air.wait::before{background:none;box-shadow:inset 0 0 0 1.5px #FFFFFF}
+.artmsg{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px;text-align:center;font:600 12px/1.3 var(--font);color:var(--label);padding:0 8px}
+.artmsg .ic{color:var(--next)}
+.pbar{display:block;height:4px;border-radius:2px;background:var(--control-hover);overflow:hidden;width:70%}
+.pbar i{display:block;height:100%;background:var(--accent)}
+.mt .cap{display:block;margin-top:7px;min-width:0}
+.mt .cap b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt .cap small{display:flex;align-items:center;gap:4px;margin-top:3px;font:500 11px/1.25 var(--font);color:var(--label-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.warn{color:var(--next)!important}
+.warn .ic{width:12px;height:12px;flex:none}
+.mt.bad .art{background:#000000;box-shadow:inset 0 0 0 1px var(--label-3)}
+.mt.imp .art{background:#000000;box-shadow:inset 0 0 0 1px var(--label-3)}
+.fsq{display:inline-flex;align-items:center;gap:5px;margin-top:6px;height:24px;padding:0 8px;border-radius:6px;background:var(--control);font:500 12px/1 var(--font);white-space:nowrap}
+.fsq:hover{background:var(--control-hover)}
+.fsq .ic{width:12px;height:12px}
+.prep-mode .fsq{display:none}
+.empty{display:grid;justify-items:center;align-content:center;gap:10px;text-align:center;padding:24px;min-height:100%;color:var(--label-2);line-height:1.45}
+.empty h4{font:600 15px/1.2 var(--font);color:var(--label)}
+.empty p{max-width:440px}
+.empty .bigic{width:40px;height:40px;color:var(--label-2);stroke-width:1.2}
+.empty .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.drop{position:absolute;inset:6px;z-index:4;border-radius:10px;display:grid;place-content:center;justify-items:center;gap:8px;text-align:center;
+  background:linear-gradient(rgba(10,132,255,0.16),rgba(10,132,255,0.16)),var(--raised);box-shadow:inset 0 0 0 2px var(--accent);color:var(--label);font-size:13px;line-height:1.45;padding:16px}
+.drop b{font-weight:600}
+.drop strong{font:600 17px/1.2 var(--font)}
+.drop .ic{width:36px;height:36px;color:var(--label)}
+.pick{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;box-shadow:inset 0 0 0 1.5px var(--accent);font-size:12px;line-height:1.4;color:var(--label-2)}
+.pick b{color:var(--label);font-weight:600}
+.pick .ic{color:var(--accent)}
+
+/* Details of the selected media item */
+.dt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.dt .art{box-shadow:0 0 0 1px var(--sep)}
+.dt .state{position:absolute;left:8px;top:8px;padding:4px 7px;border-radius:4px;background:rgba(0,0,0,.78);color:#FFFFFF;font:600 11px/1 var(--font)}
+.dt .state.on{background:var(--live);color:var(--window);font-weight:800;letter-spacing:.04em}
+.dt h4{font:600 15px/1.2 var(--font);overflow-wrap:anywhere}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:12px;line-height:1.3}
+.facts dt{color:var(--label-2)}
+.facts dd{font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
+.dt .note{display:flex;gap:6px;font-size:12px;line-height:1.45;color:var(--label-2)}
+.dt .note .ic{width:14px;height:14px;margin-top:1px}
+.dt .note b{color:var(--label);font-weight:600}
+.dt .acts{display:flex;flex-direction:column;gap:8px}
+.dt .acts .push{justify-content:space-between;height:30px}
+
+/* Full-screen video transport */
+.fs{display:grid;gap:8px;min-width:0}
+.fs .top{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.fs .top b{font-weight:600}
+.fs .ctl{display:flex;align-items:center;gap:8px;min-width:0}
+.fs .pp{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--accent-strong);color:var(--on-accent);flex:none}
+.fs .pp:hover{background:var(--accent-strong-hover)}
+.fs .pp .ic{width:16px;height:16px}
+.fs .tb .ic{width:16px;height:16px}
+.fs input[type=range]{flex:1;min-width:60px;accent-color:var(--accent);height:20px}
+.fs .tm{font-size:12px;font-weight:600;min-width:38px;text-align:center}
+.fs .note{font-size:12px;line-height:1.45;color:var(--label-2)}
+.fs .note b{color:var(--label);font-weight:600}
+.fs .snd{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--label-2);flex-wrap:wrap}
+.fs .snd b{color:var(--label);font-weight:600}
+.fs .snd .ic{width:14px;height:14px;color:var(--label)}
+
+/* Prepare: song backgrounds */
+.prep{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:auto;padding:3px}
+.ihead{display:flex;align-items:center;gap:10px}
+.ihead h2{font:600 15px/1.2 var(--font)}
+.ihead .facts2{color:var(--label-2)}
+.ihead .ic.big{width:20px;height:20px;color:var(--accent)}
+.scope{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:6px;background:var(--control);color:var(--label-2);line-height:1.45}
+.scope b{color:var(--label);font-weight:600}
+.scope .ic{margin-top:1px}
+.sec{display:flex;align-items:baseline;gap:10px;font:600 13px/1 var(--font)}
+.sec span{font:400 11px/1 var(--font);color:var(--label-2)}
+.bgl{display:flex;flex-direction:column;border-top:1px solid var(--sep)}
+.bgrow{display:grid;grid-template-columns:150px 96px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--sep);border-radius:0}
+.bgrow.picking{background:var(--control);box-shadow:inset 3px 0 0 var(--accent)}
+.bgrow .pn b{display:block;font-weight:600}
+.bgrow .pn small{display:block;margin-top:2px;font-size:11px;color:var(--label-2)}
+.bgrow .art{width:96px;box-shadow:0 0 0 1px var(--sep)}
+.bgrow .art.inh{opacity:.5}
+.bgrow .bn{min-width:0;line-height:1.35}
+.bgrow .bn b{font-weight:500}
+.bgrow .bn small{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--label-2)}
+.rule{font-size:12px;line-height:1.5;color:var(--label-2)}
+.rule b{color:var(--label);font-weight:600}
+
+/* Design preview controls (outside the window, not part of the app) */
+.demo{position:fixed;left:104px;top:30px;z-index:40;padding:5px 9px;max-width:560px;border-radius:8px;background:var(--raised);box-shadow:var(--shadow-float);font:500 11px/1 var(--font);color:var(--label-2)}
+.demo summary{font-weight:600;color:var(--label);padding:2px 0;border-radius:4px}
+.demo details[open] summary{margin-bottom:10px}
+.demo .opts{display:flex;flex-direction:column;gap:10px}
+.demo .opts>div{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.demo .seg{flex-wrap:wrap}
+.demo .seg button{height:20px;padding:0 9px;font-size:11px}
+
+@media (prefers-reduced-motion:no-preference){
+  .row,.tb,.push,.seg button,.mt .art,.fsq{transition:background-color .12s ease,color .12s ease,box-shadow .12s ease}
+  .pane.now h3 .flag::before{animation:livepulse 1.6s ease-in-out infinite}
+  @keyframes livepulse{50%{opacity:.35}}
+}
+
+/* ---- This artboard ---- */
+
+.win{width:1408px;height:868px;grid-template-columns:240px minmax(0,1fr)}
+.svc{flex:1;min-height:0;overflow:auto;padding:0 10px 8px}
+.split{flex:none;height:1px;background:var(--sep);margin:0 10px}
+.lib{flex:none;display:flex;flex-direction:column;padding:4px 10px 10px}
+.content{display:grid;grid-template-rows:52px minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);min-width:0;min-height:0}
+.mainA{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:12px;padding:12px 20px 12px;min-height:0;min-width:0}
+.prep-mode .mainA{grid-template-rows:minmax(0,1fr) minmax(0,1.15fr)}
+.stage{display:grid;grid-template-columns:330px 240px minmax(0,1fr);gap:16px}
+.pane.now .slide p{font-size:21px}
+.pane.next .slide p{font-size:14px}
+.gobtns{height:auto}
+.g5{grid-template-columns:repeat(5,1fr)}
+.binhead .count{display:none}
+.drawer{--tile:150px}
+.bottombar{border-top:1px solid var(--sep);display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:end;gap:10px 20px;padding:10px 20px 12px}
+.bottombar .onscreen{grid-column:1/-1}
+.outputs h2{font:500 11px/1 var(--font);color:var(--label-2);margin-bottom:8px}
+.outputs ul{display:flex;gap:12px}
+.mon{width:118px}
+.mlnote{max-width:280px;font-size:11px;padding-bottom:4px}
+.clearbox{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:10px;padding-bottom:4px}
+.airline{font-size:12px;justify-content:flex-end}
+.prep-mode .bottombar{display:none}
+
+.drawer{display:flex;flex-direction:column;min-height:0;border-radius:8px;background:var(--raised);box-shadow:0 0 0 1px var(--sep);overflow:hidden}
+.dhead{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--sep);min-width:0}
+.tabs{display:inline-flex;padding:2px;border-radius:6px;background:var(--control);gap:2px;flex:none}
+.tabs button{height:24px;padding:0 14px;border-radius:5px;color:var(--label-2);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.tabs button .ic{width:14px;height:14px}
+.tabs button[aria-selected="true"]{background:var(--control-hover);color:var(--label);box-shadow:var(--shadow-segment)}
+.dhead .binhead{flex:1}
+.dbody{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) var(--dtw,248px)}
+.dbody.slides{display:block;overflow:auto;padding:12px}
+.binscroll{position:relative;overflow:auto;min-height:0;padding:12px}
+.dside{border-left:1px solid var(--sep);padding:12px;overflow:auto;min-height:0}
+.dextra{display:grid;gap:8px;padding:10px 12px;border-bottom:1px solid var(--sep)}
+.dextra:empty{display:none}
+.fs.bar{padding:10px 12px;border-bottom:1px solid var(--sep);background:rgba(255,69,58,0.08);box-shadow:inset 3px 0 0 var(--live)}
+.fs.bar{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);grid-template-areas:"top ctl" "snd note";column-gap:20px}
+.fs.bar .top{grid-area:top}.fs.bar .ctl{grid-area:ctl}.fs.bar .snd{grid-area:snd}.fs.bar .note{grid-area:note}
+.pickwrap{padding:10px 12px 0}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sidebar" viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M7.5 3.5v13M4.5 6.5h1M4.5 9h1"/></symbol>
+  <symbol id="i-inspector" viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M12.5 3.5v13M14.5 6.5h1M14.5 9h1"/></symbol>
+  <symbol id="i-note" viewBox="0 0 16 16"><path d="M6 12V3.2l7-1.4V10.5"/><circle cx="4.2" cy="12" r="1.8"/><circle cx="11.2" cy="10.5" r="1.8"/></symbol>
+  <symbol id="i-film" viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="2"/><path d="m6.5 6 3.5 2-3.5 2z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><circle cx="5.5" cy="6.5" r="1.3"/><path d="m2 12 4-4 3 3 2-2 3.5 3.5"/></symbol>
+  <symbol id="i-present" viewBox="0 0 16 16"><rect x="1.5" y="2" width="13" height="9" rx="1.5"/><path d="M8 11v3M5.5 14.5h5"/></symbol>
+  <symbol id="i-item" viewBox="0 0 16 16"><path d="M3 4h10M3 8h10M3 12h6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3.5 3.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 10 10"><path d="m3.5 2 3 3-3 3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+  <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v4M8 4.9v.1"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 2 14.5 13.5h-13z"/><path d="M8 6.5v3.2M8 11.6v.1"/></symbol>
+  <symbol id="i-display" viewBox="0 0 20 20"><rect x="2" y="4" width="11" height="8" rx="1.5"/><path d="M6 15h3M7.5 12v3M15 7h1.5A1.5 1.5 0 0 1 18 8.5v5a1.5 1.5 0 0 1-1.5 1.5H12"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7M11.5 4.5l-7 7"/></symbol>
+  <symbol id="i-loop" viewBox="0 0 16 16"><path d="M2.5 8a5 5 0 0 1 9-3M13.5 8a5 5 0 0 1-9 3"/><path d="M11.8 1.8v3.4H8.4M4.2 14.2v-3.4h3.4"/></symbol>
+  <symbol id="i-import" viewBox="0 0 16 16"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 11v2.5h11V11"/></symbol>
+  <symbol id="i-play" viewBox="0 0 16 16"><path d="M5 3.2v9.6L13 8z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 16 16"><path d="M5.5 3.5v9M10.5 3.5v9" stroke-width="2.2"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1"/></symbol>
+  <symbol id="i-back" viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 2.5v2.4h2.4"/><path d="M7 6.5v3M9 6.5h1v3" stroke-width="1.2"/></symbol>
+  <symbol id="i-fwd" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v2.4h-2.4"/><path d="M6.5 6.5v3M8.5 6.5h1v3" stroke-width="1.2"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 16 16"><path d="M2.5 6h2.5L8.5 3v10L5 10H2.5z"/><path d="M11 5.5a3.5 3.5 0 0 1 0 5M12.8 3.8a6 6 0 0 1 0 8.4"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 16 16"><path d="M8 2 14.5 5.5 8 9 1.5 5.5z"/><path d="m1.5 8.5 6.5 3.5 6.5-3.5M1.5 11.2 8 14.7l6.5-3.5"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 16 16"><path d="M3 3h10a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 13 11H7l-3 2.5V11H3a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 3 3z"/></symbol>
+  <symbol id="i-text" viewBox="0 0 16 16"><path d="M3 3.5h10M8 3.5V13M6 13h4"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 16 16"><path d="M1.5 4.5a1 1 0 0 1 1-1h3.5l1.5 1.5h6a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-open" viewBox="0 0 16 16"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M11.5 9.5v4h-9v-9h4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 16 16"><path d="M8 3v10M4 9l4 4 4-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
+  <symbol id="i-bubble" viewBox="0 0 20 20"><path d="M4.5 4h11A2 2 0 0 1 17.5 6v6a2 2 0 0 1-2 2H9l-3.5 3v-3h-1a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M7 8h6M7 10.5h4"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 12 16"><path d="M4 4h.01M8 4h.01M4 8h.01M8 8h.01M4 12h.01M8 12h.01" stroke-width="2.2"/></symbol>
+</svg>
+<div class="win" role="application" aria-label="Global Service Studio — Sunday Service, Live, media drawer">
+  <nav class="sidebar" aria-label="Service and library">
+    <div class="sb-top"><div class="lights" aria-hidden="true"><i></i><i></i><i></i></div><button class="tb" type="button" aria-label="Hide sidebar" aria-pressed="true"><svg class="ic" aria-hidden="true"><use href="#i-sidebar"/></svg></button></div>
+    <div class="svc"><h2 class="sb-h" id="h-svc">Service<span class="meta num">57:50</span></h2>
+      <p class="tot"><b>Sunday Service</b> · started 10:00</p>
+      <ul aria-labelledby="h-svc">
+        
+        <li><span class="grp"><span class="disc" aria-hidden="true"><svg class="ic" style="transform:rotate(90deg)"><use href="#i-chev"/></svg></span>Worship<span class="meta">13:20</span></span></li>
+        <li><button class="row item done" type="button" data-prep-sel><svg class="ic" aria-hidden="true"><use href="#i-note"/></svg><span class="nm">Morning Light</span><span class="meta">4:30</span></button></li>
+        <li><button class="row item done" type="button"><svg class="ic" aria-hidden="true"><use href="#i-note"/></svg><span class="nm">We Lift Our Voice</span><span class="meta">3:40</span></button></li>
+        <li><button class="row item is-live" type="button" aria-current="step" data-live-row><svg class="ic" aria-hidden="true"><use href="#i-note"/></svg><span class="nm">Great Is the Light</span><span class="flag live">LIVE</span></button></li>
+        <li><span class="grp"><span class="disc" aria-hidden="true"><svg class="ic" style="transform:rotate(90deg)"><use href="#i-chev"/></svg></span>Welcome<span class="meta">4:00</span></span></li>
+        <li><button class="row item" type="button"><svg class="ic" aria-hidden="true"><use href="#i-item"/></svg><span class="nm">Announcements</span><span class="meta">4:00</span></button></li>
+        <li><span class="grp"><span class="disc" aria-hidden="true"><svg class="ic" style="transform:rotate(90deg)"><use href="#i-chev"/></svg></span>Message<span class="meta">32:00</span></span></li>
+        <li><button class="row item" type="button"><svg class="ic" aria-hidden="true"><use href="#i-item"/></svg><span class="nm">Sermon</span><span class="meta">32:00</span></button></li>
+        
+      </ul></div>
+    <div class="split" aria-hidden="true"></div>
+    <section class="lib" aria-labelledby="h-lib"><h2 class="sb-h" id="h-lib">Library<span class="meta">42 songs</span></h2>
+      <label class="search" style="margin:0 0 6px"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="sr">Search Songs</span><input type="search" placeholder="Search Songs"></label>
+      <ul aria-labelledby="h-lib">
+        <li><button class="row" type="button"><svg class="ic" aria-hidden="true"><use href="#i-note"/></svg><span class="nm">Every Morning New</span></button></li>
+        <li><button class="row" type="button"><svg class="ic" aria-hidden="true"><use href="#i-note"/></svg><span class="nm">Faithful Through the Night</span></button></li>
+        <li><button class="row" type="button"><svg class="ic" aria-hidden="true"><use href="#i-note"/></svg><span class="nm">Harbor of Grace</span></button></li>
+        <li><button class="row" type="button"><svg class="ic" aria-hidden="true"><use href="#i-note"/></svg><span class="nm">River of Mercy</span></button></li>
+      </ul></section>
+  </nav>
+  <div class="content">
+    <header class="toolbar">
+      <div class="tl" role="toolbar" aria-label="Service">
+        <div class="title"><h1>Sunday Service</h1><p class="num">Sun, Nov 15 · 10:00</p></div>
+        <button class="tb" type="button" aria-label="Outputs" title="Outputs"><svg class="ic" aria-hidden="true"><use href="#i-display"/></svg></button>
+        
+      </div>
+      <div class="seg mode" role="group" aria-label="Mode" data-modeseg>
+        <button type="button" aria-pressed="false" data-mode="prepare">Prepare</button><button type="button" aria-pressed="true" data-mode="live">Live</button>
+      </div>
+      <div class="tr" role="toolbar" aria-label="View">
+        <span class="clock num" aria-label="Current time 10:12">10:12</span>
+        <label class="search" style="width:200px"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="sr">Search the service</span><input type="search" placeholder="Search the service"></label>
+        <button class="tb" type="button" aria-label="Show inspector" aria-pressed="false" title="Show Inspector"><svg class="ic" aria-hidden="true"><use href="#i-inspector"/></svg></button>
+      </div>
+    </header>
+    <main class="mainA" aria-label="Live">
+      <div class="stage" data-view="live"><section class="pane now" aria-labelledby="h-now">
+          <h3><span class="flag live">LIVE</span><span id="h-now">On the screens now</span><span class="where" data-now-where><b>Great Is the Light</b> · Chorus 2 of 2</span></h3>
+          <div class="slide" data-air-art role="img" data-air-aria="Live: Great is the light, bright is the day"><p data-lyr>Great is the light<br>Bright is the day</p></div>
+        </section><section class="pane next" aria-labelledby="h-next">
+          <h3><span id="h-next">Next</span><span class="flag next">NEXT</span><span class="where"><b>Verse 2</b> · 1 of 2</span></h3>
+          <div class="slide" data-air-art role="img" aria-label="Next: Into the valley, down to the shore"><p>Into the valley<br>Down to the shore</p></div>
+        </section><div class="go" role="group" aria-label="Move through the service">
+          <p class="after">After this item <b>Announcements</b></p>
+          <div class="gobtns">
+            <button class="go-prev" type="button" aria-keyshortcuts="ArrowLeft"><span class="t"><strong>Previous</strong><span class="dest">Chorus · 1 of 2</span></span><span class="kbd">←</span></button>
+            <button class="go-next" type="button" aria-keyshortcuts="Space ArrowRight"><span class="t"><strong>Next</strong><span class="dest">Verse 2 · 1 of 2</span></span><svg class="arrow" viewBox="0 0 28 28" aria-hidden="true"><path d="M5 14h17M15 7l7 7-7 7"/></svg><span class="keys"><span class="kbd">Space</span><span class="kbd">→</span></span></button>
+          </div>
+        </div></div>
+      <div data-view="prepare" hidden style="min-height:0;display:flex;flex-direction:column"><div class="prep" aria-labelledby="prep-title">
+        <div class="ihead"><svg class="ic big" aria-hidden="true"><use href="#i-note"/></svg><h2 id="prep-title">Morning Light</h2><span class="facts2">Song · Worship · 3 of 12 in the service</span><span class="sp"></span><button class="push" type="button"><svg class="ic" aria-hidden="true"><use href="#i-open"/></svg>Edit Song</button></div>
+        <p class="scope"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><span>Backgrounds are <b>saved with the song</b> and used in every service. Nothing you choose here goes on the screens.</span></p>
+        <section aria-labelledby="h-bgs">
+          <h3 class="sec" id="h-bgs" style="margin-bottom:10px">Backgrounds<span>A default for the song, and a different one for any part</span></h3>
+          <ul class="bgl" aria-labelledby="h-bgs">
+          <li class="bgrow" data-bgrow="default">
+            <span class="pn"><b>Song default</b><small>With the first slide</small></span>
+            <span class="art" data-bgart></span>
+            <span class="bn" data-bgname></span>
+            <button class="push" type="button" data-choose="default" aria-haspopup="true">Choose…</button>
+            <button class="linkbtn" type="button" data-unset="default">Remove</button>
+          </li>
+          <li class="bgrow" data-bgrow="v1">
+            <span class="pn"><b>Verse 1</b><small>2 slides</small></span>
+            <span class="art" data-bgart></span>
+            <span class="bn" data-bgname></span>
+            <button class="push" type="button" data-choose="v1" aria-haspopup="true">Choose…</button>
+            <button class="linkbtn" type="button" data-unset="v1">Use Song Default</button>
+          </li>
+          <li class="bgrow" data-bgrow="chorus">
+            <span class="pn"><b>Chorus</b><small>2 slides · sung 3 times</small></span>
+            <span class="art" data-bgart></span>
+            <span class="bn" data-bgname></span>
+            <button class="push" type="button" data-choose="chorus" aria-haspopup="true">Choose…</button>
+            <button class="linkbtn" type="button" data-unset="chorus">Use Song Default</button>
+          </li>
+          <li class="bgrow" data-bgrow="v2">
+            <span class="pn"><b>Verse 2</b><small>2 slides</small></span>
+            <span class="art" data-bgart></span>
+            <span class="bn" data-bgname></span>
+            <button class="push" type="button" data-choose="v2" aria-haspopup="true">Choose…</button>
+            <button class="linkbtn" type="button" data-unset="v2">Use Song Default</button>
+          </li>
+          <li class="bgrow" data-bgrow="bridge">
+            <span class="pn"><b>Bridge</b><small>1 slide</small></span>
+            <span class="art" data-bgart></span>
+            <span class="bn" data-bgname></span>
+            <button class="push" type="button" data-choose="bridge" aria-haspopup="true">Choose…</button>
+            <button class="linkbtn" type="button" data-unset="bridge">Use Song Default</button>
+          </li>
+          </ul>
+        </section>
+        <p class="rule">In Live, the song default goes on air with the song's first slide. A part's background goes on air with that part's first slide and stays until the next cue. <b>A repeated Chorus keeps its video playing.</b> The Key output never shows backgrounds.</p>
+      </div></div>
+      <section class="drawer" aria-label="Slides and media drawer">
+        <div class="dhead">
+          <div class="tabs" role="tablist" aria-label="Drawer">
+            <button type="button" role="tab" aria-selected="false" aria-controls="tab-slides" id="t-slides" data-tab="slides" aria-keyshortcuts="Meta+1"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg>Slides<span class="kbd">⌘1</span></button><button type="button" role="tab" aria-selected="true" aria-controls="tab-media" id="t-media" data-tab="media" aria-keyshortcuts="Meta+2"><svg class="ic" aria-hidden="true"><use href="#i-film"/></svg>Images &amp; Videos<span class="kbd">⌘2</span></button>
+          </div>
+          <div class="binhead">
+          <span class="sr" id="h-bin">Images and videos</span><span class="count num" data-count></span>
+          
+          <div class="seg" role="group" aria-label="Show" data-filters>
+            <button type="button" aria-pressed="true" data-filter="all">All<span class="c" data-c="all"></span></button><button type="button" aria-pressed="false" data-filter="image">Images<span class="c" data-c="image"></span></button><button type="button" aria-pressed="false" data-filter="video">Videos<span class="c" data-c="video"></span></button>
+          </div>
+          <span class="sp"></span>
+          <label class="search" style="width:180px"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="sr">Search media names</span><input type="search" placeholder="Search media names" data-q></label>
+          <button class="push" type="button" data-import aria-keyshortcuts="Shift+Meta+I" title="Copies files into the library's Media folder"><svg class="ic" aria-hidden="true"><use href="#i-import"/></svg>Import…<span class="kbd">⇧⌘I</span></button>
+        </div>
+        </div>
+        <div data-tabpanel="media" id="tab-media" role="tabpanel" aria-labelledby="t-media" style="display:flex;flex-direction:column;min-height:0;flex:1">
+          <div class="fs bar" data-fsbox="bar" hidden></div>
+          <div class="pickwrap" data-pickwrap><div class="pick" data-pick hidden><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><span>Choosing the background for <b data-pick-part>Chorus</b> of <b>Morning Light</b>. Click an image or video, or press Return. Nothing goes on the screens in Prepare.</span><span class="sp"></span><button class="push" type="button" data-pick-cancel aria-keyshortcuts="Escape">Cancel<span class="kbd">esc</span></button></div></div>
+          <div class="dbody">
+            <div class="binscroll" data-dropzone><div class="drop" data-drop hidden><svg class="ic" aria-hidden="true"><use href="#i-import"/></svg><strong>Let go to add these 3 files</strong><span>They are copied into <b>Library › Media</b>. The originals stay where they are.</span></div><div data-bin="tile"></div></div>
+            <aside class="dside" aria-label="Selected media"><div class="dt" data-details></div></aside>
+          </div>
+        </div>
+        <div class="dbody slides" data-tabpanel="slides" id="tab-slides" role="tabpanel" aria-labelledby="t-slides" hidden><ol class="sgrid g5" aria-label="Slides of Great Is the Light"><li><button class="thumb done" type="button" aria-label="Verse 1, slide 1"><span class="slide"><p>Over the mountains<br>Over the sea</p></span><small><span>1</span><span class="sec">Verse 1</span><b></b></small></button></li><li><button class="thumb done" type="button" aria-label="Verse 1, slide 2"><span class="slide"><p>Light of the morning<br>Rising for me</p></span><small><span>2</span><span class="sec">Verse 1</span><b></b></small></button></li><li><button class="thumb done" type="button" aria-label="Chorus, slide 3"><span class="slide"><p>Great is the light<br>Bright is the day</p></span><small><span>3</span><span class="sec">Chorus</span><b></b></small></button></li><li><button class="thumb is-live" type="button" aria-current="true" aria-label="Chorus, slide 4, live"><span class="slide"><p>Nothing can dim it<br>Nothing can fade</p></span><small><span>4</span><span class="sec">Chorus</span><b>● LIVE</b></small></button></li><li><button class="thumb is-next" type="button" aria-label="Verse 2, slide 5, next"><span class="slide"><p>Into the valley<br>Down to the shore</p></span><small><span>5</span><span class="sec">Verse 2</span><b>NEXT</b></small></button></li><li><button class="thumb" type="button" aria-label="Verse 2, slide 6"><span class="slide"><p>Light of the morning<br>Now and evermore</p></span><small><span>6</span><span class="sec">Verse 2</span><b></b></small></button></li><li><button class="thumb" type="button" aria-label="Chorus, slide 7"><span class="slide"><p>Great is the light<br>Bright is the day</p></span><small><span>7</span><span class="sec">Chorus</span><b></b></small></button></li><li><button class="thumb" type="button" aria-label="Chorus, slide 8"><span class="slide"><p>Nothing can dim it<br>Nothing can fade</p></span><small><span>8</span><span class="sec">Chorus</span><b></b></small></button></li><li><button class="thumb" type="button" aria-label="Bridge, slide 9"><span class="slide"><p>Higher than the heavens<br>Deeper than the sea</p></span><small><span>9</span><span class="sec">Bridge</span><b></b></small></button></li><li><button class="thumb" type="button" aria-label="Chorus, slide 10"><span class="slide"><p>Great is the light<br>Bright is the day</p></span><small><span>10</span><span class="sec">Chorus</span><b></b></small></button></li></ol></div>
+      </section>
+    </main>
+    <footer class="bottombar" aria-label="On screen, outputs and clear actions">
+      <p class="onscreen" data-onscreen tabindex="-1"></p>
+      <section class="outputs" aria-labelledby="h-out"><h2 id="h-out">Outputs</h2><ul><li class="mon"><div class="scr" data-out="aud" aria-hidden="true"><p data-lyr style="font-size:7.5px">Great is the light<br>Bright is the day</p></div><div class="name"><b>Center</b><span class="status">Live</span></div><div class="role">Media: <b>yes</b></div></li>
+        <li class="mon"><div class="scr" data-out="aud" aria-hidden="true"><p data-lyr style="font-size:7.5px">Great is the light<br>Bright is the day</p></div><div class="name"><b>Sides</b><span class="status">Live</span></div><div class="role">Media: <b>yes</b></div></li>
+        <li class="mon"><div class="scr tele" aria-hidden="true" style="padding:4px 6px;font-size:6px"><div class="clk"><span>Great Is the Light</span><b style="font-size:8px">10:12</b></div><div class="cur" data-lyr style="font-size:9px">Great is the light<br>Bright is the day</div><div class="nx">Into the valley / Down to the shore</div></div><div class="name"><b>Stage</b><span class="status">Live</span></div><div class="role">Media: no</div></li>
+        <li class="mon"><div class="scr keyout" aria-hidden="true" style="padding:0 8px 6px"><div data-lyr style="font-size:6.5px;padding:3px 4px">Great is the light<br>Bright is the day</div></div><div class="name"><b>Key</b><span class="status">Live</span></div><div class="role">Media: <b>never</b></div></li></ul></section>
+      <p class="mlnote"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg><span><b>Center</b> and <b>Sides</b> show backgrounds and videos. <b>Key never does</b>: the switcher gets only the lyrics.<br><span class="chk" aria-hidden="true"></span>Checkerboard = no background (transparent).</span></p>
+      <section class="clearbox" aria-label="Clear"><div class="clr"><button class="push" type="button" aria-keyshortcuts="F1" data-clear="slide">Clear Slide<span class="kbd">F1</span></button>
+          <button class="push" type="button" aria-keyshortcuts="F2" data-clear="bg">Clear Background<span class="kbd">F2</span></button>
+          <button class="push danger" type="button" aria-keyshortcuts="F3" data-clear="all">Clear All<span class="kbd">F3</span></button></div></section>
+    </footer>
+  </div>
+</div>
+<aside class="demo" aria-label="Design preview controls, not part of the app"><details><summary>Preview states</summary><div class="opts">
+  <div><span>State</span>
+    <div class="seg" role="group" aria-label="State" id="demo-state">
+      <button type="button" aria-pressed="true" data-s="live">Live · background on air</button>
+      <button type="button" aria-pressed="false" data-s="fullscreen">Full-screen video</button>
+      <button type="button" aria-pressed="false" data-s="prepare">Prepare · song backgrounds</button>
+      <button type="button" aria-pressed="false" data-s="drop">Dragging files in</button>
+      <button type="button" aria-pressed="false" data-s="empty">Empty bin</button>
+      <button type="button" aria-pressed="false" data-s="noresults">No results</button>
+    </div></div>
+  <div><span>Appearance</span>
+    <div class="seg" role="group" aria-label="Appearance" id="demo-app">
+      <button type="button" aria-pressed="true" data-a="midnight">Midnight</button>
+      <button type="button" aria-pressed="false" data-a="graphite">Graphite</button>
+      <button type="button" aria-pressed="false" data-a="black">Black</button>
+    </div></div>
+</div></details></aside>
+<p class="sr" aria-live="polite" data-say></p>
+<script>
+
+var TAB="media";
+function setTab(t){TAB=t;document.querySelectorAll("[data-tab]").forEach(function(b){b.setAttribute("aria-selected",String(b.dataset.tab===t))});
+  document.querySelectorAll("[data-tabpanel]").forEach(function(p){p.hidden=p.dataset.tabpanel!==t});
+  document.querySelectorAll("[data-binhead-only]").forEach(function(e){e.hidden=t!=="media"})}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-tab]");if(b)setTab(b.dataset.tab)});
+window.onState=function(){setTab("media")};
+window.onRender=function(){var pw=document.querySelector("[data-pickwrap]");if(pw)pw.hidden=!S.pick};
+
+
+var M=[
+ {id:"light",n:"Soft light loop",k:"video",loop:true,dur:"0:20",res:"1920×1080",codec:"H.264",fps:30,size:"48 MB",file:"soft-light-loop.mp4"},
+ {id:"waves",n:"Waves loop 4K",k:"video",loop:true,dur:"0:30",res:"3840×2160",codec:"HEVC",fps:60,size:"212 MB",file:"waves-loop-4k.mov"},
+ {id:"sunrise",n:"Sunrise hills",k:"image",res:"3840×2160",codec:"JPEG",size:"4.1 MB",file:"sunrise-hills.jpg"},
+ {id:"count",n:"Welcome countdown 5 min",k:"video",sound:true,dur:"5:00",res:"1920×1080",codec:"H.264",fps:30,size:"310 MB",file:"welcome-countdown-5min.mp4"},
+ {id:"baptism",n:"Baptism story 2026",k:"video",sound:true,dur:"4:12",res:"3840×2160",codec:"HEVC",fps:30,size:"1.6 GB",file:"baptism-story-2026.mov"},
+ {id:"candle",n:"Candle glow loop",k:"video",loop:true,heavy:true,dur:"0:45",res:"3840×2160",codec:"ProRes 422",fps:30,size:"2.9 GB",file:"candle-glow-loop.mov"},
+ {id:"mist",n:"Mountain mist",k:"image",res:"5472×3648",codec:"JPEG",size:"9.8 MB",file:"mountain-mist.jpg"},
+ {id:"mission",n:"Mission trip recap",k:"video",sound:true,heavy:true,dur:"2:48",res:"1920×1080",codec:"ProRes 422 HQ",fps:30,size:"5.2 GB",file:"mission-trip-recap.mov"},
+ {id:"ocean",n:"Ocean dawn loop",k:"video",loop:true,dur:"0:25",res:"1920×1080",codec:"H.264",fps:30,size:"61 MB",file:"ocean-dawn-loop.mp4"},
+ {id:"bokeh",n:"Christmas lights",k:"image",res:"1920×1080",codec:"PNG",size:"3.2 MB",file:"christmas-lights.png"},
+ {id:"blue",n:"Abstract blue",k:"image",res:"2560×1440",codec:"HEIC",size:"1.4 MB",file:"abstract-blue.heic"},
+ {id:"youth",n:"Youth camp promo",k:"video",bad:true,dur:"1:30",res:"1280×720",codec:"DivX (AVI)",size:"180 MB",file:"youth-camp-promo.avi"},
+ {id:"easter",n:"Easter sunrise 4K",k:"video",importing:62,res:"3840×2160",codec:"HEVC",size:"1.9 GB",file:"easter-sunrise-4k.mov"}
+];
+var PARTS={"default":"Song default",v1:"Verse 1",chorus:"Chorus",v2:"Verse 2",bridge:"Bridge"};
+var AUDIO="X32 USB · Ch 1–2";
+var S;
+function reset(){S={mode:"live",filter:"all",q:"",sel:"waves",air:"light",fs:null,pick:null,empty:false,drop:false,lyrOff:false,lyrPrev:false,
+  parts:{"default":"waves",v1:null,chorus:"sunrise",v2:null,bridge:"candle"}}}
+reset();
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return [].slice.call((r||document).querySelectorAll(s))}
+function byId(id){for(var i=0;i<M.length;i++)if(M[i].id===id)return M[i];return null}
+function secs(d){var p=String(d||"0:00").split(":");return (+p[0])*60+(+p[1])}
+function mmss(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function esc(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function ok(m){return m&&!m.bad&&m.importing==null}
+function typeShort(m){return m.k==="image"?"Image":m.loop?"Loop":m.sound?"Sound":"Video"}
+function typeLong(m){return m.k==="image"?"Image":m.loop?"Video loop · no sound":m.sound?"Video with sound":"Video"}
+function res(m){return m.res+" · "+m.codec+(m.fps?" · "+m.fps+" fps":"")}
+function vis(){if(S.empty)return [];var q=S.q.trim().toLowerCase();
+  return M.filter(function(m){if(S.filter!=="all"&&m.k!==S.filter)return false;if(q&&m.n.toLowerCase().indexOf(q)<0)return false;return true})}
+function airText(m){if(S.mode!=="live")return "";if(S.fs&&S.fs.id===m.id)return "ON AIR · Full screen";if(S.air===m.id)return S.fs?"Back after the video":"ON AIR · Background";return ""}
+function aria(m){var a=[m.n,typeShort(m)];if(m.dur)a.push(m.dur);a.push(m.res+", "+m.codec);
+  if(m.heavy)a.push("heavy on this Mac, no hardware decoding");if(m.bad)a.push("can't play");if(m.importing!=null)a.push("importing, "+m.importing+" percent");
+  var t=airText(m);if(t)a.push(t.toLowerCase());if(S.mode==="live"&&ok(m)&&!t)a.push("press Return to show as background"+(m.k==="video"?", Command Return to play full screen":""));
+  if(S.pick&&ok(m))a.push("press Return to use for "+PARTS[S.pick]);return a.join(", ")}
+function inner(m,variant){var t=airText(m),h='<span class="art" data-art="'+m.id+'">';
+  if(t&&variant!=="row")h+='<span class="air'+(t.indexOf("ON AIR")===0?"":" wait")+'">'+t+'</span>';
+  if(m.bad)h+='<span class="artmsg"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg>Can’t play</span>';
+  else if(m.importing!=null)h+='<span class="artmsg">Importing… '+m.importing+'%<span class="pbar"><i style="width:'+m.importing+'%"></i></span></span>';
+  else{if(variant!=="row")h+='<span class="tag"><svg class="ic" aria-hidden="true"><use href="#i-'+(m.k==="image"?"image":m.loop?"loop":m.sound?"speaker":"film")+'"/></svg>'+typeShort(m)+'</span>'+(m.dur?'<span class="dur">'+m.dur+'</span>':"")}
+  h+='</span><span class="cap"><b>'+esc(m.n)+'</b>';
+  if(variant==="row")h+=(m.bad||m.importing!=null?"":'<small class="num">'+typeShort(m)+(m.dur?" · "+m.dur:"")+'</small>')+'<small class="num">'+(m.res.indexOf("3840")===0?"4K":m.res.indexOf("1920")===0?"1080p":m.res)+" · "+m.codec+'</small>';
+  else h+='<small class="num">'+res(m)+'</small>';
+  if(t&&variant==="row")h+=t.indexOf("ON AIR")===0?'<small><span class="flag live">'+t+'</span></small>':'<small>'+t+'</small>';
+  if(m.heavy)h+='<small class="warn"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg>Heavy on this Mac</small>';
+  if(m.bad)h+='<small class="warn"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg>Format not supported</small>';
+  if(m.importing!=null)h+='<small>Copying to Media · 1.2 of 1.9 GB</small>';
+  return h+'</span>'}
+function cls(m,base){var t=airText(m);return base+(S.sel===m.id?" sel":"")+(t.indexOf("ON AIR")===0?" on":"")+(m.bad?" bad":"")+(m.importing!=null?" imp":"")}
+function renderBins(){var list=vis();
+  $$("[data-bin]").forEach(function(box){var variant=box.dataset.bin,h="";
+    if(S.empty){h='<div class="empty"><svg class="ic bigic" aria-hidden="true"><use href="#i-film"/></svg><h4>No images or videos yet</h4><p>Drag your images and videos here, or click Import…</p><div class="acts"><button class="push primary" type="button" data-import>Import…<span class="kbd">⇧⌘I</span></button></div><p>They are copied into this library, so the service still plays if the originals move. Works best: MP4 or MOV videos (H.264 or HEVC) and JPEG, PNG or HEIC images.</p></div>'}
+    else if(!list.length){var what=S.filter==="image"?"images":S.filter==="video"?"videos":"media";
+      h='<div class="empty"><h4>No '+what+' match “'+esc(S.q)+'”</h4><p>Search looks at media names only.</p><div class="acts"><button class="push" type="button" data-clearq>Clear Search</button>'+(S.filter!=="all"?'<button class="push" type="button" data-showall>Show All Types</button>':"")+'</div></div>'}
+    else{h='<ul class="bin" role="list" aria-labelledby="h-bin">'+list.map(function(m){
+        var b='<button class="'+cls(m,variant==="row"?"mr":"mt")+'" type="button" data-id="'+m.id+'" aria-label="'+esc(aria(m))+'"'+(ok(m)?' aria-keyshortcuts="Enter Meta+Enter"':' aria-disabled="true"')+'>'+inner(m,variant)+'</button>';
+        if(variant==="row")b+='<button class="tb info" type="button" data-info="'+m.id+'" aria-label="Preview '+esc(m.n)+'" aria-haspopup="dialog" title="Preview (⌘Y)"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg></button>';
+        else if(m.sound&&ok(m))b+='<button class="fsq" type="button" data-fsgo="'+m.id+'" aria-label="Play '+esc(m.n)+' full screen with sound"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Play Full Screen</button>';
+        return '<li>'+b+'</li>'}).join("")+'</ul>'}
+    box.innerHTML=h});
+  var all=S.empty?[]:M,ni=0,nv=0,imp=0;all.forEach(function(m){if(m.k==="image")ni++;else nv++;if(m.importing!=null)imp++});
+  $$("[data-c=all]").forEach(function(e){e.textContent=all.length});$$("[data-c=image]").forEach(function(e){e.textContent=ni});$$("[data-c=video]").forEach(function(e){e.textContent=nv});
+  $$("[data-count]").forEach(function(e){e.textContent=S.empty?"Empty":(list.length===all.length?all.length+" items":list.length+" of "+all.length)+(imp?" · 1 importing":"")});
+  $$("[data-filter]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.filter===S.filter))});
+  $$("[data-q]").forEach(function(i){if(i.value!==S.q)i.value=S.q});
+}
+function details(){var m=byId(S.sel),h="";if(!m||S.empty){$$("[data-details]").forEach(function(d){d.innerHTML='<p class="l2" style="line-height:1.45">Select a media item to see its details.</p>'});return}
+  var t=airText(m),on=t.indexOf("ON AIR")===0;
+  h='<span class="art" data-art="'+m.id+'"><span class="state'+(on?" on":"")+'">'+(on?t:S.mode==="live"?"Preview · not on air":"Preview")+'</span></span><h4>'+esc(m.n)+'</h4>';
+  var facts='<dl class="facts"><dt>Type</dt><dd>'+typeLong(m)+'</dd>'+(m.dur?'<dt>Length</dt><dd>'+m.dur+'</dd>':"")+'<dt>Size</dt><dd>'+m.res+(m.fps?" · "+m.fps+" fps":"")+'</dd><dt>Format</dt><dd>'+m.codec+(m.bad?"":m.heavy?" · no hardware decoding here":m.k==="video"?" · hardware decoding":"")+'</dd><dt>File</dt><dd>'+m.size+' · Media › '+m.file+'</dd></dl>';
+  if(m.heavy)h+='<p class="note warn"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg><span>Heavy on this Mac: '+m.codec+' has no hardware decoding here and may drop frames. It still plays.</span></p>';
+  if(m.bad)h+='<p class="note warn"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg><span>Can’t play: DivX is not supported. Convert it to H.264 or HEVC and import it again.</span></p>';
+  h+='<div class="acts">';
+  if(m.bad)h+='<button class="push" type="button">Show in Finder</button><button class="push" type="button">Remove from Media…</button>';
+  else if(m.importing!=null)h+='<p class="note"><span>Copying into <b>Library › Media</b>. It can be used when the copy finishes.</span></p><button class="push" type="button">Cancel Import</button>';
+  else if(S.pick)h+='<button class="push primary" type="button" data-act="use">Use for '+PARTS[S.pick]+'<span class="kbd">↩</span></button>';
+  else if(S.mode==="live"){h+=(S.air===m.id&&!S.fs?'<button class="push" type="button" disabled>On air as the background</button>':'<button class="push primary" type="button" data-act="bg">Show as Background<span class="kbd">↩</span></button>');
+    if(S.fs&&S.fs.id===m.id)h+='<button class="push" type="button" disabled>Playing full screen · use the transport</button>';
+    else if(m.k==="video")h+='<button class="push" type="button" data-act="fs"><span><svg class="ic" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><use href="#i-play"/></svg>Play Full Screen'+(m.sound?" with Sound":"")+'</span><span class="kbd">⌘↩</span></button>';
+    h+='<p class="note how"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><span>'+(m.k==="image"?'A click or Return shows it <b>behind the lyrics</b>.':'A click or Return plays it <b>behind the lyrics, muted and looping</b>. <b>Play Full Screen</b> plays it once with sound; the lyrics hide until it ends.')+'</span></p>'}
+  h+='</div>'+facts;
+  $$("[data-details]").forEach(function(d){d.innerHTML=h})}
+function airCur(){return S.fs?S.fs.id:S.air}
+function renderAir(){var cur=S.mode==="live"?airCur():null,m=byId(cur),bg=byId(S.air);
+  $$("[data-air-art],[data-out=aud]").forEach(function(e){if(cur)e.setAttribute("data-art",cur);else e.setAttribute("data-art","none")});
+  $$("[data-now-where]").forEach(function(e){e.innerHTML=S.fs?'<b>Full-screen video</b> · '+esc(byId(S.fs.id).n):'<b>Great Is the Light</b> · Chorus 2 of 2'});
+  $$("[data-onscreen]").forEach(function(e){var t,act="";
+    if(S.fs){t='<b>Full-screen video: '+esc(byId(S.fs.id).n)+'</b> · lyrics hidden until it ends · then '+backList();
+      act='<button class="push" type="button" data-tp="stop"><svg class="ic" aria-hidden="true"><use href="#i-stop"/></svg>Stop Video</button>'}
+    else{var bgt=bg?'Background: <b>'+esc(bg.n)+'</b> ('+(bg.k==="image"?"image":"video, muted, looping")+')':"";
+      if(!S.lyrOff&&bg)t='<b>Lyrics</b> · Chorus 2 of 2 · '+bgt;
+      else if(bg)t=bgt+' · <b>no lyrics</b> (cleared; Next shows them again)';
+      else if(!S.lyrOff)t='<b>Lyrics</b> · Chorus 2 of 2 · <b>no background</b> (black behind the lyrics)';
+      else t='<b>Nothing</b> · the audience screens are black';
+      if(bg)act='<button class="push" type="button" data-clear="bg" aria-keyshortcuts="F2">Clear Background<span class="kbd">F2</span></button>'}
+    e.classList.toggle("fs-on",!!S.fs);
+    e.innerHTML='<svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="os-k">On screen:</span><span class="os-t">'+t+'</span>'+act});
+  document.body.classList.toggle("lyr-off",S.lyrOff);
+}
+function backList(){var p=[];if(!S.lyrPrev)p.push("the lyrics");var bg=byId(S.air);if(bg)p.push("<b>"+esc(bg.n)+"</b>");return !p.length?"the screens go black":p.join(" and ")+(p.length>1||!S.lyrPrev?" come back":" comes back")}
+function backSay(){var p=[];if(!S.lyrOff)p.push("the lyrics");var bg=byId(S.air);if(bg)p.push(bg.n);return p.length?"Back on the screens: "+p.join(" and ")+".":"The audience screens are black."}
+function renderFS(){var m=S.fs&&byId(S.fs.id),bg=byId(S.air);
+  $$("[data-fsbox]").forEach(function(box){box.hidden=!m;if(!m)return;var total=secs(m.dur),compact=box.dataset.fsbox==="mini";
+    box.innerHTML='<div class="top"><span class="flag live">ON AIR · Full screen</span><b>'+esc(m.n)+'</b>'+(compact?"":'<span class="l2 num">'+res(m)+' · with sound</span>')+'</div>'+
+    '<div class="ctl"><button class="tb" type="button" data-tp="back" aria-label="Back 10 seconds" aria-keyshortcuts="Alt+ArrowLeft" title="Back 10 s (⌥←)"><svg class="ic" aria-hidden="true"><use href="#i-back"/></svg></button>'+
+    '<button class="pp" type="button" data-tp="pp" aria-label="'+(S.fs.playing?"Pause":"Play")+'" aria-keyshortcuts="Alt+Space" title="'+(S.fs.playing?"Pause":"Play")+' (⌥Space)"><svg class="ic" aria-hidden="true"><use href="#i-'+(S.fs.playing?"pause":"play")+'"/></svg></button>'+
+    '<button class="tb" type="button" data-tp="fwd" aria-label="Forward 10 seconds" aria-keyshortcuts="Alt+ArrowRight" title="Forward 10 s (⌥→)"><svg class="ic" aria-hidden="true"><use href="#i-fwd"/></svg></button>'+
+    (compact?'</div><div class="ctl">':"")+
+    '<span class="tm num" data-el aria-label="Elapsed">'+mmss(S.fs.t)+'</span><input type="range" min="0" max="'+total+'" value="'+S.fs.t+'" data-scrub aria-label="Position in '+esc(m.n)+'" aria-valuetext="'+mmss(S.fs.t)+' of '+m.dur+'"><span class="tm num" data-rem aria-label="Remaining">−'+mmss(total-S.fs.t)+'</span>'+
+    (compact?"</div>":'<button class="push" type="button" data-tp="stop">'+'<svg class="ic" aria-hidden="true"><use href="#i-stop"/></svg>Stop Video</button></div>')+
+    '<p class="snd"><svg class="ic" aria-hidden="true"><use href="#i-speaker"/></svg>Sound to <b>'+AUDIO+'</b><button class="linkbtn" type="button">Change in Settings…</button></p>'+
+    '<p class="note"><b>The lyrics are hidden</b> and the background waits while it plays. When it ends or you press Stop Video, '+backList()+'.</p>'+
+    (compact?'<button class="push" type="button" data-tp="stop"><svg class="ic" aria-hidden="true"><use href="#i-stop"/></svg>Stop Video</button>':"")});
+  $$("[data-fs-hide]").forEach(function(e){e.hidden=!!m});
+}
+function tick(){if(!S.fs||!S.fs.playing)return;var m=byId(S.fs.id),total=secs(m.dur);S.fs.t++;
+  if(S.fs.t>=total){S.fs=null;S.lyrOff=S.lyrPrev;render();say("Video ended. "+backSay());return}
+  $$("[data-el]").forEach(function(e){e.textContent=mmss(S.fs.t)});$$("[data-rem]").forEach(function(e){e.textContent="−"+mmss(total-S.fs.t)});
+  $$("[data-scrub]").forEach(function(e){if(document.activeElement!==e){e.value=S.fs.t;e.setAttribute("aria-valuetext",mmss(S.fs.t)+" of "+m.dur)}})}
+setInterval(tick,1000);
+function renderPrep(){
+  $$("[data-bgrow]").forEach(function(r){var p=r.dataset.bgrow,id=S.parts[p],inh=!id&&p!=="default",m=byId(id||(p==="default"?null:S.parts["default"]));
+    r.classList.toggle("picking",S.pick===p);
+    var a=r.querySelector("[data-bgart]");if(m){a.setAttribute("data-art",m.id)}else a.setAttribute("data-art","none");a.classList.toggle("inh",inh);
+    r.querySelector("[data-bgname]").innerHTML=m?(inh?'<b class="l2">Song default</b><small>'+esc(m.n)+'</small>':'<b>'+esc(m.n)+'</b><small class="num'+(m.heavy?" warn":"")+'">'+(m.heavy?'<svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg>Heavy on this Mac · ':"")+typeShort(m)+(m.dur?" · "+m.dur:"")+'</small>'):'<b class="l2">None</b><small>Transparent · the screens show black</small>';
+    var c=r.querySelector("[data-choose]");c.setAttribute("aria-expanded",String(S.pick===p));c.textContent=S.pick===p?"Choosing…":"Choose…";
+    var u=r.querySelector("[data-unset]");u.hidden=!id});
+  $$("[data-pick]").forEach(function(e){e.hidden=!S.pick});$$("[data-pick-part]").forEach(function(e){e.textContent=S.pick?PARTS[S.pick]:""});
+}
+function render(){
+  document.body.classList.toggle("prep-mode",S.mode==="prepare");
+  $$("[data-view]").forEach(function(v){v.hidden=v.dataset.view!==S.mode});
+  $$("[data-mode]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.mode===S.mode))});
+  $$("[data-prep-sel]").forEach(function(r){if(S.mode==="prepare")r.setAttribute("aria-current","page");else r.removeAttribute("aria-current")});
+  $$("[data-drop]").forEach(function(e){e.hidden=!S.drop});
+  var f=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.id:null;
+  renderBins();details();renderAir();renderFS();renderPrep();
+  if(f){var e=$('[data-id="'+f+'"]');if(e)e.focus()}
+  if(window.onRender)window.onRender();
+}
+function say(t){$$("[data-say]").forEach(function(e){e.textContent="";setTimeout(function(){e.textContent=t},30)})}
+function activate(id){var m=byId(id);S.sel=id;if(!ok(m)){render();say(m.bad?m.n+" can’t play: the format is not supported.":m.n+" is still importing.");return}
+  if(S.pick){var p=S.pick;S.parts[p]=id;S.pick=null;render();say(m.n+" is now the background for "+PARTS[p]+" of Morning Light. Nothing changed on the screens.");var b=$('[data-choose="'+p+'"]');if(b)b.focus();return}
+  if(S.mode!=="live"){render();return}
+  S.air=id;render();say(S.fs?m.n+" is the background now; it shows after the full-screen video.":m.n+" on air as the background"+(m.k==="video"?", muted and looping.":".")+(m.heavy?" Heavy on this Mac: it may drop frames.":""))}
+function playFS(id){var m=byId(id);if(!ok(m)||m.k!=="video"||S.mode!=="live")return;S.sel=id;if(!S.fs)S.lyrPrev=S.lyrOff;S.lyrOff=true;S.fs={id:id,t:0,playing:true};render();say(m.n+" is playing full screen with sound. The lyrics are hidden until it ends.")}
+function clear(what){
+  if(S.fs){if(what==="slide"){S.lyrPrev=true;render();say("Lyrics cleared. They stay hidden after the video.");return}
+    S.fs=null;S.air=null;S.lyrOff=what==="all"?true:S.lyrPrev;render();say(what==="all"?"Video, slide and background cleared.":"Video stopped and background cleared. "+backSay());return}
+  if(what!=="bg")S.lyrOff=true;if(what!=="slide"){S.air=null;S.fs=null}render();
+  say(what==="slide"?"Slide cleared. The background stays.":what==="bg"?"Background cleared. The words stay.":"Slide and background cleared.")}
+function moveFocus(cur,key){var items=$$("[data-bin] [data-id]"),i=items.indexOf(cur);if(i<0)return;var t=null;
+  if(key==="ArrowRight")t=items[i+1];else if(key==="ArrowLeft")t=items[i-1];
+  else{var r=cur.getBoundingClientRect(),best=null,bd=1e9;items.forEach(function(o){var q=o.getBoundingClientRect();
+    if(key==="ArrowDown"?q.top>r.bottom-2:q.bottom<r.top+2){var d=Math.abs(q.top-r.top)*4+Math.abs(q.left-r.left);if(d<bd){bd=d;best=o}}});t=best}
+  if(t){t.focus();S.sel=t.dataset.id;$$("[data-bin] [data-id]").forEach(function(o){o.classList.toggle("sel",o===t)});details();if(window.onRender)window.onRender()}}
+document.addEventListener("click",function(e){var b;
+  if((b=e.target.closest("[data-id]")))return activate(b.dataset.id);
+  if((b=e.target.closest("[data-fsgo]")))return playFS(b.dataset.fsgo);
+  if((b=e.target.closest("[data-act]"))){var a=b.dataset.act;if(a==="bg"||a==="use")activate(S.sel);else if(a==="fs")playFS(S.sel);return}
+  if((b=e.target.closest("[data-filter]"))){S.filter=b.dataset.filter;render();return}
+  if(e.target.closest("[data-clearq]")){S.q="";render();return}
+  if(e.target.closest("[data-showall]")){S.filter="all";render();return}
+  if(e.target.closest("[data-import]")){say("Import opens the file picker. Chosen files are copied into the library’s Media folder.");return}
+  if((b=e.target.closest("[data-clear]")))return clear(b.dataset.clear);
+  if((b=e.target.closest("[data-mode]"))){S.mode=b.dataset.mode;S.pick=null;S.drop=false;render();return}
+  if((b=e.target.closest("[data-choose]"))){S.pick=S.pick===b.dataset.choose?null:b.dataset.choose;var cur=S.parts[S.pick];if(cur)S.sel=cur;render();if(window.onPick)window.onPick();return}
+  if((b=e.target.closest("[data-unset]"))){S.parts[b.dataset.unset]=null;render();say(PARTS[b.dataset.unset]+(b.dataset.unset==="default"?" background removed.":" uses the song default."));return}
+  if(e.target.closest("[data-pick-cancel]")){var p=S.pick;S.pick=null;render();var c=$('[data-choose="'+p+'"]');if(c)c.focus();return}
+  if((b=e.target.closest("[data-tp]"))){var t=b.dataset.tp,m=S.fs&&byId(S.fs.id);if(!m)return;
+    if(t==="pp"){S.fs.playing=!S.fs.playing;renderFS();$('[data-tp="pp"]').focus();say(S.fs.playing?"Playing":"Paused. The paused frame stays on the screens.")}
+    else if(t==="back"||t==="fwd"){S.fs.t=Math.max(0,Math.min(secs(m.dur)-1,S.fs.t+(t==="back"?-10:10)));renderFS()}
+    else if(t==="stop"){S.fs=null;S.lyrOff=S.lyrPrev;render();say("Video stopped. "+backSay())}return}
+  if(e.target.closest(".go-next,.go-prev")){if(S.lyrOff&&!S.fs){S.lyrOff=false;render();say("The lyrics are back on the screens.")}return}
+});
+/* An action inside the On screen line rebuilds it: keep keyboard focus on the line. */
+document.addEventListener("click",function(e){if(e.target.closest&&e.target.closest("[data-onscreen] button"))setTimeout(function(){var o=$("[data-onscreen]");if(o)o.focus()},0)},true);
+document.addEventListener("input",function(e){if(e.target.matches("[data-q]")){S.q=e.target.value;var at=e.target;renderBins();details();at.focus()}
+  else if(e.target.matches("[data-scrub]")&&S.fs){S.fs.t=+e.target.value;var m=byId(S.fs.id);$$("[data-el]").forEach(function(x){x.textContent=mmss(S.fs.t)});$$("[data-rem]").forEach(function(x){x.textContent="−"+mmss(secs(m.dur)-S.fs.t)})}});
+document.addEventListener("focusin",function(e){var b=e.target.closest&&e.target.closest("[data-bin] [data-id]");if(b&&S.sel!==b.dataset.id){S.sel=b.dataset.id;$$("[data-bin] [data-id]").forEach(function(o){o.classList.toggle("sel",o===b)});details();if(window.onRender)window.onRender()}});
+document.addEventListener("keydown",function(e){var b=e.target.closest&&e.target.closest("[data-bin] [data-id]");
+  if(b&&e.key==="Enter"&&e.metaKey){e.preventDefault();playFS(b.dataset.id);return}
+  if(b&&/^Arrow/.test(e.key)){e.preventDefault();moveFocus(b,e.key);return}
+  if(e.key==="F1"||e.key==="F2"||e.key==="F3"){e.preventDefault();clear(e.key==="F1"?"slide":e.key==="F2"?"bg":"all");return}
+  if(e.key===" "&&e.altKey&&S.fs){e.preventDefault();$('[data-tp="pp"]').click();return}
+  if(e.key==="Escape"){if(S.pick){$("[data-pick-cancel]").click();return}if(window.onEscape)window.onEscape()}});
+["dragenter","dragover"].forEach(function(t){document.addEventListener(t,function(e){if(e.dataTransfer&&[].indexOf.call(e.dataTransfer.types||[],"Files")>=0){e.preventDefault();if(!S.drop){S.drop=true;render()}}})});
+document.addEventListener("drop",function(e){e.preventDefault();S.drop=false;render();say("Importing. Files are copied into the library’s Media folder.")});
+document.addEventListener("dragleave",function(e){if(!e.relatedTarget&&S.drop){S.drop=false;render()}});
+function setState(s){reset();
+  if(s==="fullscreen"){S.fs={id:"baptism",t:72,playing:true};S.sel="baptism";S.lyrOff=true}
+  else if(s==="prepare"){S.mode="prepare";S.pick="chorus";S.sel="sunrise"}
+  else if(s==="drop"){S.drop=true}
+  else if(s==="empty"){S.empty=true;S.air=null}
+  else if(s==="noresults"){S.filter="video";S.q="christmas"}
+  if(window.onState)window.onState(s);render()}
+(function(){function pick(g,attr,fn){g.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
+  [].forEach.call(g.querySelectorAll("button"),function(o){o.setAttribute("aria-pressed",String(o===b))});fn(b.dataset[attr])})}
+  pick(document.getElementById("demo-app"),"a",function(a){document.documentElement.dataset.appearance=a});
+  pick(document.getElementById("demo-state"),"s",setState);
+  var h=location.hash.slice(1),b=document.querySelector('#demo-state [data-s="'+h+'"]');if(b)b.click();else setState("live")})();
+
+</script>
+</body>
+</html>
