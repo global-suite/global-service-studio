@@ -269,3 +269,6 @@
 /* Prepare: button of the part background row that removes the part's own background, so it uses the song's. */ "Use the song's background" = "Use the song's background";
 /* Sidebar: header of the library's presentations, under the songs. */ "Presentations" = "Presentations";
 /* Alert title when a presentation file cannot be added to the service. */ "The presentation could not be opened." = "The presentation could not be opened.";
+/* Stage output: heading on a presentation slide; %1$@ is the presentation's title, %2$ld the slide's number, %3$ld the number of slides. */ "%1$@ · Slide %2$ld of %3$ld" = "%1$@ · Slide %2$ld of %3$ld";
+/* Stage output: a presentation slide's number when it has no notes; %1$ld is the slide's number, %2$ld the number of slides. */ "Slide %1$ld of %2$ld" = "Slide %1$ld of %2$ld";
+/* Stage output: hint under a presentation slide that has no speaker notes. */ "No notes" = "No notes";
