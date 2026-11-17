@@ -25,6 +25,7 @@ struct PrepareView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 6) { ForEach(state.parts.indices, id: \.self) { chip($0) }; addPartMenu }.padding(4)
                     }
+                    SongBackgroundPicker(state: state, part: part).padding(.leading, 4)
                 }
                 if size == .compact {
                     HStack(alignment: .top, spacing: 24) { wordsStep.frame(width: (proxy.size.width - 72) / 2); partSlides(columns: 2, width: (proxy.size.width - 72) / 2, fixed: false) }.frame(height: 300)
