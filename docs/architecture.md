@@ -70,6 +70,8 @@ User content is stored as versioned JSON files in a library folder, with a rebui
 
 The library folder layout, the GRDB and FTS5 search index, how it stays consistent with the files and how the library is prepared for sync are decided in [ADR 0007](adr/0007-library-storage-and-sync.md).
 
+Keynote, PowerPoint and PDF decks are imported as presentations of full-frame slide images, rendered from a PDF; the pipeline and the `scaling` field are decided in [ADR 0010](adr/0010-importing-keynote-powerpoint-and-pdf.md).
+
 ## Localization
 
 English is the base language and Spanish ships alongside it from the first release. No user-facing string is hard-coded. See [localization](localization.md).

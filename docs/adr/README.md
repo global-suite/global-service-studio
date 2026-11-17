@@ -13,6 +13,7 @@ An ADR records one significant decision: what was decided, why, and what it cost
 | [0007](0007-library-storage-and-sync.md) | Library storage, search index and the path to sync | Accepted |
 | [0008](0008-media-layer-key-output-and-video.md) | Media layer, key output and video playback | Accepted |
 | [0009](0009-service-plan-format.md) | Service plan format details | Accepted |
+| [0010](0010-importing-keynote-powerpoint-and-pdf.md) | Importing Keynote, PowerPoint and PDF slides | Accepted |
 
 ## Adding one
 
