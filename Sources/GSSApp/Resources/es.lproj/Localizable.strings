@@ -260,3 +260,10 @@
 /* Settings: label of the audio device picker for full-screen videos. */ "Video sound" = "Sonido de video";
 /* Settings: the audio device picker's choice that follows the system's output device. */ "System default" = "Predeterminado del sistema";
 /* Settings: help under the audio device picker. */ "Full-screen videos play their sound on this device. Backgrounds are always muted." = "Los videos a pantalla completa reproducen su sonido en este dispositivo. Los fondos siempre van sin sonido.";
+/* Prepare: label of the row with the background saved with the song for every service. */ "Song background" = "Fondo de la canción";
+/* Prepare: label of the row with the selected part's background; %@ is the part, such as Chorus. */ "Background of %@" = "Fondo de %@";
+/* Prepare: the song background row when the song has none; the slides are transparent. */ "None · transparent" = "Ninguno · transparente";
+/* Prepare: the part background row when the part uses the song's background. */ "Same as the song" = "Igual que la canción";
+/* Prepare: button of a background row that opens the library's images and videos to choose one. */ "Change…" = "Cambiar…";
+/* Prepare: button of the song background row that removes the song's background. */ "Remove" = "Quitar";
+/* Prepare: button of the part background row that removes the part's own background, so it uses the song's. */ "Use the song's background" = "Usar el fondo de la canción";

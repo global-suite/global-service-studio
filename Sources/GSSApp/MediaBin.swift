@@ -37,6 +37,8 @@ struct MediaBin: View {
     @State private var search = ""
     @State private var selected: String?
     @State private var isTargeted = false
+    /// When set, as in Prepare's background picker, a click passes the file here instead of putting it on air, and nothing plays.
+    var onChoose: ((MediaFile) -> Void)?
 
     static func name(of file: MediaFile) -> String { ((file.path as NSString).lastPathComponent as NSString).deletingPathExtension }
 
@@ -84,8 +86,8 @@ struct MediaBin: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 260), spacing: 12)], alignment: .leading, spacing: 16) {
                     ForEach(files, id: \.path) { file in
                         let url = state.libraryFolder.appendingPathComponent(file.path)
-                        MediaTile(file: file, url: url, onAir: state.isOnAir(file), selected: selected == file.path,
-                                  playFullScreen: file.kind == .video ? { selected = file.path; state.perform(.playFullScreen(url)) } : nil) { choose(file) }
+                        MediaTile(file: file, url: url, onAir: onChoose == nil && state.isOnAir(file), selected: selected == file.path,
+                                  playFullScreen: file.kind == .video && onChoose == nil ? { selected = file.path; state.perform(.playFullScreen(url)) } : nil) { choose(file) }
                     }
                 }
                 .padding(4)
@@ -95,6 +97,7 @@ struct MediaBin: View {
 
     private func choose(_ file: MediaFile) {
         selected = file.path
+        if let onChoose { return onChoose(file) }
         state.perform(.setBackground(state.background(for: file)))
     }
 

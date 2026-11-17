@@ -3,6 +3,7 @@ import CoreGraphics
 import Foundation
 import GSSCore
 import GSSLibrary
+import UniformTypeIdentifiers
 
 /// The two modes of the main window.
 public enum AppMode: CaseIterable, Sendable {
@@ -100,6 +101,10 @@ public enum AppCommand: Equatable, Sendable {
     case selectPlanItem(Int?)
     /// Replaces a plan item, for this service only: a song item's sequence or arrangement never changes the song. Invalid items are ignored.
     case updatePlanItem(at: Int, PlanItem)
+
+    /// Sets the prepared song's background, saved with the song: a nil section is the song default, a section id that part's, and a nil file removes it.
+    /// A file outside the library is imported first; a refused file is reported in `alert` and changes nothing. Nothing goes on air.
+    case setSongBackground(section: String?, file: URL?)
 }
 
 /// A file of the library the list cannot show, with the localized reason.
@@ -345,6 +350,7 @@ public final class AppState: ObservableObject {
         case .seekVideo(let seconds): seekFullScreen(to: videoClock.elapsed + seconds)
         case .setVideoPosition(let seconds): seekFullScreen(to: seconds)
         case .stopVideo: stopFullScreen()
+        case .setSongBackground(let section, let file): setSongBackground(section, file)
         default: performService(command)
         }
     }
@@ -637,6 +643,40 @@ public final class AppState: ObservableObject {
     /// Publishes a media list unless a newer list or import started after it.
     private func showMedia(_ files: [MediaFile], load: Int) {
         if load == mediaLoads, files != mediaFiles { mediaFiles = files }
+    }
+
+    // MARK: Song backgrounds (issue #127)
+
+    /// Stores an image or video of the library as the song's or a part's background, through `importMedia`, which returns a file of `Media/` as it is.
+    /// Empty containers are removed; the same value again, or a section the song does not have, changes nothing.
+    private func setSongBackground(_ section: String?, _ file: URL?) {
+        guard section.map({ id in song.sections.contains { $0.id == id } }) ?? true else { return }
+        var value: ThemeBackground?
+        if let file {
+            do {
+                let media = try Library.open(libraryFolder).importMedia(file)
+                let isVideo = UTType(filenameExtension: (media.path as NSString).pathExtension)?.conforms(to: .movie) == true
+                value = ThemeBackground(kind: isVideo ? .video : .image, media: media)
+            } catch {
+                alert = AppAlert(title: Strings.text("Some files could not be added."),
+                                 message: String(format: Strings.text("These files are not images or videos, or could not be read:\n%@"), file.lastPathComponent))
+                return
+            }
+        }
+        var backgrounds = song.backgrounds ?? SongBackgrounds()
+        if let section {
+            var sections = backgrounds.sections ?? [:]
+            sections[section] = value
+            backgrounds.sections = sections.isEmpty ? nil : sections
+        } else {
+            backgrounds.defaultBackground = value
+        }
+        let isEmpty = backgrounds.defaultBackground == nil && backgrounds.sections == nil && backgrounds.unknown.isEmpty
+        guard (isEmpty ? nil : backgrounds) != song.backgrounds else { return }
+        var edited = song
+        edited.backgrounds = isEmpty ? nil : backgrounds
+        song = edited
+        preparedSongChanged()
     }
 
     /// Opens and reconciles the index off the main thread, then shows it on the main thread; until then the list is empty.
