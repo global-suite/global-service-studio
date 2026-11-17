@@ -222,3 +222,13 @@
 /* Service Info dialog: label of the start time field. */ "Start Time" = "Hora de inicio";
 /* Service Info dialog: placeholder of the start time field (hours and minutes). */ "HH:MM" = "HH:MM";
 /* Service Info dialog: help of the start time field. */ "The time the service starts, in 24-hour hours and minutes. Leave it empty for none." = "La hora en que empieza el servicio, en horas y minutos de 24 horas. Déjala vacía si no tiene.";
+/* File menu item that imports a Keynote or PowerPoint file as a presentation of the library. */ "Import Presentation…" = "Importar presentación…";
+/* Title of the alert shown when importing a presentation fails. */ "The presentation could not be imported." = "No se pudo importar la presentación.";
+/* Import alert: Keynote is not installed. */ "Keynote is needed to import Keynote files. You can also export the presentation as PDF from the app that made it." = "Se necesita Keynote para importar archivos de Keynote. También puedes exportar la presentación como PDF desde la app con la que se hizo.";
+/* Import alert: Keynote, which imports PowerPoint files, is not installed. */ "Keynote is needed to import PowerPoint files. You can also export the presentation as PDF from the app that made it." = "Se necesita Keynote para importar archivos de PowerPoint. También puedes exportar la presentación como PDF desde la app con la que se hizo.";
+/* Import alert: macOS refused to let the app control Keynote or PowerPoint. */ "Global Service Studio is not allowed to control Keynote or PowerPoint. Allow it in System Settings → Privacy & Security → Automation, then import again." = "Global Service Studio no tiene permiso para controlar Keynote ni PowerPoint. Permítelo en Ajustes del Sistema → Privacidad y seguridad → Automatización y vuelve a importar.";
+/* Import alert: Keynote or PowerPoint could not open the file. */ "The file could not be opened. Check that it opens in Keynote or PowerPoint." = "No se pudo abrir el archivo. Comprueba que se abre en Keynote o PowerPoint.";
+/* Import alert: Keynote or PowerPoint could not export the slides. */ "The slides could not be exported. You can also export the presentation as PDF from the app that made it." = "No se pudieron exportar las diapositivas. También puedes exportar la presentación como PDF desde la app con la que se hizo.";
+/* Import progress sheet title: %@ is the presentation's file name. */ "Importing “%@”" = "Importando “%@”";
+/* Import progress sheet: while Keynote or PowerPoint exports the slides. */ "Exporting the slides…" = "Exportando las diapositivas…";
+/* Import progress sheet: the first %ld is the slide being imported, the second the number of slides. */ "Importing slide %ld of %ld" = "Importando diapositiva %ld de %ld";

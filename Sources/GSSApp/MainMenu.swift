@@ -19,7 +19,7 @@ enum MainMenu {
             ]),
             submenu(text("File"), serviceItems(services) + [
                 item(text("Open Song…"), #selector(MainWindowController.openSong(_:)), "o"), item(text("Save Song"), #selector(MainWindowController.saveSong(_:)), "s"),
-                item(text("Choose Library Folder…"), #selector(MainWindowController.chooseLibraryFolder(_:))),
+                item(text("Import Presentation…"), #selector(MainWindowController.importPresentation(_:))), item(text("Choose Library Folder…"), #selector(MainWindowController.chooseLibraryFolder(_:))),
             ]),
             submenu(text("Edit"), [
                 item(text("Undo"), Selector(("undo:")), "z"), item(text("Redo"), Selector(("redo:")), "Z"), .separator(),

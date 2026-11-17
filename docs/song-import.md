@@ -45,6 +45,10 @@ File → Open Song… opens OpenLyrics files (`.xml`) as well as plain text, and
 - **Dropped.** Instrumental parts, chords, comments in lyrics, formatting tags and the `format` section, optional breaks, `part` and `repeat` on lines, `tempo` given as text, themes in other languages, author languages, and the properties `released`, `transposition`, `variant`, `publisher`, `version`, `keywords`, `songbooks` and `comments`. Names in `verseOrder` that match no imported verse are left out of the arrangement.
 - **Errors.** `malformedXML(line:)` when the file is not well-formed XML, `notOpenLyrics` when the root element is not `song`, and `noVerses` when no verse has lyric lines.
 
+## Importing presentations
+
+File → Import Presentation… brings a Keynote (`.key`) or PowerPoint (`.pptx`, `.ppt`) file into the library as a presentation of slide images ([ADR 0010](adr/0010-importing-keynote-powerpoint-and-pdf.md)). The app asks Keynote to export the deck as PDF, without skipped slides and with the presenter notes; a PowerPoint file uses PowerPoint when Keynote is not installed, and then has no notes. Keynote is needed for Keynote files, and Keynote or PowerPoint for PowerPoint files; without them the app says so and suggests exporting the presentation as PDF from the app that made it. The first import asks for permission to control Keynote or PowerPoint; if it was refused, allow it in System Settings → Privacy & Security → Automation. A cancelled or failed import leaves nothing in the library.
+
 ## What the app will not do
 
 - Bundle or distribute copyrighted lyrics.
