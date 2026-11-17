@@ -269,3 +269,11 @@
 /* Prepare: button of the part background row that removes the part's own background, so it uses the song's. */ "Use the song's background" = "Use the song's background";
 /* Sidebar: header of the library's presentations, under the songs. */ "Presentations" = "Presentations";
 /* Alert title when a presentation file cannot be added to the service. */ "The presentation could not be opened." = "The presentation could not be opened.";
+/* Prepare: label of a presentation item's choice of how its slides fill the screen. */ "Scaling" = "Scaling";
+/* Prepare: scaling choice that shows the whole slide, with transparent bands where its proportion differs from the screen. */ "Fit" = "Fit";
+/* Prepare: scaling choice that covers the screen and crops the slide's edges. */ "Fill" = "Fill";
+/* Prepare: scaling choice that covers the screen without keeping the slide's proportion. */ "Stretch" = "Stretch";
+/* Prepare: help under the scaling choice of a presentation item. */ "Fit shows the whole slide, with the background in the bands. Fill crops the edges. Stretch fills the screen without keeping the proportion." = "Fit shows the whole slide, with the background in the bands. Fill crops the edges. Stretch fills the screen without keeping the proportion.";
+/* Live and Prepare: shown on a presentation slide while its image loads. */ "Loading slide…" = "Loading slide…";
+/* Live and Prepare: shown on a presentation slide whose image is missing or cannot be read. */ "Slide image not found" = "Slide image not found";
+/* Alert title when a presentation's scaling cannot be saved in the library. */ "The presentation could not be saved." = "The presentation could not be saved.";
