@@ -247,3 +247,5 @@
 /* On screen line above the outputs: the lyrics are cleared and a background shows; %@ is the background part. */ "On screen: %@ · no lyrics (cleared; Next shows them again)" = "On screen: %@ · no lyrics (cleared; Next shows them again)";
 /* On screen line above the outputs: lyrics with no background; %@ is the part, such as Chorus · 2 of 2. */ "On screen: Lyrics · %@ · no background (black behind the lyrics)" = "On screen: Lyrics · %@ · no background (black behind the lyrics)";
 /* On screen line above the outputs: no lyrics and no background. */ "On screen: Nothing · the audience screens are black" = "On screen: Nothing · the audience screens are black";
+/* Media bin: button and context menu item on a video that plays it once, full screen with sound, over the audience screens. */ "Play Full Screen" = "Play Full Screen";
+/* On screen line above the outputs while a video plays full screen; %@ is the video's name. */ "On screen: Full-screen video: %@ · lyrics hidden until it ends" = "On screen: Full-screen video: %@ · lyrics hidden until it ends";
