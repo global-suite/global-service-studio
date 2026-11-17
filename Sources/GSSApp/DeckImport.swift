@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 /// Why a presentation could not be imported, localized by `DeckImport.message(for:)`; `noApplication` names the kind of file.
 enum DeckImportError: Error, Equatable {
     enum Kind: Equatable, Sendable { case keynote, powerPoint }
-    case noApplication(Kind), permissionDenied, cannotOpen, exportFailed, cancelled
+    case noApplication(Kind), permissionDenied, cannotOpen, exportFailed, cancelled, passwordProtected, unreadablePDF
 }
 
 /// Exports a deck to a PDF without its skipped slides and returns the speaker notes of each exported slide, in order.
@@ -69,6 +69,7 @@ struct KeynoteExporter: DeckExporter {
 }
 
 /// Imports a deck: exported to a temporary PDF, rendered page by page, written as slide images and saved as a presentation.
+/// A PDF file skips the exporter: it is rendered in place and its presentation has no notes.
 enum DeckImport {
     /// Runs off the main thread, reporting `progress(slide, count)`, and returns the saved file; a failed or cancelled import
     /// leaves no temporary PDF, slide images or presentation file.
@@ -79,14 +80,20 @@ enum DeckImport {
         var saved: URL?
         defer { try? files.removeItem(at: folder) }
         do {
-            try files.createDirectory(at: folder, withIntermediateDirectories: true)
-            let pdf = folder.appendingPathComponent("deck.pdf")
-            let notes = try await exporter.exportPDF(of: source, to: pdf)
-            guard let document = CGPDFDocument(pdf as CFURL), document.numberOfPages > 0 else { throw DeckImportError.exportFailed }
+            let isPDF = source.pathExtension.lowercased() == "pdf", failure = isPDF ? DeckImportError.unreadablePDF : .exportFailed
+            var pdf = source, notes: [String?] = []
+            if !isPDF {
+                try files.createDirectory(at: folder, withIntermediateDirectories: true)
+                pdf = folder.appendingPathComponent("deck.pdf")
+                notes = try await exporter.exportPDF(of: source, to: pdf)
+            }
+            guard let document = CGPDFDocument(pdf as CFURL) else { throw failure }
+            if document.isEncrypted, !document.isUnlocked, !document.unlockWithPassword("") { throw DeckImportError.passwordProtected }
+            guard document.numberOfPages > 0 else { throw failure }
             let pages = try (1...document.numberOfPages).map { number -> Data in
                 try Task.checkCancellation()
                 progress(number, document.numberOfPages)
-                guard let png = document.page(at: number).flatMap({ DeckRenderer.png(of: $0, fitting: size) }) else { throw DeckImportError.exportFailed }
+                guard let png = document.page(at: number).flatMap({ DeckRenderer.png(of: $0, fitting: size) }) else { throw failure }
                 return png
             }
             try Task.checkCancellation()
@@ -118,6 +125,8 @@ enum DeckImport {
         case DeckImportError.permissionDenied: key = "Global Service Studio is not allowed to control Keynote or PowerPoint. Allow it in System Settings → Privacy & Security → Automation, then import again."
         case DeckImportError.cannotOpen: key = "The file could not be opened. Check that it opens in Keynote or PowerPoint."
         case DeckImportError.exportFailed: key = "The slides could not be exported. You can also export the presentation as PDF from the app that made it."
+        case DeckImportError.passwordProtected: key = "This PDF is protected with a password. Remove the password and import it again."
+        case DeckImportError.unreadablePDF: key = "This PDF could not be read."
         default: return Strings.libraryMessage(for: error, language: language)
         }
         return Strings.text(key, language: language)
@@ -136,11 +145,11 @@ final class WeakReference<Value: AnyObject>: @unchecked Sendable {
 }
 
 extension MainWindowController {
-    /// File > Import Presentation…: chooses a Keynote or PowerPoint file, then shows the progress with Cancel.
+    /// File > Import Presentation…: chooses a Keynote, PowerPoint or PDF file, then shows the progress with Cancel.
     @objc func importPresentation(_ sender: Any?) {
         guard let window, state.presentationImport == nil else { return }
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = ["key", "pptx", "ppt"].compactMap { UTType(filenameExtension: $0) }
+        panel.allowedContentTypes = ["key", "pptx", "ppt", "pdf"].compactMap { UTType(filenameExtension: $0) }
         panel.beginSheetModal(for: window) { [weak self] response in
             guard response == .OK, let url = panel.url, let state = self?.state else { return }
             state.perform(.importPresentation(url))

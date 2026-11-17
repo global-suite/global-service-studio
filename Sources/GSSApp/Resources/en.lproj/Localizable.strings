@@ -270,3 +270,5 @@
 /* Settings: label of the audio device picker for full-screen videos. */ "Video sound" = "Video sound";
 /* Settings: the audio device picker's choice that follows the system's output device. */ "System default" = "System default";
 /* Settings: help under the audio device picker. */ "Full-screen videos play their sound on this device. Backgrounds are always muted." = "Full-screen videos play their sound on this device. Backgrounds are always muted.";
+/* Import alert: the chosen PDF needs a password to open. */ "This PDF is protected with a password. Remove the password and import it again." = "This PDF is protected with a password. Remove the password and import it again.";
+/* Import alert: the chosen PDF is damaged or is not a PDF. */ "This PDF could not be read." = "This PDF could not be read.";
