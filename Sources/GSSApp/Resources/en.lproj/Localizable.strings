@@ -267,3 +267,5 @@
 /* Prepare: button of a background row that opens the library's images and videos to choose one. */ "Change…" = "Change…";
 /* Prepare: button of the song background row that removes the song's background. */ "Remove" = "Remove";
 /* Prepare: button of the part background row that removes the part's own background, so it uses the song's. */ "Use the song's background" = "Use the song's background";
+/* Sidebar: header of the library's presentations, under the songs. */ "Presentations" = "Presentations";
+/* Alert title when a presentation file cannot be added to the service. */ "The presentation could not be opened." = "The presentation could not be opened.";

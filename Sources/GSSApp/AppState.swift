@@ -30,12 +30,14 @@ public enum AppCommand: Equatable, Sendable {
     case setKeyColor(String)
     /// Makes a song the one prepared, from its first part; a song without slides is ignored. It never changes what is on air.
     case loadSong(Song)
-    /// Makes a plan the program, with the songs its items refer to; nothing is on air until Next or a slide click.
-    case openPlan(Plan, songs: [Song])
+    /// Makes a plan the program, with the songs and presentations its items refer to; nothing is on air until Next or a slide click.
+    case openPlan(Plan, songs: [Song], presentations: [Presentation] = [])
     /// Shows a plan item's slides in the Live grid without putting them on air; nil or the live item returns to it, an item without slides is ignored.
     case previewItem(Int?)
     /// Adds a song file of the library to the plan, after the live item or at the end; it never goes on air by itself.
     case addToService(URL, position: ServicePosition)
+    /// Adds a presentation file of the library to the plan as a presentation item, like `addToService`; it never goes on air by itself.
+    case addPresentationToService(URL, position: ServicePosition)
     /// Edits the order of the default arrangement: a part moves to a final position, a section is inserted (repeated) at a position,
     /// a part leaves the order (never the last one), or a new section of a kind is created at a position. Invalid indexes are ignored.
     case moveArrangementItem(from: Int, to: Int)
@@ -158,6 +160,8 @@ public final class AppState: ObservableObject {
     /// The songs of the library that match `librarySearch`: by title, or best match first while searching.
     @Published public private(set) var librarySongs: [SongMatch] = []
     @Published public private(set) var librarySearch = ""
+    /// The presentations of the library, in file name order; listed off the main thread whenever the library index opens.
+    @Published public private(set) var libraryPresentations: [StoredPresentation] = []
     /// Invalid files and files that share a song `id`, by file name.
     @Published public private(set) var libraryProblems: [LibraryProblem] = []
     /// Whether the index is being opened and reconciled off the main thread.
@@ -241,6 +245,10 @@ public final class AppState: ObservableObject {
     public var previousSlide: LiveSlide? { programIndex > 0 ? program.slides[programIndex - 1].slide : nil }
     /// The lines the outputs show: none while cleared.
     public var shownLines: [String] { isCleared || fullScreenVideo != nil ? [] : liveSlide.lines }
+    /// The live program slide, with a presentation slide's image, scaling and notes; nil when nothing is on air.
+    public var liveProgramSlide: ProgramSlide? { isOnAir ? program.slides[programIndex] : nil }
+    /// The presentation image the outputs show: none while cleared or while a full-screen video plays, like the lyrics.
+    public var shownImage: MediaReference? { isCleared || fullScreenVideo != nil ? nil : liveProgramSlide?.image }
 
     /// Applies a command; moves outside the song and words that leave a part empty are ignored, other moves end a clear. Clear All also clears the background.
     /// The audience output shows only with a display chosen, and clearing the display hides it.
@@ -282,8 +290,9 @@ public final class AppState: ObservableObject {
         case .loadSong(let song):
             load(song)
             if self.song == song { openSongFile = nil }
-        case .openPlan(let plan, let songs):
-            program = Program(plan: plan, songs: Dictionary(songs.map { ($0.id, $0) }) { first, _ in first }, mode: repetitionMode)
+        case .openPlan(let plan, let songs, let presentations):
+            program = Program(plan: plan, songs: Dictionary(songs.map { ($0.id, $0) }) { first, _ in first },
+                              presentations: Dictionary(presentations.map { ($0.id, $0) }) { first, _ in first }, mode: repetitionMode)
             (programIndex, previewItem) = (-1, nil)
             if selectedPlanItem != nil { selectedPlanItem = nil }
             syncLiveIndex()
@@ -291,8 +300,18 @@ public final class AppState: ObservableObject {
             guard let item, item != liveItem else { if previewItem != nil { previewItem = nil }; return }
             if !program.range(of: item).isEmpty, item != previewItem { previewItem = item }
         case .addToService(let url, let position):
-            do { add(try Song.decode(from: Data(contentsOf: url)), position) } catch {
+            do {
+                let song = try Song.decode(from: Data(contentsOf: url))
+                add(PlanItem(id: UUID().uuidString.lowercased(), kind: .song, title: song.title, song: song.id), position, songs: [song.id: song])
+            } catch {
                 alert = AppAlert(title: Strings.text("The song could not be opened."), message: Strings.text("This file could not be read."))
+            }
+        case .addPresentationToService(let url, let position):
+            do {
+                let deck = try Presentation.decode(from: Data(contentsOf: url))
+                add(PlanItem(id: UUID().uuidString.lowercased(), kind: .presentation, title: deck.title, presentation: deck.id), position, presentations: [deck.id: deck])
+            } catch {
+                alert = AppAlert(title: Strings.text("The presentation could not be opened."), message: Strings.text("This file could not be read."))
             }
         case .moveArrangementItem(let from, let to):
             editOrder { order in
@@ -437,13 +456,13 @@ public final class AppState: ObservableObject {
         }
     }
 
-    /// Makes a plan the service with the songs the library holds, nothing on air, and reports each item whose song or arrangement is missing.
+    /// Makes a plan the service with the songs and presentations the library holds, nothing on air, and reports each item whose song, arrangement or presentation is missing.
     private func startService(_ plan: Plan, file: URL?) {
         var resolved: [ResolvedPlanItem] = []
         if Library.exists(at: libraryFolder) {
             library("The service could not be opened.") { resolved = try Library.open(libraryFolder).resolve(plan, index: index).items }
         }
-        perform(.openPlan(plan, songs: resolved.compactMap { $0.song?.song }))
+        perform(.openPlan(plan, songs: resolved.compactMap { $0.song?.song }, presentations: resolved.compactMap { $0.presentation?.presentation }))
         (serviceFile, hasUnsavedServiceChanges) = (file, false)
         let lines = resolved.filter { $0.problem != nil }.map { item in
             String(format: Strings.text(item.song == nil ? "“%@” is not in the library." : "“%@” uses an arrangement its song does not have."),
@@ -453,24 +472,24 @@ public final class AppState: ObservableObject {
     }
 
     /// Rebuilds the program for an edited plan and marks the service as changed; every edit of the plan goes through here.
-    private func planChanged(_ plan: Plan, songs: [UUID: Song]? = nil) {
-        rebuildProgram(plan: plan, songs: songs)
+    private func planChanged(_ plan: Plan, songs: [UUID: Song]? = nil, presentations: [UUID: Presentation]? = nil) {
+        rebuildProgram(plan: plan, songs: songs, presentations: presentations)
         if !hasUnsavedServiceChanges { hasUnsavedServiceChanges = true }
     }
 
-    /// Adds a song item to the plan after the live item (first when nothing is on air) or at the end, keeping the live slide and the preview.
-    private func add(_ song: Song, _ position: ServicePosition) {
+    /// Adds a song or presentation item to the plan after the live item (first when nothing is on air) or at the end, keeping the live slide and the preview.
+    private func add(_ item: PlanItem, _ position: ServicePosition, songs: [UUID: Song] = [:], presentations: [UUID: Presentation] = [:]) {
         var plan = program.plan
         let index = position == .end ? plan.items.count : liveItem.map { $0 + 1 } ?? 0
-        plan.items.insert(PlanItem(id: UUID().uuidString.lowercased(), kind: .song, title: song.title, song: song.id), at: index)
+        plan.items.insert(item, at: index)
         if let preview = previewItem, preview >= index { previewItem = preview + 1 }
-        planChanged(plan, songs: program.songs.merging([song.id: song]) { old, _ in old })
+        planChanged(plan, songs: program.songs.merging(songs) { old, _ in old }, presentations: program.presentations.merging(presentations) { old, _ in old })
     }
 
     /// Rebuilds the program keeping the live slide on its item: on `liveIndex` when the item shows the prepared slides, else at its place, clamped.
-    private func rebuildProgram(plan: Plan? = nil, songs: [UUID: Song]? = nil) {
+    private func rebuildProgram(plan: Plan? = nil, songs: [UUID: Song]? = nil, presentations: [UUID: Presentation]? = nil) {
         let item = liveItem, offset = item.map { programIndex - program.range(of: $0).lowerBound } ?? 0, previous = cuePosition
-        program = Program(plan: plan ?? program.plan, songs: songs ?? program.songs, mode: repetitionMode)
+        program = Program(plan: plan ?? program.plan, songs: songs ?? program.songs, presentations: presentations ?? program.presentations, mode: repetitionMode)
         if let item {
             let range = program.range(of: item)
             let prepared = liveIndex >= 0 && program.slides[range].map(\.slide) == slides
@@ -681,6 +700,7 @@ public final class AppState: ObservableObject {
 
     /// Opens and reconciles the index off the main thread, then shows it on the main thread; until then the list is empty.
     private func openLibraryIndex() {
+        loadPresentations()
         libraryLoads += 1
         let load = libraryLoads, folder = libraryFolder
         (index, invalidFiles) = (nil, [])
@@ -703,6 +723,19 @@ public final class AppState: ObservableObject {
                     self.index = index
                 }
                 self.showLibrary(problems: true)
+            }
+        }
+    }
+
+    /// Reads the library's presentation files off the main thread, on the index queue; a missing library or one that cannot be read lists none.
+    /// The library is opened here, so the queue only reads and never creates folders.
+    private func loadPresentations() {
+        let folder = libraryFolder, library = Library.exists(at: folder) ? try? Library.open(folder) : nil
+        indexQueue.async {
+            let listed = (try? library?.presentations().presentations) ?? []
+            DispatchQueue.main.async { [weak self] in
+                guard let self, folder == self.libraryFolder, listed != self.libraryPresentations else { return }
+                self.libraryPresentations = listed
             }
         }
     }
