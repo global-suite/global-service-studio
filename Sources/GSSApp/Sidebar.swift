@@ -33,6 +33,7 @@ struct Sidebar: View {
                 }
                 if !state.libraryProblems.isEmpty { problems }
             }
+            if !state.libraryPresentations.isEmpty { presentations }
         }
         .listStyle(.sidebar)
         .environment(\.defaultMinListRowHeight, 28)
@@ -80,6 +81,23 @@ struct Sidebar: View {
             if state.hasUnsavedServiceChanges { Text(Strings.text("Unsaved")).foregroundColor(.secondary).lineLimit(1).layoutPriority(1) }
             Spacer(minLength: 4)
             addMenu
+        }
+    }
+
+    /// The library's presentations with their slide counts; they reach the screens only as items of the service, so clicking one does nothing.
+    private var presentations: some View {
+        Section(Strings.text("Presentations")) {
+            ForEach(state.libraryPresentations, id: \.url) { stored in
+                HStack(spacing: 6) {
+                    Label(stored.presentation.title, systemImage: "rectangle.on.rectangle").lineLimit(1)
+                    Spacer(minLength: 4)
+                    Text(Strings.slideCount(stored.presentation.slides.count)).font(.system(size: 11)).foregroundColor(.secondary).lineLimit(1).layoutPriority(1)
+                }
+                .contextMenu {
+                    Button(Strings.text("Add as Next Item")) { state.perform(.addPresentationToService(stored.url, position: .next)) }
+                    Button(Strings.text("Add to End of Service")) { state.perform(.addPresentationToService(stored.url, position: .end)) }
+                }
+            }
         }
     }
 

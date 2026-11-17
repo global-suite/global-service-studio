@@ -33,13 +33,16 @@ public enum PlanItemProblem: Equatable, Sendable {
     case missingSong(UUID)
     /// The song was found but has no arrangement with this id.
     case missingArrangement(String)
+    /// No presentation file of the library holds this `id`.
+    case missingPresentation(UUID)
 }
 
-/// A plan item with the song it refers to, when it is a song item that was found, and its problem, if any.
+/// A plan item with the song or presentation it refers to, when it is a song or presentation item that was found, and its problem, if any.
 public struct ResolvedPlanItem: Equatable, Sendable {
     public let item: PlanItem
     public let song: StoredSong?
     public let problem: PlanItemProblem?
+    public var presentation: StoredPresentation?
 }
 
 /// A plan with every item resolved against the library, in plan order.
@@ -77,9 +80,14 @@ extension Library {
     }
 
     /// Finds the song of every song item: through `index` when it knows a file that holds the song, else by reading the
-    /// song files. A missing song or arrangement is reported on its item; other items are returned without a song.
+    /// song files; and the presentation of every presentation item, by reading the presentation files once.
+    /// A missing song, arrangement or presentation is reported on its item; other items are returned without one.
     public func resolve(_ plan: Plan, index: LibraryIndex? = nil) throws -> PlanResolution {
-        var scanned: [UUID: StoredSong]?
+        var scanned: [UUID: StoredSong]?, decks: [UUID: StoredPresentation]?
+        func presentation(_ id: UUID) throws -> StoredPresentation? {
+            if decks == nil { decks = Dictionary(try presentations().presentations.map { ($0.presentation.id, $0) }) { first, _ in first } }
+            return decks?[id]
+        }
         func song(_ id: UUID) throws -> StoredSong? {
             for url in try index?.files(holding: id) ?? [] {
                 if let found = try? storedSong(at: url), found.song.id == id { return found }
@@ -90,6 +98,10 @@ extension Library {
             return scanned?[id]
         }
         let items = try plan.items.map { item -> ResolvedPlanItem in
+            if item.kind == .presentation, let id = item.presentation {
+                let found = try presentation(id)
+                return ResolvedPlanItem(item: item, song: nil, problem: found == nil ? .missingPresentation(id) : nil, presentation: found)
+            }
             guard item.kind == .song, let id = item.song else { return ResolvedPlanItem(item: item, song: nil, problem: nil) }
             guard let found = try song(id) else { return ResolvedPlanItem(item: item, song: nil, problem: .missingSong(id)) }
             let arrangements = found.song.arrangements ?? []

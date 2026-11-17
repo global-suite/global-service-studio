@@ -131,4 +131,18 @@ final class LibraryPlanTests: XCTestCase {
         let resolved = try library.resolve(Plan(title: "Fallback", items: [PlanItem(id: "s1", kind: .song, song: unindexed.id)]), index: index)
         XCTAssertEqual(resolved.items.map(\.song?.song), [unindexed])
     }
+
+    func testResolvingFindsPresentationsByIDAndReportsMissingOnesPerItem() throws {
+        let library = try Library.open(temporaryFolder())
+        let image = MediaReference(path: "Media/Presentations/deck/001.png", sha256: String(repeating: "a", count: 64))
+        let deck = Presentation.importedDeck(title: "Invented Deck", images: [image])
+        let url = try library.save(deck), missing = UUID()
+        let items = [PlanItem(id: "p1", kind: .presentation, presentation: deck.id), PlanItem(id: "p2", kind: .presentation, presentation: missing),
+                     PlanItem(id: "h1", kind: .header, title: "Welcome")]
+        let resolved = try library.resolve(plan("Decks", items: items))
+        XCTAssertEqual(resolved.items.map(\.presentation?.presentation), [deck, nil, nil])
+        XCTAssertEqual(resolved.items.map(\.presentation?.url.lastPathComponent), [url.lastPathComponent, nil, nil])
+        XCTAssertEqual(resolved.items.map(\.song), [nil, nil, nil])
+        XCTAssertEqual(resolved.items.map(\.problem), [nil, .missingPresentation(missing), nil])
+    }
 }
