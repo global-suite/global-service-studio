@@ -9,6 +9,8 @@ public struct Presentation: Equatable, Sendable {
     public var title: String
     public var theme: UUID?
     public var slides: [PresentationSlide]
+    /// The file an imported deck came from (ADR 0011).
+    public var source: PresentationSource?
     public var externalIds: [String: JSONValue]?
     public var extensions: [String: JSONValue]?
     public var unknown: [String: JSONValue] = [:]
@@ -21,6 +23,7 @@ public struct Presentation: Equatable, Sendable {
         var (id, reader) = try Envelope.open(data, format: format, supportedVersion: supportedVersion)
         var presentation = try Presentation(id: id, title: reader.required("title"), theme: reader.optional("theme"),
                                             slides: reader.required("slides"))
+        presentation.source = try reader.optional("source")
         presentation.externalIds = try reader.optional("externalIds")
         presentation.extensions = try reader.optional("extensions")
         presentation.unknown = reader.unknown
@@ -31,7 +34,7 @@ public struct Presentation: Equatable, Sendable {
     /// The canonical bytes of the presentation file.
     public func encoded() throws -> Data {
         let fields: [String: JSONValue?] = [
-            "title": title.json, "theme": theme?.json, "slides": slides.json,
+            "title": title.json, "theme": theme?.json, "slides": slides.json, "source": source?.json,
             "externalIds": externalIds?.json, "extensions": extensions?.json,
         ]
         let envelope = Envelope.fields(format: Self.format, version: Self.supportedVersion, id: id)

@@ -1,10 +1,17 @@
 import Foundation
 
 extension Presentation {
-    /// Checks unique ids, what each element kind needs, frames inside the canvas, sizes and colors.
+    /// Checks unique ids, what each element kind needs, frames inside the canvas, sizes, colors and the source.
     public func validate() throws {
         func fail(_ reason: String, _ path: String) -> FormatError { .validation(reason: reason, at: path) }
         func positive(_ value: Double, _ at: String) throws { if !(value > 0) { throw fail("nonPositiveSize", at) } }
+        if let source {
+            if !source.path.hasPrefix("/") { throw fail("invalidSourcePath", "source.path") }
+            if let bookmark = source.bookmark, Data(base64Encoded: bookmark) == nil {
+                throw fail("invalidBookmark", "source.bookmark")
+            }
+            if !Self.isUTCTimestamp(source.importedAt) { throw fail("invalidTimestamp", "source.importedAt") }
+        }
         let tolerance = 1e-9
         var slideIds = Set<String>()
         for (s, slide) in slides.enumerated() {
@@ -36,5 +43,14 @@ extension Presentation {
                 }
             }
         }
+    }
+
+    /// Whether `text` is an RFC 3339 time in UTC, such as `2026-11-18T14:30:00Z`, with optional fractional seconds.
+    static func isUTCTimestamp(_ text: String) -> Bool {
+        let formatter = ISO8601DateFormatter()
+        guard text.hasSuffix("Z") else { return false }
+        if formatter.date(from: text) != nil { return true }
+        formatter.formatOptions.insert(.withFractionalSeconds)
+        return formatter.date(from: text) != nil
     }
 }

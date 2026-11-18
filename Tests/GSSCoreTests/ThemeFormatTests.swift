@@ -90,6 +90,16 @@ final class ThemeFormatTests: XCTestCase {
         XCTAssertFalse(String(decoding: try theme.encoded(), as: UTF8.self).contains("externalIds"))
     }
 
+    func testTitleBodyAndCaptionSlotsRoundTrip() throws {
+        let slot = ##"{ "frame": { "x": 0.1, "y": 0.1, "width": 0.8, "height": 0.2 }, "font": { "family": "F", "weight": "bold", "size": 0.1 }, "color": "#FFFFFF", "align": "center" }"##
+        let edits = [(#""footer": {"#, #""title": "# + slot + #", "body": "# + slot + #", "caption": "# + slot + #", "footer": {"#)]
+        try assertRoundTrips(edits)
+        let theme = try decodeTheme(edits)
+        XCTAssertEqual(theme.slots[Theme.titleSlot]?.font.weight, .bold)
+        XCTAssertEqual(theme.slots[Theme.bodySlot], theme.slots[Theme.captionSlot])
+        XCTAssertNil(try decodeTheme().slots[Theme.titleSlot])
+    }
+
     func testNewerVersionIsRejected() {
         assertDecodeThrows(.unsupportedVersion(found: 2, supported: 1), [(#""version": 1"#, #""version": 2"#)])
     }

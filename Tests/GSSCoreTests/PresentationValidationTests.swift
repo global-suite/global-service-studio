@@ -83,6 +83,36 @@ final class PresentationValidationTests: XCTestCase {
         try check(nil) { $0[1].scaling = PresentationImageScaling(rawValue: "zoom-blur") }
     }
 
+    private func checkSource(_ reason: String?, at path: String = "", _ edit: (inout PresentationSource) -> Void) throws {
+        var presentation = try decodePresentation()
+        var source = PresentationSource(kind: .pdf, path: "/Decks/Demo.pdf", importedAt: "2026-11-18T14:30:00Z")
+        edit(&source)
+        presentation.source = source
+        guard let reason else { return XCTAssertNoThrow(try presentation.validate()) }
+        XCTAssertThrowsError(try presentation.validate(), path) {
+            XCTAssertEqual($0 as? FormatError, .validation(reason: reason, at: path))
+        }
+    }
+
+    func testSourceImportedAtIsUTCInRFC3339() throws {
+        try checkSource(nil) { _ in }
+        try checkSource(nil) { $0.kind = PresentationSourceKind(rawValue: "slidesApp") }
+        try checkSource(nil) { $0.importedAt = "2026-11-18T14:30:00.250Z" }
+        for value in ["2026-11-18", "2026-11-18T14:30:00+02:00", "2026-13-18T14:30:00Z", "yesterday"] {
+            try checkSource("invalidTimestamp", at: "source.importedAt") { $0.importedAt = value }
+        }
+    }
+
+    func testSourcePathIsAbsolute() throws {
+        try checkSource("invalidSourcePath", at: "source.path") { $0.path = "Decks/Demo.pdf" }
+        try checkSource("invalidSourcePath", at: "source.path") { $0.path = "" }
+    }
+
+    func testSourceBookmarkIsBase64() throws {
+        try checkSource(nil) { $0.bookmark = "Ym9vaw==" }
+        try checkSource("invalidBookmark", at: "source.bookmark") { $0.bookmark = "not base64!" }
+    }
+
     func testUnknownKindIsOnlyCheckedForFrameFontAndColor() throws {
         let clock = PresentationElement(id: "e2", kind: PresentationElementKind(rawValue: "clock"))
         try check(nil) { $0[1] = clock }
