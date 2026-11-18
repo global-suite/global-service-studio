@@ -1,0 +1,57 @@
+{
+  "title": "Slide editor",
+  "brief": "How a first-time volunteer creates simple slides inside Global Service Studio (T5, owner choice C after A; owner rule: 'este sistema tiene que ser muy facil para un usuario que primera vez ve este programa'): announcements, a sermon outline, a title card and a reading reference, all with invented text. Covers creating a new presentation from the Library's Presentations section (+ menu: New Presentation, Import Keynote, PowerPoint or PDF…) and from the service's + menu (New Presentation, added after the selection); a slide list; adding a slide from five layouts that use the theme's slots (Title, Title + Text, Text only, Image + Caption, Image full); editing text in place or in fields; adding an image from the media bin (Import… and drag from Finder too); a simple rectangle or rounded rectangle only where it stays simple; reordering (drag, ⌥↑ ⌥↓) and deleting slides with Undo (⌘Z); choosing the theme for the whole presentation; speaker notes per slide (Stage screen only); an imported Keynote deck in the same editor as read-only pictures with Edit in Keynote, Import Again… and Fit | Fill | Stretch for the whole presentation; transparent slide areas drawn with the checkerboard of design/system.md. Saving is automatic in all three directions: the toolbar says 'Saved automatically', and a failed save shows 'Not saved' plus a banner with Try Again that keeps the slides open. Three structurally different directions, each at 1440×900 and 3440×1440; every artboard has a Design preview control for Editing text, Add Slide menu, Choose image, Theme menu, Imported deck, New and empty, Library + menu, Service + menu, Slide deleted and Save failed, plus the three appearances.",
+  "feature": "odd/tasks/presentations.md",
+  "artboards": [
+    {
+      "file": "01-keynote-like-prepare.html",
+      "title": "A · Keynote-like · Prepare",
+      "tradeoff": "The familiar three-pane presentation editor: slide thumbnails on the left (drag to reorder, Add Slide at the bottom), the slide on a canvas in the middle where text is typed in place, speaker notes under it, and an inspector on the right for the selected text or image (size Smaller | Theme | Larger, alignment, Fit | Fill | Stretch), the slide's layout and the presentation's theme and background. An Add to slide bar offers Text, Image (media bin popover) and Shape. Anyone who has used Keynote or PowerPoint recognizes it at once and it has room to grow; for someone who never has, it shows the most controls at the same time (bar, inspector, list), and the inspector costs 280 px of canvas at 1440",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "02-keynote-like-prepare-wide.html",
+      "title": "A · Keynote-like · Prepare (ultrawide)",
+      "tradeoff": "The same editor at 3440: a larger slide list, a canvas about 1720 px wide, and the media bin docked as an Images column beside the canvas, so a picture is one click away without a popover; the imported deck hides that column and gives the canvas its width. Most efficient for repeated work on a wide screen; the docked column is always there even when the slide has no picture, and the notes sit far below the canvas",
+      "width": 3440,
+      "height": 1440
+    },
+    {
+      "file": "03-form-first-prepare.html",
+      "title": "B · Form first · Prepare",
+      "tradeoff": "No free canvas: each slide is a short form (Layout, Title, Text with one line per point, Image with Choose Image… and Fit | Fill | Stretch, Text size, Speaker notes) with a live preview on the right that outlines the field being typed in, plus the slides before and after. A slide list of rows (thumbnail, first line, layout) with Duplicate, Delete and Move buttons. The hardest to get wrong for a first-time volunteer, since nothing can be dragged out of place and every field says what it does; it cannot place things freely, has no shapes, and typing in a field instead of on the slide feels less direct",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "04-form-first-prepare-wide.html",
+      "title": "B · Form first · Prepare (ultrawide)",
+      "tradeoff": "The form at 3440 with a 1500 px live preview and large before and after slides, so the volunteer sees the result at nearly projection size while typing. Clearest feedback of the three; the form column stays narrow on purpose (fields do not grow), so most of the extra width goes to the preview rather than to more slides",
+      "width": 3440,
+      "height": 1440
+    },
+    {
+      "file": "05-layout-gallery-prepare.html",
+      "title": "C · Layout gallery first · Prepare",
+      "tradeoff": "A new presentation opens on a gallery that asks 'What goes on your first slide?' with the theme chips above five large layout cards; after that the slide fills the window and the volunteer types straight onto it, with a small floating toolbar next to the selected box (smaller, larger, alignment, clear; for a picture Replace…, Fit | Fill | Stretch, remove). Slides run along a film strip at the bottom that ends in an Add Slide card opening the same gallery. The largest canvas and the fewest controls on screen; tools appear only when something is selected, so they are less discoverable, and delete and duplicate live in a right-click menu and keys",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "06-layout-gallery-prepare-wide.html",
+      "title": "C · Layout gallery first · Prepare (ultrawide)",
+      "tradeoff": "At 3440 the layout gallery stays open as an Add a slide column on the right (click to add after the current slide, or drag into the strip), the canvas is about 1640 px wide and the speaker notes open under it. Adding slides is always one click; the gallery column repeats what the Add Slide card already does, and the first-slide gallery leaves much of the ultrawide window empty",
+      "width": 3440,
+      "height": 1440
+    }
+  ],
+  "chosen": "05-layout-gallery-prepare.html",
+  "decisions": [
+    "Direction C (layout gallery first), with Delete and Duplicate visible on the selected slide and explanatory messages from B",
+    "Automatic saving with undo and redo",
+    "Text only in the first version; shapes later",
+    "The service + creates a presentation and adds it to the service; the Library can also create presentations on their own, without any service open",
+    "Imported decks: reorder, hide or delete slides and edit notes; Fix in Keynote and Update from Keynote; a text box over an imported picture comes with the editor"
+  ]
+}
