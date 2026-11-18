@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440, initial-scale=1">
+<title>Slide editor — C · Layout gallery first</title>
+<style>
+/*BASE-START*/
+/* Tokens: design/system.md (Midnight appearance by default). Nothing outside this list.
+   --focus and --sel are the accent at 50% and 60% (focus ring and selected row, as in design/operator-window). */
+:root{
+  --window:#1C1C1C; --raised:#242424; --desk:#0B0B0B;
+  --sidebar:rgba(22,22,22,0.90); --titlebar:rgba(28,28,28,0.92);
+  --sep:rgba(255,255,255,0.10); --control:rgba(255,255,255,0.08); --control-hover:rgba(255,255,255,0.13);
+  --label:rgba(255,255,255,0.85); --label-2:rgba(255,255,255,0.55); --label-3:rgba(255,255,255,0.28);
+  --accent:#0A84FF; --live:#FF453A; --next:#FF9F0A; --ok:#32D74B; --key-green:#00B140;
+  --focus:rgba(10,132,255,0.5); --sel:rgba(10,132,255,0.6);
+  --font:-apple-system,"SF Pro Text","Helvetica Neue",sans-serif;
+  --material:blur(30px) saturate(180%);
+}
+html[data-appearance="graphite"]{--window:#1E1E1E;--raised:#2A2A2C;--desk:#2A2A2C;--sidebar:rgba(40,40,42,0.72);--titlebar:rgba(46,46,48,0.86)}
+html[data-appearance="black"]{--window:#000000;--raised:#1C1C1C;--desk:#000000;--sidebar:rgba(10,10,10,0.94);--titlebar:rgba(10,10,10,0.94);--sep:rgba(255,255,255,0.14)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--desk);color:var(--label);font:400 13px/1.3 var(--font);display:grid;place-items:center;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit;background:none;border:0;margin:0;padding:0}
+button{cursor:default}
+ul,ol{list-style:none;margin:0;padding:0}
+h1,h2,h3,h4,p,dl,dd,figure{margin:0}
+:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.num{font-variant-numeric:tabular-nums}
+.l2{color:var(--label-2)}
+.kbd{display:inline-grid;place-items:center;min-width:20px;height:18px;padding:0 5px;border-radius:4px;background:var(--control);
+  box-shadow:inset 0 -1px 0 rgba(0,0,0,0.5);font:600 11px/1 var(--font);color:var(--label-2);white-space:nowrap}
+
+/* Window, sidebar, unified toolbar (design/operator-window 04–06) */
+.win{border-radius:10px;overflow:hidden;display:grid;background:var(--window);
+  box-shadow:inset 0 0 0 1px var(--sep),0 0 0 1px rgba(0,0,0,0.5),0 22px 60px rgba(0,0,0,0.5)}
+.sidebar{background:var(--sidebar);-webkit-backdrop-filter:var(--material);backdrop-filter:var(--material);
+  border-right:1px solid var(--sep);display:flex;flex-direction:column;min-height:0;min-width:0}
+.sb-top{height:52px;flex:none;display:flex;align-items:center;padding:0 12px 0 20px}
+.lights{display:flex;gap:8px}.lights i{width:12px;height:12px;border-radius:50%;background:var(--live)}
+.lights i:nth-child(2){background:var(--next)}.lights i:nth-child(3){background:var(--ok)}
+.sb-top .tb{margin-left:auto}
+.sb-h{display:flex;align-items:center;gap:6px;height:28px;padding:0 8px;font:600 11px/1 var(--font);color:var(--label-2)}
+.sb-h .meta{margin-left:auto;font-weight:500}
+.row{display:flex;align-items:center;gap:7px;width:100%;height:28px;padding:0 8px;border-radius:6px;text-align:left;white-space:nowrap;min-width:0}
+.row:hover{background:var(--control)}
+.row .ic{color:var(--accent)}
+.row .nm{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.row .meta{margin-left:auto;padding-left:6px;font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums;flex:none}
+.row[aria-current="page"],.row[aria-selected="true"]{background:var(--sel);color:#FFFFFF;font-weight:600}
+.row[aria-current="page"] .ic,.row[aria-current="page"] .meta,.row[aria-selected="true"] .ic,.row[aria-selected="true"] .meta{color:#FFFFFF}
+.grp{display:flex;align-items:center;gap:4px;height:28px;padding:0 8px 0 2px;color:var(--label-2);font-weight:600;width:100%;text-align:left;border-radius:6px}
+.grp .meta{margin-left:auto;font-weight:500;font-size:12px;font-variant-numeric:tabular-nums}
+.disc{width:16px;height:16px;display:grid;place-items:center;border-radius:4px;color:var(--label-2);flex:none}
+.disc .ic{width:12px;height:12px;stroke-width:2}
+.disc[aria-expanded="true"] .ic,.grp[aria-expanded="true"] .disc .ic{transform:rotate(90deg)}
+
+.toolbar{height:52px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:0 12px 0 16px;
+  background:var(--titlebar);-webkit-backdrop-filter:var(--material);backdrop-filter:var(--material);border-bottom:1px solid var(--sep)}
+.tl{display:flex;align-items:center;gap:6px;min-width:0}
+.title{margin-right:10px;line-height:1.15;min-width:0}
+.title h1{font-size:15px;font-weight:600;white-space:nowrap}
+.title p{font-size:11px;font-weight:500;color:var(--label-2);white-space:nowrap}
+.tr{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.tb{width:32px;height:28px;display:grid;place-items:center;border-radius:6px;color:var(--label-2);flex:none}
+.tb .ic{width:18px;height:18px}
+.tb:hover{background:var(--control);color:var(--label)}
+.tb[aria-pressed="true"]{color:var(--label)}
+.clock{font-size:13px;font-weight:600;color:var(--label);padding:0 6px}
+.search{display:flex;align-items:center;gap:6px;height:28px;padding:0 8px;border-radius:6px;background:var(--control);color:var(--label-2)}
+.search .ic{width:14px;height:14px}
+.search input{flex:1;min-width:0;outline:0;color:var(--label)}
+.search input::placeholder{color:var(--label-2)}
+.search:focus-within{box-shadow:0 0 0 3px var(--focus)}
+
+/* Controls */
+.seg{display:inline-flex;padding:2px;border-radius:6px;background:var(--control);gap:2px}
+.seg button{height:22px;padding:0 12px;border-radius:5px;color:var(--label-2);font-weight:500;white-space:nowrap}
+.seg button:hover{color:var(--label)}
+.seg button[aria-pressed="true"]{background:var(--control-hover);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,0.5)}
+.seg.mode button{height:24px;min-width:84px}
+.pop{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 6px 0 10px;border-radius:6px;background:var(--control);white-space:nowrap}
+.pop .ud{width:8px;height:12px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;color:var(--label-2);margin-left:auto}
+.push{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:24px;padding:0 10px;border-radius:6px;background:var(--control);font-weight:500;white-space:nowrap}
+.pop:hover,.push:hover{background:var(--control-hover)}
+.push.primary{background:var(--accent);color:#FFFFFF;font-weight:600}
+.push.primary:hover{box-shadow:inset 0 0 0 100px var(--control)}
+.push.primary .kbd{background:var(--window);color:var(--label)}
+.push.danger{background:rgba(255,69,58,0.16);box-shadow:inset 0 0 0 1px rgba(255,69,58,0.24)}
+.push.danger:hover{background:rgba(255,69,58,0.24)}
+.push .ic{width:14px;height:14px}
+.field{display:flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;background:var(--control)}
+.field input{flex:1;min-width:0;outline:0;color:var(--label)}
+.field:focus-within{box-shadow:0 0 0 3px var(--focus)}
+.lbl{color:var(--label-2)}
+
+/* State flags: always text plus a dot, never color only */
+.flag{display:inline-flex;align-items:center;gap:5px;font:700 11px/1 var(--font);letter-spacing:.04em;color:var(--label);flex:none}
+.flag::before{content:"";width:8px;height:8px;border-radius:50%;flex:none}
+.flag.live::before{background:var(--live)}
+.flag.next{color:var(--next)}
+.flag.next::before{box-shadow:inset 0 0 0 2px var(--next)}
+
+/* Slides: 16:9, black, white centered text */
+.slide{aspect-ratio:16/9;width:100%;border-radius:6px;display:grid;place-items:center;text-align:center;overflow:hidden;color:#FFFFFF;
+  background:radial-gradient(70% 90% at 28% 22%,rgba(10,132,255,.42),transparent 70%),radial-gradient(60% 70% at 82% 92%,rgba(255,159,10,.26),transparent 70%),#000000}
+.slide p{font-weight:600;line-height:1.28;text-shadow:0 1px 8px rgba(0,0,0,.6);padding:0 8px}
+.slide.media{background:radial-gradient(80% 90% at 70% 30%,rgba(255,159,10,.30),transparent 70%),#000000}
+.slide.page{background:#000000}
+.slide.blank{background:#000000;box-shadow:inset 0 0 0 1px var(--sep)}
+.slide.blank p{color:var(--label-2);font-weight:500;text-shadow:none}
+.slide .play{width:32px;height:32px;fill:none;stroke:#FFFFFF;stroke-width:1.5}
+
+/* Design preview controls (outside the window, not part of the app) */
+.demo{position:fixed;right:24px;bottom:22px;z-index:20;padding:6px 10px;border-radius:8px;background:var(--raised);box-shadow:0 0 0 1px var(--sep),0 8px 24px rgba(0,0,0,0.5);font:500 11px/1 var(--font);color:var(--label-2)}
+.demo summary{font-weight:600;color:var(--label);padding:2px 0;border-radius:4px}
+.demo details[open] summary{margin-bottom:10px}
+.demo .opts{display:flex;flex-direction:column;gap:10px}
+.demo .opts>div{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.demo .seg button{height:20px;padding:0 9px;font-size:11px}
+
+@media (prefers-reduced-motion:no-preference){
+  .row,.tb,.push,.pop,.seg button{transition:background-color .12s ease,color .12s ease}
+}
+/*BASE-END*/
+
+/* Tokens added to design/system.md on 2026-11-14 (service plan). */
+:root{
+  --accent-strong:#0071E3; --accent-strong-hover:#0063C8; --on-accent:#FFFFFF;
+  --selection:rgba(10,132,255,0.60);
+  --destructive-fill:rgba(255,69,58,0.16); --destructive-fill-hover:rgba(255,69,58,0.24); --destructive-border:inset 0 0 0 1px rgba(255,69,58,0.24);
+  --shadow-window:inset 0 0 0 1px var(--sep),0 0 0 1px rgba(0,0,0,0.5),0 22px 60px rgba(0,0,0,0.5);
+  --shadow-menu:0 0 0 1px var(--sep),0 12px 32px rgba(0,0,0,0.55);
+  --shadow-popover:0 0 0 1px var(--sep),0 16px 40px rgba(0,0,0,0.6);
+  --shadow-float:0 0 0 1px var(--sep),0 8px 24px rgba(0,0,0,0.5);
+  --shadow-segment:0 1px 2px rgba(0,0,0,0.5);
+}
+.win{box-shadow:var(--shadow-window)}
+.seg button[aria-pressed="true"]{box-shadow:var(--shadow-segment)}
+.row[aria-current="page"],.row[aria-selected="true"]{background:var(--selection);color:var(--on-accent)}
+/* Filled accent with text: accent-strong (white 4.70:1); hover darkens. */
+.push.primary{background:var(--accent-strong);color:var(--on-accent)}
+.push.primary:hover{box-shadow:none;background:var(--accent-strong-hover)}
+.push.primary .kbd{background:var(--window);color:var(--label);box-shadow:none}
+.push.danger{background:var(--destructive-fill);box-shadow:var(--destructive-border)}
+.push.danger:hover{background:var(--destructive-fill-hover)}
+.demo{box-shadow:var(--shadow-float)}
+
+
+
+/* Transparent (system.md, 2026-11-16): checkerboard behind any slide with nothing behind it */
+:root{--chk-a:#2A2A2C;--chk-b:#1E1E1E}
+.chkbg{background:repeating-conic-gradient(var(--chk-a) 0 25%,var(--chk-b) 0 50%);background-size:max(4px,max(8px,7.1429%)) max(4px,max(8px,12.6984%))}
+.chk{display:inline-block;width:22px;height:13px;border-radius:3px;flex:none;background:repeating-conic-gradient(var(--chk-a) 0 25%,var(--chk-b) 0 50%);background-size:5.5px 6.5px;box-shadow:0 0 0 1px var(--sep)}
+
+.win{position:relative;box-shadow:var(--shadow-window)}
+.main{display:grid;min-width:0;min-height:0;position:relative}
+.toolbar{grid-column:1/-1}
+.title h1{display:flex;align-items:center;gap:6px}
+.title h1 .ic{width:15px;height:15px;color:var(--accent)}
+.save{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--label-2);white-space:nowrap;padding:0 6px}
+.save .ic{width:13px;height:13px;color:var(--ok)}
+.save.err{color:var(--label)}
+.save.err .ic{color:var(--next)}
+.banner{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--control);border-bottom:1px solid var(--sep);font-size:12px}
+.banner .ic{color:var(--next)}
+.banner .sp{flex:1}
+.work{display:flex;flex-direction:column;min-width:0;min-height:0}
+.editbar{flex:none;display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-bottom:1px solid var(--sep);white-space:nowrap}
+.editbar .sp{flex:1}
+.editbar .vsep{width:1px;height:20px;background:var(--sep);margin:0 4px}
+.editbar .ctx{color:var(--label-2);font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.editbar .ctx b{color:var(--label);font-weight:600}
+.push[disabled],.tb[disabled],.pop[disabled]{color:var(--label-3);background:var(--control)}
+.push[disabled] .ic{color:var(--label-3)}
+.push .chev{width:9px;height:9px;fill:none;stroke:currentColor;stroke-width:1.6;color:var(--label-2);margin-left:-2px}
+.push.tall{height:28px;padding:0 12px}
+.keybar{flex:none;display:flex;align-items:center;gap:16px;height:36px;padding:0 16px;border-top:1px solid var(--sep);font-size:12px;color:var(--label-2);white-space:nowrap;overflow:hidden}
+.keybar h2{font:600 11px/1 var(--font);color:var(--label-2)}
+.keybar dl{display:flex;align-items:center;gap:16px}
+.keybar div{display:flex;align-items:center;gap:6px}
+.keybar dt{display:flex;gap:3px}
+.help{font-size:11px;line-height:1.45;color:var(--label-2)}
+.linkbtn{color:var(--accent);font-weight:500;font-size:12px;border-radius:4px}
+.linkbtn:hover{text-decoration:underline}
+.anchor{position:relative;display:inline-flex}
+
+/* Sidebar (service-plan 07) with the Library's Songs | Presentations */
+.svc{flex:1;min-height:0;overflow:auto;padding:0 10px 8px}
+.svc .row.item{padding-left:26px}
+.svc .tot{display:flex;align-items:center;gap:6px;height:22px;padding:0 8px 4px;font-size:11px;color:var(--label-2)}
+.svc .tot b{color:var(--label);font-weight:600}
+.split{flex:none;height:1px;background:var(--sep);margin:0 10px}
+.lib{flex:none;display:flex;flex-direction:column;padding:4px 10px 10px;min-height:0}
+.lib .seg{display:flex;margin:2px 0 8px}.lib .seg button{flex:1}
+.lib .search{margin:0 0 6px}
+.lib ul{overflow:auto;min-height:0;flex:1}
+.lib .row .meta{font-size:11px}
+.lib .row .ic.imp{color:var(--label-2)}
+.lib .foot{padding:6px 8px 0;font-size:11px;line-height:1.4;color:var(--label-2)}
+.add{width:24px;height:24px;display:grid;place-items:center;border-radius:6px;color:var(--label-2);flex:none}
+.add:hover,.add[aria-expanded="true"]{background:var(--control-hover);color:var(--label)}
+.add .ic{width:14px;height:14px}
+.row .new{font-size:11px;font-weight:600;color:var(--label-2);margin-left:auto}
+
+/* Menus and popovers */
+.menu{position:absolute;z-index:6;width:300px;padding:5px;border-radius:8px;background:var(--raised);box-shadow:var(--shadow-menu);text-align:left}
+.menu button{display:flex;align-items:center;gap:8px;width:100%;min-height:26px;padding:3px 8px;border-radius:5px;text-align:left;white-space:nowrap}
+.menu button:hover,.menu button:focus-visible,.menu button.hot{background:var(--accent-strong);color:var(--on-accent);outline:0}
+.menu button:hover *,.menu button:focus-visible *,.menu button.hot *{color:var(--on-accent)}
+.menu .ic{color:var(--label-2)}
+.menu .k{margin-left:auto;font-size:12px;color:var(--label-2)}
+.menu hr{border:0;border-top:1px solid var(--sep);margin:5px 4px}
+.menu .mh{font-size:11px;font-weight:600;color:var(--label-2);padding:4px 8px 2px}
+.menu .mf{font-size:11px;color:var(--label-2);padding:4px 8px 3px;line-height:1.4;white-space:normal}
+.menu .two{display:flex;flex-direction:column;gap:1px;white-space:normal}
+.menu .two small{font-size:11px;color:var(--label-2)}
+.lmenu{width:330px}
+.lmenu button{gap:10px;padding:5px 8px}
+.lmenu .lpic{width:48px;height:27px}
+.lpic{fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;color:var(--label-2)}
+.lpic .fr{stroke:var(--label-3);stroke-width:1}
+.lpic .pi{fill:var(--control-hover);stroke:none}
+.pop-panel{position:absolute;z-index:6;padding:12px;border-radius:10px;background:var(--raised);box-shadow:var(--shadow-popover);text-align:left}
+.pop-panel h2{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.pop-panel h2 .sp{flex:1}
+.toast{position:absolute;z-index:6;display:flex;align-items:center;gap:10px;height:36px;padding:0 8px 0 14px;border-radius:8px;background:var(--raised);box-shadow:var(--shadow-float);font-size:13px;white-space:nowrap}
+
+/* Media picker (from the media bin) */
+.picker .fbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.picker .fbar .search{flex:1}
+.mgrid{display:grid;gap:10px}
+.mgrid button{display:flex;flex-direction:column;gap:5px;text-align:left;border-radius:6px;padding:0;min-width:0}
+.mgrid .th{aspect-ratio:16/9;width:100%;border-radius:6px;overflow:hidden;position:relative;box-shadow:0 0 0 1px var(--sep)}
+.mgrid .th .pic{position:absolute;inset:0}
+.mgrid button[aria-pressed="true"] .th{box-shadow:0 0 0 3px var(--accent)}
+.mgrid .nm{font-size:11px;color:var(--label);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mgrid .mt{font-size:11px;color:var(--label-2)}
+.picker .pfoot{display:flex;align-items:center;gap:8px;margin-top:12px}
+.picker .pfoot .sp{flex:1}
+
+/* Slides: frames are fractions of the slide, so one renderer serves thumbnails and the canvas */
+.sl{position:relative;width:var(--sw);aspect-ratio:16/9;border-radius:6px;overflow:hidden;color:#FFFFFF;flex:none;box-shadow:0 0 0 1px var(--sep)}
+.sl .el{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,0.6);line-height:1.25}
+.sl .el span,.sl .el ul{position:relative}
+.sl .t-title{left:8%;top:28%;width:84%;height:24%;font-weight:700;font-size:calc(var(--sw)*0.072)}
+.sl .t-sub{left:8%;top:55%;width:84%;height:12%;font-weight:500;font-size:calc(var(--sw)*0.034)}
+.sl .tt-title{left:8%;top:8%;width:84%;height:17%;font-weight:700;font-size:calc(var(--sw)*0.05)}
+.sl .tt-body{left:14%;top:31%;width:72%;height:58%;justify-content:flex-start;align-items:flex-start;text-align:left;font-weight:500;font-size:calc(var(--sw)*0.036);line-height:1.55}
+.sl .tt-body li::before{content:"•";margin-right:.5em}
+.sl .x-body{left:10%;top:22%;width:80%;height:56%;font-weight:600;font-size:calc(var(--sw)*0.05);line-height:1.35}
+.sl .ic-img{left:20%;top:7%;width:60%;height:64%}
+.sl .ic-cap{left:8%;top:75%;width:84%;height:15%;font-weight:600;font-size:calc(var(--sw)*0.036)}
+.sl .if-img{left:0;top:0;width:100%;height:100%}
+.sl .shape{left:14%;top:24%;width:72%;height:52%;border-radius:calc(var(--sw)*0.02);background:rgba(0,0,0,0.6)}
+.pic{position:absolute;inset:0;overflow:hidden}
+.pic svg{width:100%;height:100%;display:block;fill:rgba(255,255,255,0.28);stroke:rgba(255,255,255,0.55);stroke-width:1}
+.pic.g1{background:radial-gradient(70% 90% at 28% 26%,rgba(255,159,10,0.72),transparent 70%),radial-gradient(60% 70% at 82% 86%,rgba(255,69,58,0.42),transparent 70%),#1C1C1C}
+.pic.g2{background:radial-gradient(80% 80% at 70% 20%,rgba(10,132,255,0.62),transparent 70%),radial-gradient(70% 60% at 20% 90%,rgba(50,215,75,0.45),transparent 70%),#1C1C1C}
+.pic.g3 svg{fill:rgba(255,255,255,0.85);stroke:#1C1C1C;stroke-width:3}
+/* Editing aids: drawn only in the editor, never on the screens */
+.sl .el.ed{outline:1px dashed transparent;outline-offset:2px}
+.sl .el.ed:hover{outline-color:rgba(255,255,255,0.55)}
+.sl .el.sel{outline:2px solid var(--accent);outline-offset:3px}
+.sl .el.ph{outline:1px dashed rgba(255,255,255,0.55);outline-offset:2px;color:rgba(255,255,255,0.55);text-shadow:none;font-weight:500}
+.caret{display:inline-block;width:2px;height:1.05em;margin-left:2px;background:#FFFFFF;vertical-align:-0.12em}
+.hd{position:absolute;width:9px;height:9px;border-radius:2px;background:#FFFFFF;box-shadow:0 0 0 1.5px var(--accent);z-index:1}
+.hd.htl{left:-8px;top:-8px}.hd.htr{right:-8px;top:-8px}.hd.hbl{left:-8px;bottom:-8px}.hd.hbr{right:-8px;bottom:-8px}
+/* Imported slide: a 4:3 picture of the Keynote slide; Fit leaves transparent bands */
+.sl.imported .imp{position:absolute;top:0;bottom:0;left:12.5%;width:75%;background:#FFFFFF;color:#1C1C1C;display:flex;flex-direction:column;justify-content:center;padding:0 9%;gap:calc(var(--sw)*0.012);text-shadow:none;transform-origin:50% 50%}
+.sl.imported .imp b{font:800 calc(var(--sw)*0.056)/1.1 var(--font);letter-spacing:-0.01em}
+.sl.imported .imp span{font-size:calc(var(--sw)*0.026);color:#1C1C1C;opacity:.75}
+.sl.imported .imp-band{position:absolute;left:0;top:0;bottom:0;width:6%;background:#0071E3}
+.sl.imported .imp-dots{display:flex;gap:calc(var(--sw)*0.01);margin-top:calc(var(--sw)*0.02)}
+.sl.imported .imp-dots em{width:calc(var(--sw)*0.05);height:calc(var(--sw)*0.05);border-radius:50%;background:#0071E3;opacity:.85}
+.sl.imported .imp-dots em:nth-child(2){background:#FF9F0A}.sl.imported .imp-dots em:nth-child(3){background:#32D74B}
+.sl[data-scaling="fill"] .imp{transform:scale(1.3334)}
+.sl[data-scaling="stretch"] .imp{transform:scaleX(1.3334)}
+.ro{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--label-2)}
+.ro .ic{width:12px;height:12px}
+
+/* Slide list rows */
+.thumbs li{position:relative}
+.thumbs .th-btn{display:flex;gap:6px;align-items:flex-start;width:100%;padding:4px;border-radius:8px;text-align:left}
+.thumbs .th-btn .n{width:16px;flex:none;text-align:right;font-size:11px;color:var(--label-2);padding-top:2px;font-variant-numeric:tabular-nums}
+.thumbs .th-btn[aria-selected="true"] .sl{box-shadow:0 0 0 3px var(--accent)}
+.thumbs .th-btn[aria-selected="true"] .n{color:var(--label);font-weight:700}
+.thumbs .cap{display:block;font-size:11px;color:var(--label-2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Segmented scaling with explanation */
+.scal{display:flex;flex-direction:column;gap:8px}
+.scal .seg{display:flex}.scal .seg button{flex:1}
+textarea.notes{display:block;width:100%;resize:none;border-radius:6px;background:var(--control);padding:8px 10px;line-height:1.45;color:var(--label);outline:0}
+textarea.notes:focus-visible{box-shadow:0 0 0 3px var(--focus)}
+textarea.notes[readonly]{color:var(--label-2)}
+textarea::placeholder,input::placeholder{color:var(--label-2)}
+[hidden]{display:none!important}
+.demo{max-width:560px}
+.demo .seg{flex-wrap:wrap}
+
+
+.win{width:1408px;height:868px;grid-template-columns:240px minmax(0,1fr)}
+.main{grid-template-columns:minmax(0,1fr);grid-template-rows:52px auto minmax(0,1fr)}
+.work{grid-row:3}
+.body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr)}
+.col{display:flex;flex-direction:column;min-width:0;min-height:0}
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;padding:16px 24px 8px;gap:10px}
+.cwrap{flex:1;min-height:0;display:grid;place-items:center;width:100%}
+.canvas{position:relative}
+.canvas .sl{box-shadow:0 0 0 1px var(--sep),0 8px 24px rgba(0,0,0,0.5)}
+.ft{position:absolute;z-index:3;display:flex;align-items:center;gap:2px;height:38px;padding:0 5px;border-radius:8px;background:var(--raised);box-shadow:var(--shadow-float);white-space:nowrap}
+.ft.imp{gap:8px;padding:0 6px 0 12px}
+.ft.imp>.ic{color:var(--label-2)}
+.fb{width:30px;height:28px;display:grid;place-items:center;border-radius:6px;color:var(--label)}
+.fb:hover{background:var(--control)}
+.fb[aria-pressed="true"]{background:var(--control-hover)}
+.fbt{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:6px;font-weight:500}
+.fbt:hover{background:var(--control)}
+.fbt .ic{width:14px;height:14px}
+.fsep{width:1px;height:20px;background:var(--sep);margin:0 4px}
+.fl{font-size:11px;color:var(--label-2);padding:0 4px}
+.ft .seg button{height:24px}
+.notesline{display:flex;align-items:center;gap:10px;width:940px;min-height:32px;padding:4px 10px;border-radius:6px;background:var(--control);font-size:12px}
+.notesline .nt{display:inline-flex;align-items:center;gap:6px;font-weight:600;white-space:nowrap}
+.notesline .nt .ic{width:13px;height:13px;color:var(--label-2)}
+.notesline .np{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notesline textarea{flex:1;background:none;padding:4px}
+.notesline .help{white-space:nowrap}
+.film{flex:none;border-top:1px solid var(--sep);padding:10px 16px 6px}
+.film ol{display:flex;gap:10px;overflow-x:auto;overflow-y:visible;padding:4px 4px 2px}
+.film ol:not([hidden]){display:flex}
+.fs{position:relative;border-radius:8px;padding:0}
+.fs .n{position:absolute;left:4px;bottom:4px;min-width:16px;height:16px;padding:0 4px;border-radius:4px;background:rgba(0,0,0,0.6);color:#FFFFFF;font-size:10px;font-weight:600;display:grid;place-items:center}
+.fs[aria-selected="true"] .sl{box-shadow:0 0 0 3px var(--accent)}
+.addli{display:flex}
+.film .anchor{position:static}
+.addcard{width:116px;aspect-ratio:16/9;border-radius:6px;border:1px dashed var(--label-3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--label);font-weight:500;font-size:12px}
+.addcard:hover,.addcard[aria-expanded="true"]{background:var(--control);border-color:var(--accent)}
+.addcard .ic{width:16px;height:16px;color:var(--accent)}
+.film{position:relative}
+.film .fh{padding:6px 4px 0}
+.gal{width:960px}
+.galg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.gcard{display:flex;flex-direction:column;gap:4px;padding:8px;border-radius:8px;background:var(--control);text-align:left;min-width:0}
+.gcard:hover{background:var(--control-hover)}
+.gcard.hot{box-shadow:0 0 0 3px var(--accent)}
+.gcard .sl{margin-bottom:6px}
+.gcard b{font-weight:600}.gcard span{font-size:11px;color:var(--label-2)}
+.gallery{flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;width:100%;max-width:1100px}
+.gallery h2{font-size:22px;font-weight:700}
+.galg.big{gap:14px}
+.themes{display:flex;align-items:center;gap:8px}
+.themes .lbl{font-size:12px;margin-right:4px}
+.themes button{height:26px;padding:0 12px;border-radius:13px;background:var(--control);font-size:12px}
+.themes button[aria-checked="true"]{box-shadow:inset 0 0 0 2px var(--accent);background:var(--control-hover);font-weight:600}
+.themes .chk{margin-left:12px}
+.rail{border-left:1px solid var(--sep);padding:20px;display:flex;flex-direction:column;gap:10px;overflow:auto;background:var(--sidebar)}
+.rail h2{font-size:13px;font-weight:600}
+.railg{display:flex;flex-direction:column;gap:12px}
+
+
+</style>
+</head>
+<body>
+<!--ICONS-START-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sidebar" viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M7.5 3.5v13M4.5 6.5h1M4.5 9h1"/></symbol>
+  <symbol id="i-inspector" viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M12.5 3.5v13M14.5 6.5h1M14.5 9h1"/></symbol>
+  <symbol id="i-note" viewBox="0 0 16 16"><path d="M6 12V3.2l7-1.4V10.5"/><circle cx="4.2" cy="12" r="1.8"/><circle cx="11.2" cy="10.5" r="1.8"/></symbol>
+  <symbol id="i-film" viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="2"/><path d="m6.5 6 3.5 2-3.5 2z"/></symbol>
+  <symbol id="i-present" viewBox="0 0 16 16"><rect x="1.5" y="2" width="13" height="9" rx="1.5"/><path d="M8 11v3M5.5 14.5h5"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 16 16"><path d="M4 1.5h5L12.5 5v9.5h-8.5z"/><path d="M9 1.5V5h3.5M6.5 8.5h3.5M6.5 11h3.5"/></symbol>
+  <symbol id="i-item" viewBox="0 0 16 16"><path d="M3 4h10M3 8h10M3 12h6"/></symbol>
+  <symbol id="i-header" viewBox="0 0 16 16"><path d="M2.5 3.5h11M2.5 8h7M2.5 12.5h7" stroke-width="2"/></symbol>
+  <symbol id="i-timer" viewBox="0 0 16 16"><circle cx="8" cy="9" r="5.5"/><path d="M8 9V6.2M6.5 1.5h3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3.5 3.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 10 10"><path d="m3.5 2 3 3-3 3"/></symbol>
+  <symbol id="i-ud" viewBox="0 0 10 12"><path d="m2.5 4.5 2.5-2.5 2.5 2.5M2.5 7.5 5 10l2.5-2.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+  <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M4 7l4-4 4 4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 16 16"><path d="M8 3v10M4 9l4 4 4-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
+  <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v4M8 4.9v.1"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 2 14.5 13.5h-13z"/><path d="M8 6.5v3.2M8 11.6v.1"/></symbol>
+  <symbol id="i-display" viewBox="0 0 20 20"><rect x="2" y="4" width="11" height="8" rx="1.5"/><path d="M6 15h3M7.5 12v3M15 7h1.5A1.5 1.5 0 0 1 18 8.5v5a1.5 1.5 0 0 1-1.5 1.5H12"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7M11.5 4.5l-7 7"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 12 16"><path d="M4 4h.01M8 4h.01M4 8h.01M8 8h.01M4 12h.01M8 12h.01" stroke-width="2.2"/></symbol>
+  <symbol id="i-template" viewBox="0 0 16 16"><rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke-dasharray="2 1.6"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></symbol>
+  <symbol id="i-loop" viewBox="0 0 16 16"><path d="M2.5 8a5 5 0 0 1 9-3M13.5 8a5 5 0 0 1-9 3"/><path d="M11.8 1.8v3.4H8.4M4.2 14.2v-3.4h3.4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14"/><path d="m13 10.5 9 5.5-9 5.5z"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></symbol>
+  <symbol id="i-library" viewBox="0 0 16 16"><path d="M3 2.5v11M6 2.5v11M9 3.2l3.6 10.3"/></symbol>
+  <symbol id="i-open" viewBox="0 0 16 16"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M11.5 9.5v4h-9v-9h4"/></symbol>
+</svg>
+<!--ICONS-END-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-text" viewBox="0 0 16 16"><path d="M3 3.5h10M8 3.5v9.5M6 13h4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><circle cx="5.5" cy="6" r="1.2"/><path d="m2 12 4-4 3 3 2-2 3.5 3.5"/></symbol>
+  <symbol id="i-shape" viewBox="0 0 16 16"><rect x="2" y="3.5" width="12" height="9" rx="2.5"/></symbol>
+  <symbol id="i-rect" viewBox="0 0 16 16"><rect x="2" y="3.5" width="12" height="9"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.8 6.5v4.5M9.2 6.5v4.5"/></symbol>
+  <symbol id="i-dup" viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 16 16"><path d="M5.5 4 2.5 7l3 3"/><path d="M2.5 7h7a4 4 0 0 1 0 8H7"/></symbol>
+  <symbol id="i-al" viewBox="0 0 16 16"><path d="M2.5 4h11M2.5 8h7M2.5 12h9"/></symbol>
+  <symbol id="i-ac" viewBox="0 0 16 16"><path d="M2.5 4h11M4.5 8h7M3.5 12h9"/></symbol>
+  <symbol id="i-ar" viewBox="0 0 16 16"><path d="M2.5 4h11M6.5 8h7M4.5 12h9"/></symbol>
+  <symbol id="i-smaller" viewBox="0 0 16 16"><path d="M2 12.5 5 4l3 8.5M3 10h4M10.5 9h4"/></symbol>
+  <symbol id="i-larger" viewBox="0 0 16 16"><path d="M1.5 13 5 3.5 8.5 13M2.7 10h4.6M12.5 6.5v5M10 9h5"/></symbol>
+  <symbol id="i-layouts" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 6h13M6 6v7.5"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 2a6 6 0 0 0 0 12z" fill="currentColor"/></symbol>
+  <symbol id="i-import" viewBox="0 0 16 16"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 11v2.5h11V11"/></symbol>
+  <symbol id="i-picture" viewBox="0 0 16 16"><rect x="1.5" y="2" width="13" height="9" rx="1.5"/><path d="M8 11v3M5.5 14.5h5"/><path d="m3.5 9.5 3-3 2 2 1.5-1.5 2.5 2.5"/></symbol>
+  <symbol id="i-notes" viewBox="0 0 16 16"><path d="M3 2.5h10v11H3z"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></symbol>
+  <symbol id="i-chevd" viewBox="0 0 10 10"><path d="m2 3.5 3 3 3-3"/></symbol>
+</svg>
+<div class="win" role="application" aria-label="Global Service Studio — Sunday Morning Slides, Prepare">
+  <nav class="sidebar" aria-label="Service and library">
+    <div class="sb-top"><div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+      <button class="tb" type="button" aria-label="Hide sidebar" aria-pressed="true"><svg class="ic"><use href="#i-sidebar"/></svg></button></div>
+    <div class="svc">
+      <h2 class="sb-h" id="h-svc">Service<span class="meta num">57:50</span>
+        <button class="add" type="button" id="svcadd" aria-label="Add to Service" aria-haspopup="menu" aria-expanded="false" style="margin-left:4px" title="Add to Service"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button></h2>
+      <p class="tot"><b>Sunday Service</b> · Sun, Nov 15</p>
+      <ul aria-labelledby="h-svc">
+        <li><button class="grp" type="button" aria-expanded="false"><span class="disc" aria-hidden="true"><svg class="ic"><use href="#i-chev"/></svg></span>Pre-service<span class="meta">7:30</span></button></li>
+        <li><button class="grp" type="button" aria-expanded="false"><span class="disc" aria-hidden="true"><svg class="ic"><use href="#i-chev"/></svg></span>Worship<span class="meta">3 songs</span></button></li>
+        <li><button class="grp" type="button" aria-expanded="true"><span class="disc" aria-hidden="true"><svg class="ic"><use href="#i-chev"/></svg></span>Welcome<span class="meta">4:00</span></button>
+          <ul><li><button class="row item" type="button"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="nm">Sunday Morning Slides</span><span class="meta">4:00</span></button></li>
+          <li data-only="empty"><button class="row item" type="button"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="nm">New Presentation</span><span class="new">New</span></button></li></ul></li>
+        <li><button class="grp" type="button" aria-expanded="true"><span class="disc" aria-hidden="true"><svg class="ic"><use href="#i-chev"/></svg></span>Message<span class="meta">32:00</span></button>
+          <ul><li><button class="row item" type="button"><svg class="ic" aria-hidden="true"><use href="#i-item"/></svg><span class="nm">Sermon</span><span class="meta">32:00</span></button></li>
+          <li><button class="row item" type="button"><svg class="ic imp" aria-hidden="true" style="color:var(--label-2)"><use href="#i-picture"/></svg><span class="nm">Missions Update</span><span class="meta">3:00</span></button></li></ul></li>
+        <li><button class="grp" type="button" aria-expanded="false"><span class="disc" aria-hidden="true"><svg class="ic"><use href="#i-chev"/></svg></span>Response<span class="meta">8:30</span></button></li>
+      </ul>
+    </div>
+    <div class="split" aria-hidden="true"></div>
+    <section class="lib" aria-labelledby="h-lib" style="height:330px">
+      <h2 class="sb-h" id="h-lib">Library<span class="meta">5 presentations</span>
+        <button class="add" type="button" id="libadd" aria-label="New Presentation or Import" aria-haspopup="menu" aria-expanded="false" style="margin-left:4px" title="New Presentation"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button></h2>
+      <div class="seg" role="group" aria-label="Library shows"><button type="button" aria-pressed="false">Songs</button><button type="button" aria-pressed="true">Presentations</button></div>
+      <label class="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="sr">Search Presentations</span><input type="search" placeholder="Search Presentations"></label>
+      <ul aria-labelledby="h-lib" id="libl">
+        <li><button class="row" type="button" data-p="xmas"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="nm">Christmas Eve Welcome</span><span class="meta num">3 slides</span></button></li>
+        <li><button class="row" type="button" data-p="mis"><svg class="ic imp" aria-hidden="true"><use href="#i-picture"/></svg><span class="nm">Missions Update</span><span class="meta num">Keynote · 6</span></button></li>
+        <li data-only="empty"><button class="row" type="button" data-p="new"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="nm">New Presentation</span><span class="meta num">0 slides</span></button></li>
+        <li><button class="row" type="button" data-p="ann"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="nm">Sunday Morning Slides</span><span class="meta num">8 slides</span></button></li>
+        <li><button class="row" type="button" data-p="guest"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="nm">Title Card · Guest Speaker</span><span class="meta num">1 slide</span></button></li>
+        <li><button class="row" type="button" data-p="vbs"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="nm">Volunteer Training</span><span class="meta num">12 slides</span></button></li>
+      </ul>
+      <p class="foot">Click a presentation to edit it. Drag it into the Service to show it in Live.</p>
+    </section>
+  </nav>
+  <div class="menu" id="svcmenu" role="menu" aria-label="Add to Service" data-only="newsvc" style="left:188px;top:84px">
+    <p class="mh" aria-hidden="true">Add after Sunday Morning Slides</p>
+    <button role="menuitem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-note"/></svg>Song from Library…<span class="k">⌘L</span></button>
+    <button role="menuitem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-header"/></svg>Header<span class="k">⇧⌘H</span></button>
+    <button role="menuitem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-item"/></svg>Item, such as Sermon or Offering<span class="k">⇧⌘I</span></button>
+    <hr>
+    <button role="menuitem" type="button" class="hot"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="two">New Presentation<small>Made here, saved in the Library</small></span></button>
+    <button role="menuitem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-picture"/></svg><span class="two">Import Keynote, PowerPoint or PDF…<small>Slides stay as pictures of the original</small></span></button>
+    <button role="menuitem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg>Presentation from Library…</button>
+    <button role="menuitem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg>Presentation Placeholder<span class="k">⇧⌘P</span></button>
+    <hr>
+    <button role="menuitem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-film"/></svg>Media Placeholder</button>
+    <p class="mf">A new presentation opens here, ready for its first slide, and is added to the service.</p>
+  </div>
+  <div class="menu" id="libmenu" role="menu" aria-label="New Presentation" data-only="newlib" style="left:170px;top:572px">
+    <button role="menuitem" type="button" class="hot"><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg><span class="two">New Presentation<small>Make simple slides with a theme</small></span></button>
+    <button role="menuitem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-picture"/></svg><span class="two">Import Keynote, PowerPoint or PDF…<small>Looks exactly like the original; edit it there</small></span></button>
+    <p class="mf">Presentations go on the screens only when they are in the Service.</p>
+  </div>
+  <div class="main">
+    <header class="toolbar">
+      <div class="tl" role="toolbar" aria-label="Presentation">
+        <div class="title" data-not="imported empty"><h1><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg>Sunday Morning Slides</h1><p>Presentation · 8 slides · in Sunday Service</p></div>
+        <div class="title" data-only="imported"><h1><svg class="ic" aria-hidden="true" style="color:var(--label-2)"><use href="#i-picture"/></svg>Missions Update</h1><p>Imported from Keynote · 6 slides · read-only</p></div>
+        <div class="title" data-only="empty"><h1><svg class="ic" aria-hidden="true"><use href="#i-present"/></svg>New Presentation</h1><p>Click the name to rename it</p></div>
+      </div>
+      <div class="seg mode" role="group" aria-label="Mode"><button type="button" aria-pressed="true">Prepare</button><button type="button" aria-pressed="false">Live</button></div>
+      <div class="tr" role="toolbar" aria-label="View">
+        <span class="save" role="status" data-not="saveerr imported"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Saved automatically</span>
+        <span class="save" data-only="imported">Imported Nov 12</span>
+        <span class="save err" role="status" data-only="saveerr"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg>Not saved</span>
+        
+        <button class="tb" type="button" aria-label="Outputs" title="Outputs"><svg class="ic" aria-hidden="true"><use href="#i-display"/></svg></button>
+        <label class="search" style="width:160px"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="sr">Search service and library</span><input type="search" placeholder="Search"></label>
+        
+      </div>
+    </header>
+    <div class="banner" role="alert" data-only="saveerr"><svg class="ic" aria-hidden="true"><use href="#i-warn"/></svg><span><b>Your last change was not saved.</b> The library folder can't be written right now. Your slides stay open here; nothing is lost.</span><span class="sp"></span><button class="push" type="button">Try Again</button><button class="push" type="button">Show Library Folder</button></div>
+    <div class="work">
+      <div class="editbar">
+      <span class="anchor" data-not="imported empty"><button class="pop" type="button" id="thbtn" aria-haspopup="menu" aria-expanded="false"><span class="l2">Theme</span>Clean Dark<svg class="ud" aria-hidden="true"><use href="#i-ud"/></svg></button><div class="menu" id="thmenu" role="menu" aria-label="Theme" data-only="theme" style="left:0;top:30px;width:320px">
+    <p class="mh" aria-hidden="true">Theme for every slide of this presentation</p>
+    <button role="menuitemradio" aria-checked="true" type="button" class="hot" style="gap:10px;padding:5px 8px">
+      <span class="sl chkbg" style="--sw:64px;" aria-hidden="true"><span class="el" style="inset:0;font-weight:700;font-size:11px;">Aa</span></span>
+      <span class="two">Clean Dark<small>No background · centered white text</small></span><svg class="ic" aria-hidden="true" style="margin-left:auto"><use href="#i-check"/></svg></button><button role="menuitemradio" aria-checked="false" type="button" style="gap:10px;padding:5px 8px">
+      <span class="sl chkbg" style="--sw:64px;" aria-hidden="true"><span class="el" style="inset:0;font-weight:700;font-size:11px;align-items:flex-end;padding-bottom:4px;font-size:8px">Aa</span></span>
+      <span class="two">Lower Third<small>Text at the bottom, for video</small></span></button><button role="menuitemradio" aria-checked="false" type="button" style="gap:10px;padding:5px 8px">
+      <span class="sl chkbg" style="--sw:64px;" aria-hidden="true"><span class="el" style="inset:0;font-weight:700;font-size:11px;">AA</span></span>
+      <span class="two">Bold Center<small>Large bold titles</small></span></button><button role="menuitemradio" aria-checked="false" type="button" style="gap:10px;padding:5px 8px">
+      <span class="sl " style="--sw:64px;background:#FFFFFF;color:#1C1C1C" aria-hidden="true"><span class="el" style="inset:0;font-weight:700;font-size:11px;;text-shadow:none">Aa</span></span>
+      <span class="two">Soft Light<small>Dark text on a light background</small></span></button>
+    <hr><p class="mf">Changing the theme restyles every slide here; your text and pictures stay.</p>
+  </div></span>
+      <span class="l2" style="font-size:12px;display:inline-flex;align-items:center;gap:6px" data-not="imported empty"><span class="chk" aria-hidden="true"></span>No background</span>
+      <span class="vsep" aria-hidden="true" data-not="imported empty"></span>
+      <button class="push" type="button" data-not="imported empty" aria-haspopup="menu"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Add to Slide<svg class="chev" aria-hidden="true"><use href="#i-chevd"/></svg></button>
+      <span data-only="imported" style="display:inline-flex;align-items:center;gap:8px"><span class="l2" style="font-size:12px">Slide size</span>
+        <div class="seg" role="group" aria-label="Slide size on the screens" data-scalegroup><button type="button" aria-pressed="true" data-scale="fit">Fit</button><button type="button" aria-pressed="false" data-scale="fill">Fill</button><button type="button" aria-pressed="false" data-scale="stretch">Stretch</button></div>
+        <span class="help" data-scalehelp="fit">Whole slide; transparent sides</span><span class="help" data-scalehelp="fill" hidden>Covers the screen; top and bottom cut off</span><span class="help" data-scalehelp="stretch" hidden>Covers the screen, pulled wider</span></span>
+      <span class="sp"></span>
+      <span class="ctx" data-not="image imported empty">Slide <b>6</b> of 8 · Title + Text · <button class="linkbtn" type="button">Change Layout</button></span>
+      <span class="ctx" data-only="image">Slide <b>3</b> of 8 · Image + Caption · <button class="linkbtn" type="button">Change Layout</button></span>
+      <span class="ctx" data-only="imported">Slide <b>1</b> of 6</span>
+      <span class="ctx" data-only="empty">Step 1 of 2 · choose a layout</span>
+      <button class="tb" type="button" aria-label="Undo" title="Undo ⌘Z" data-not="imported"><svg class="ic" aria-hidden="true"><use href="#i-undo"/></svg></button>
+    </div>
+      <div class="body"><div class="col"><main class="stage" aria-label="Slide">
+      <div class="cwrap" data-not="image imported empty"><div class="canvas" style="width:940px"><div class="sl chkbg" style="--sw:940px" role="img" aria-label="Slide: Hope That Holds"><div class="el tt-title ed"><span>Hope That Holds</span></div><div class="el tt-body ed sel"><ul><li>1 · Hope looks forward</li><li>2 · Hope stays steady</li><li>3 · Hope brings us together<span class="caret" aria-hidden="true"></span></li></ul></div></div><div class="ft" role="toolbar" aria-label="Text" style="left:131.60000000000002px;top:430.58750000000003px">
+      <button class="fb" type="button" aria-label="Smaller text" title="Smaller"><svg class="ic" aria-hidden="true"><use href="#i-smaller"/></svg></button><button class="fb" type="button" aria-label="Larger text" title="Larger"><svg class="ic" aria-hidden="true"><use href="#i-larger"/></svg></button>
+      <span class="fsep"></span>
+      <button class="fb" type="button" aria-label="Align left" aria-pressed="true"><svg class="ic" aria-hidden="true"><use href="#i-al"/></svg></button><button class="fb" type="button" aria-label="Align center" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-ac"/></svg></button><button class="fb" type="button" aria-label="Align right" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-ar"/></svg></button>
+      <span class="fsep"></span><span class="fl">Font and color from the theme</span>
+      <span class="fsep"></span><button class="fb" type="button" aria-label="Clear this text" title="Clear Text"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg></button></div></div></div>
+      <div class="cwrap" data-only="image"><div class="canvas" style="width:940px"><div class="sl chkbg" style="--sw:940px" role="img" aria-label="Slide: Food drive · canned goods by Nov 30"><div class="el ic-img ed sel"><div class="pic g1 "><svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><rect x="30" y="42" width="22" height="34" rx="3"/><rect x="58" y="34" width="22" height="42" rx="3"/><rect x="86" y="46" width="22" height="30" rx="3"/><rect x="114" y="38" width="22" height="38" rx="3"/><path d="M0 76h160" /></svg></div><i class="hd htl"></i><i class="hd htr"></i><i class="hd hbl"></i><i class="hd hbr"></i></div><div class="el ic-cap ed"><span>Food drive · canned goods by Nov 30</span></div></div><div class="ft" role="toolbar" aria-label="Image" style="left:188px;top:-12.987499999999997px">
+      <span class="anchor"><button class="fbt" type="button" id="imgbtn" aria-haspopup="dialog" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Replace…</button><section class="pop-panel picker" id="picker" aria-label="Choose an Image" data-only="image" style="left:0;top:40px;width:500px">
+    <h2><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Choose an Image<span class="sp"></span><span class="help">From the media bin</span></h2>
+    <div class="fbar"><label class="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="sr">Search images</span><input type="search" placeholder="Search Images"></label><button class="push" type="button"><svg class="ic" aria-hidden="true"><use href="#i-import"/></svg>Import…</button></div>
+    <div class="mgrid" role="list" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+      <button type="button" role="listitem" aria-pressed="true"><span class="th "><div class="pic g1 "><svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><rect x="30" y="42" width="22" height="34" rx="3"/><rect x="58" y="34" width="22" height="42" rx="3"/><rect x="86" y="46" width="22" height="30" rx="3"/><rect x="114" y="38" width="22" height="38" rx="3"/><path d="M0 76h160" /></svg></div></span><span class="nm">lobby-food-drive.jpg</span><span class="mt">3000 × 2000</span></button><button type="button" role="listitem" aria-pressed="false"><span class="th "><div class="pic g2 "><svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><path d="M0 70 C30 52 50 60 80 50 S130 40 160 54 V90 H0z"/><circle cx="120" cy="22" r="9"/><path d="M34 62v-16M26 50l8-10 8 10" /></svg></div></span><span class="nm">fall-picnic.jpg</span><span class="mt">4032 × 3024</span></button><button type="button" role="listitem" aria-pressed="false"><span class="th chkbg"><div class="pic g3 "><svg viewBox="0 0 160 90"><circle cx="80" cy="45" r="22"/><path d="M80 31v28M70 41h20"/></svg></div></span><span class="nm">church-logo.png</span><span class="mt">Transparent</span></button><button type="button" role="listitem" aria-pressed="false"><span class="th "><div class="pic g2 "><svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><path d="M0 70 C30 52 50 60 80 50 S130 40 160 54 V90 H0z"/><circle cx="120" cy="22" r="9"/><path d="M34 62v-16M26 50l8-10 8 10" /></svg></div></span><span class="nm">youth-night.jpg</span><span class="mt">1920 × 1080</span></button><button type="button" role="listitem" aria-pressed="false"><span class="th "><div class="pic g1 "><svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><rect x="30" y="42" width="22" height="34" rx="3"/><rect x="58" y="34" width="22" height="42" rx="3"/><rect x="86" y="46" width="22" height="30" rx="3"/><rect x="114" y="38" width="22" height="38" rx="3"/><path d="M0 76h160" /></svg></div></span><span class="nm">coffee-corner.jpg</span><span class="mt">2400 × 1600</span></button><button type="button" role="listitem" aria-pressed="false"><span class="th "><div class="pic g2 "><svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><path d="M0 70 C30 52 50 60 80 50 S130 40 160 54 V90 H0z"/><circle cx="120" cy="22" r="9"/><path d="M34 62v-16M26 50l8-10 8 10" /></svg></div></span><span class="nm">sunrise-hills.jpg</span><span class="mt">3840 × 2160</span></button>
+    </div>
+    <div class="pfoot"><span class="help">Or drag a picture from Finder onto the slide.</span><span class="sp"></span><button class="push" type="button">Cancel</button><button class="push primary" type="button">Use Image<span class="kbd">↩</span></button></div>
+  </section></span>
+      <span class="fsep"></span>
+      <div class="seg" role="group" aria-label="Image fit"><button type="button" aria-pressed="true">Fit</button><button type="button" aria-pressed="false">Fill</button><button type="button" aria-pressed="false">Stretch</button></div>
+      <span class="fsep"></span><button class="fb" type="button" aria-label="Remove image" title="Remove Image"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg></button></div></div></div>
+      <div class="cwrap" data-only="imported"><div class="canvas" style="width:940px"><div class="sl chkbg imported" style="--sw:940px" data-scaling="fit" role="img" aria-label="Imported slide 1: Missions Update, a picture of the Keynote slide">
+    <div class="imp"><div class="imp-band"></div><b>Missions Update</b><span>November 2026</span><i class="imp-dots"><em></em><em></em><em></em></i></div></div><div class="ft imp" role="toolbar" aria-label="Imported slide" style="left:50%;transform:translateX(-50%);top:474.75px">
+      <svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg><span class="fl" style="color:var(--label)">Picture of a Keynote slide. To change it, edit it in Keynote and import it again.</span>
+      <button class="fbt" type="button"><svg class="ic" aria-hidden="true"><use href="#i-open"/></svg>Edit in Keynote</button><button class="fbt" type="button"><svg class="ic" aria-hidden="true"><use href="#i-import"/></svg>Import Again…</button></div></div></div>
+      <div class="gallery" data-only="empty">
+        <h2>What goes on your first slide?</h2>
+        <p class="help" style="font-size:13px">Pick a layout. You type straight onto the slide afterwards; the theme takes care of fonts and positions.</p>
+        <div class="themes" role="radiogroup" aria-label="Theme"><span class="lbl">Theme</span><button type="button" role="radio" aria-checked="true">Clean Dark</button><button type="button" role="radio" aria-checked="false">Lower Third</button><button type="button" role="radio" aria-checked="false">Bold Center</button><button type="button" role="radio" aria-checked="false">Soft Light</button><span class="chk" aria-hidden="true"></span><span class="help">Checkerboard = no background (transparent)</span></div>
+        <div class="galg big"><button type="button" class="gcard hot"><div class="sl chkbg" style="--sw:192px" role="img" aria-label="Title layout preview"><div class="el t-title"><span>Your title</span></div><div class="el t-sub"><span>A short line</span></div></div><b>Title</b><span>A big title and a short line under it</span></button><button type="button" class="gcard"><div class="sl chkbg" style="--sw:192px" role="img" aria-label="Title + Text layout preview"><div class="el tt-title"><span>Your title</span></div><div class="el tt-body"><ul><li>First point</li><li>Second point</li></ul></div></div><b>Title + Text</b><span>A title and a few lines, such as a list</span></button><button type="button" class="gcard"><div class="sl chkbg" style="--sw:192px" role="img" aria-label="Text only layout preview"><div class="el x-body"><span>Your text here</span></div></div><b>Text only</b><span>Centered text, such as a quote</span></button><button type="button" class="gcard"><div class="sl chkbg" style="--sw:192px" role="img" aria-label="Image + Caption layout preview"><div class="el ic-img"><div class="pic g3 "><svg viewBox="0 0 160 90"><circle cx="80" cy="45" r="22"/><path d="M80 31v28M70 41h20"/></svg></div></div><div class="el ic-cap"><span>Your caption</span></div></div><b>Image + Caption</b><span>A picture with one line under it</span></button><button type="button" class="gcard"><div class="sl chkbg" style="--sw:192px" role="img" aria-label="Image full layout preview"><div class="el if-img"><div class="pic g2 "><svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><path d="M0 70 C30 52 50 60 80 50 S130 40 160 54 V90 H0z"/><circle cx="120" cy="22" r="9"/><path d="M34 62v-16M26 50l8-10 8 10" /></svg></div></div></div><b>Image full</b><span>One picture that fills the screen</span></button></div>
+        <p class="help" style="font-size:12px">Already have slides in Keynote, PowerPoint or PDF? <button class="linkbtn" type="button">Import them instead…</button></p>
+      </div>
+      <div class="notesline" data-not="imported empty image"><button class="nt" type="button" aria-expanded="false" aria-controls="n6"><svg class="ic" aria-hidden="true"><use href="#i-notes"/></svg>Speaker notes</button><span class="np" id="n6">Show point 1 first; the speaker says &quot;next&quot; for each point.</span><span class="help">Stage screen only</span></div>
+      <div class="notesline" data-only="image"><button class="nt" type="button" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-notes"/></svg>Speaker notes</button><span class="np l2">No notes yet. Click to add one.</span><span class="help">Stage screen only</span></div>
+      <div class="notesline" data-only="imported"><span class="nt"><svg class="ic" aria-hidden="true"><use href="#i-notes"/></svg>Speaker notes</span><span class="np">Thank the missions team by name before slide 2.</span><span class="help">From Keynote</span></div>
+    </main><nav class="film" aria-label="Slides" data-not="empty">
+      <ol role="listbox" aria-label="Slides of Sunday Morning Slides" aria-orientation="horizontal" data-not="imported"><li><button class="fs" type="button" role="option" data-selin="" aria-selected="false" aria-label="Slide 1, Title"><div class="sl chkbg" style="--sw:116px" role="img" aria-label="Slide: Welcome Home"><div class="el t-title"><span>Welcome Home</span></div><div class="el t-sub"><span>We're glad you're here</span></div></div><span class="n num">1</span></button></li><li><button class="fs" type="button" role="option" data-selin="" aria-selected="false" aria-label="Slide 2, Title + Text"><div class="sl chkbg" style="--sw:116px" role="img" aria-label="Slide: This Week"><div class="el tt-title"><span>This Week</span></div><div class="el tt-body"><ul><li>Youth night · Friday 7 pm</li><li>Prayer breakfast · Saturday 8 am</li><li>Food drive · drop-off in the lobby</li></ul></div></div><span class="n num">2</span></button></li><li><button class="fs" type="button" role="option" data-selin="image" aria-selected="false" aria-label="Slide 3, Image + Caption"><div class="sl chkbg" style="--sw:116px" role="img" aria-label="Slide: Food drive · canned goods by Nov 30"><div class="el ic-img"><div class="pic g1 "><svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><rect x="30" y="42" width="22" height="34" rx="3"/><rect x="58" y="34" width="22" height="42" rx="3"/><rect x="86" y="46" width="22" height="30" rx="3"/><rect x="114" y="38" width="22" height="38" rx="3"/><path d="M0 76h160" /></svg></div></div><div class="el ic-cap"><span>Food drive · canned goods by Nov 30</span></div></div><span class="n num">3</span></button></li><li><button class="fs" type="button" role="option" data-selin="" aria-selected="false" aria-label="Slide 4, Title"><div class="sl chkbg" style="--sw:116px" role="img" aria-label="Slide: Hope That Holds"><div class="el t-title"><span>Hope That Holds</span></div><div class="el t-sub"><span>A message by Daniel Price</span></div></div><span class="n num">4</span></button></li><li><button class="fs" type="button" role="option" data-selin="" aria-selected="false" aria-label="Slide 5, Title + Text"><div class="sl chkbg" style="--sw:116px" role="img" aria-label="Slide: Read together · Book 2:4"><div class="el tt-title"><span>Read together · Book 2:4</span></div><div class="el tt-body"><ul><li>“Hold on to hope;</li><li>it holds on to you.”</li></ul></div></div><span class="n num">5</span></button></li><li><button class="fs" type="button" role="option" data-selin="edit layouts theme saveerr newlib newsvc deleted" aria-selected="true" aria-label="Slide 6, Title + Text"><div class="sl chkbg" style="--sw:116px" role="img" aria-label="Slide: Hope That Holds"><div class="el tt-title"><span>Hope That Holds</span></div><div class="el tt-body"><ul><li>1 · Hope looks forward</li><li>2 · Hope stays steady</li><li>3 · Hope brings us together</li></ul></div></div><span class="n num">6</span></button></li><li data-not="deleted"><button class="fs" type="button" role="option" data-selin="" aria-selected="false" aria-label="Slide 7, Image full"><div class="sl chkbg" style="--sw:116px" role="img" aria-label="Slide: fall-picnic.jpg"><div class="el if-img"><div class="pic g2 "><svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><path d="M0 70 C30 52 50 60 80 50 S130 40 160 54 V90 H0z"/><circle cx="120" cy="22" r="9"/><path d="M34 62v-16M26 50l8-10 8 10" /></svg></div></div></div><span class="n num">7</span></button></li><li><button class="fs" type="button" role="option" data-selin="" aria-selected="false" aria-label="Slide 8, Text only"><div class="sl chkbg" style="--sw:116px" role="img" aria-label="Slide: Have a great week! See you next Sunday at 10:00"><div class="el shape"></div><div class="el x-body"><span>Have a great week!<br>See you next Sunday at 10:00</span></div></div><span class="n num">8</span></button></li><li class="addli"><span class="anchor"><button class="addcard" type="button" id="laybtn" aria-haspopup="dialog" aria-expanded="false" aria-keyshortcuts="Shift+Meta+N"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg><span>Add Slide</span><span class="kbd">⇧⌘N</span></button>
+      <section class="pop-panel gal" aria-label="Choose a layout" data-only="layouts" style="right:0;bottom:calc(100% + 6px)">
+        <h2>Add a slide after slide 6<span class="sp"></span><span class="help">Uses the theme Clean Dark</span></h2>
+        <div class="galg"><button type="button" class="gcard"><div class="sl chkbg" style="--sw:160px" role="img" aria-label="Title layout preview"><div class="el t-title"><span>Your title</span></div><div class="el t-sub"><span>A short line</span></div></div><b>Title</b><span>A big title and a short line under it</span></button><button type="button" class="gcard hot"><div class="sl chkbg" style="--sw:160px" role="img" aria-label="Title + Text layout preview"><div class="el tt-title"><span>Your title</span></div><div class="el tt-body"><ul><li>First point</li><li>Second point</li></ul></div></div><b>Title + Text</b><span>A title and a few lines, such as a list</span></button><button type="button" class="gcard"><div class="sl chkbg" style="--sw:160px" role="img" aria-label="Text only layout preview"><div class="el x-body"><span>Your text here</span></div></div><b>Text only</b><span>Centered text, such as a quote</span></button><button type="button" class="gcard"><div class="sl chkbg" style="--sw:160px" role="img" aria-label="Image + Caption layout preview"><div class="el ic-img"><div class="pic g3 "><svg viewBox="0 0 160 90"><circle cx="80" cy="45" r="22"/><path d="M80 31v28M70 41h20"/></svg></div></div><div class="el ic-cap"><span>Your caption</span></div></div><b>Image + Caption</b><span>A picture with one line under it</span></button><button type="button" class="gcard"><div class="sl chkbg" style="--sw:160px" role="img" aria-label="Image full layout preview"><div class="el if-img"><div class="pic g2 "><svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><path d="M0 70 C30 52 50 60 80 50 S130 40 160 54 V90 H0z"/><circle cx="120" cy="22" r="9"/><path d="M34 62v-16M26 50l8-10 8 10" /></svg></div></div></div><b>Image full</b><span>One picture that fills the screen</span></button></div>
+      </section></span></li></ol>
+      <ol role="listbox" aria-label="Slides of Missions Update" aria-orientation="horizontal" data-only="imported"><li><button class="fs" type="button" role="option" aria-selected="true" aria-label="Imported slide 1"><div class="sl chkbg imported" style="--sw:116px" data-scaling="fit" role="img" aria-label="Imported slide 1: Missions Update, a picture of the Keynote slide">
+    <div class="imp"><div class="imp-band"></div><b>Missions Update</b><span>November 2026</span><i class="imp-dots"><em></em><em></em><em></em></i></div></div><span class="n num">1</span></button></li><li><button class="fs" type="button" role="option" aria-selected="false" aria-label="Imported slide 2"><div class="sl chkbg imported" style="--sw:116px" data-scaling="fit" role="img" aria-label="Imported slide 2: Our partners, a picture of the Keynote slide">
+    <div class="imp"><div class="imp-band"></div><b>Our partners</b><span>Three teams, one mission</span><i class="imp-dots"><em></em><em></em><em></em></i></div></div><span class="n num">2</span></button></li><li><button class="fs" type="button" role="option" aria-selected="false" aria-label="Imported slide 3"><div class="sl chkbg imported" style="--sw:116px" data-scaling="fit" role="img" aria-label="Imported slide 3: Clean water, a picture of the Keynote slide">
+    <div class="imp"><div class="imp-band"></div><b>Clean water</b><span>12 wells this year</span><i class="imp-dots"><em></em><em></em><em></em></i></div></div><span class="n num">3</span></button></li><li><button class="fs" type="button" role="option" aria-selected="false" aria-label="Imported slide 4"><div class="sl chkbg imported" style="--sw:116px" data-scaling="fit" role="img" aria-label="Imported slide 4: Meet the team, a picture of the Keynote slide">
+    <div class="imp"><div class="imp-band"></div><b>Meet the team</b><span>Monterrey · Accra · Manila</span><i class="imp-dots"><em></em><em></em><em></em></i></div></div><span class="n num">4</span></button></li><li><button class="fs" type="button" role="option" aria-selected="false" aria-label="Imported slide 5"><div class="sl chkbg imported" style="--sw:116px" data-scaling="fit" role="img" aria-label="Imported slide 5: How to give, a picture of the Keynote slide">
+    <div class="imp"><div class="imp-band"></div><b>How to give</b><span>Online, by text or in the lobby</span><i class="imp-dots"><em></em><em></em><em></em></i></div></div><span class="n num">5</span></button></li><li><button class="fs" type="button" role="option" aria-selected="false" aria-label="Imported slide 6"><div class="sl chkbg imported" style="--sw:116px" data-scaling="fit" role="img" aria-label="Imported slide 6: Thank you, a picture of the Keynote slide">
+    <div class="imp"><div class="imp-band"></div><b>Thank you</b><span>Questions? Visit the missions table</span><i class="imp-dots"><em></em><em></em><em></em></i></div></div><span class="n num">6</span></button></li></ol>
+      <p class="help fh" data-not="imported">Drag to reorder · right-click for Duplicate and Delete</p>
+      <p class="help fh" data-only="imported">The order comes from Keynote</p>
+    </nav></div></div>
+      <footer class="keybar" aria-labelledby="h-keys" data-not="imported"><h2 id="h-keys">Keyboard</h2><dl>
+      <div><dt><span class="kbd">⇧⌘N</span></dt><dd>New slide</dd></div>
+      <div><dt><span class="kbd">⇥</span></dt><dd>Next text box</dd></div>
+      <div><dt><span class="kbd">esc</span></dt><dd>Done typing</dd></div>
+      <div><dt><span class="kbd">←</span><span class="kbd">→</span></dt><dd>Previous or next slide</dd></div>
+      <div><dt><span class="kbd">⌥←</span><span class="kbd">⌥→</span></dt><dd>Move slide</dd></div>
+      <div><dt><span class="kbd">⌫</span></dt><dd>Delete slide</dd></div>
+      <div><dt><span class="kbd">⌘Z</span></dt><dd>Undo</dd></div></dl></footer>
+    <footer class="keybar" data-only="imported"><h2>Keyboard</h2><dl><div><dt><span class="kbd">←</span><span class="kbd">→</span></dt><dd>Previous or next slide</dd></div><div><dt><span class="kbd">⌘1</span><span class="kbd">⌘2</span><span class="kbd">⌘3</span></dt><dd>Fit, Fill, Stretch</dd></div></dl></footer>
+    </div>
+    <div class="toast" role="status" data-only="deleted" style="left:50%;transform:translateX(-50%);bottom:190px">Slide 7 deleted<button class="push" type="button"><svg class="ic" aria-hidden="true"><use href="#i-undo"/></svg>Undo<span class="kbd">⌘Z</span></button></div>
+  </div>
+</div>
+<aside class="demo" aria-label="Design preview controls, not part of the app"><details><summary>Design preview: states and appearance</summary><div class="opts">
+    <div><span>State</span><div class="seg" role="group" aria-label="State" id="demo-state"><button type="button" aria-pressed="true" data-s="edit">Editing text</button><button type="button" aria-pressed="false" data-s="layouts">Add Slide menu</button><button type="button" aria-pressed="false" data-s="image">Choose image</button><button type="button" aria-pressed="false" data-s="theme">Theme menu</button><button type="button" aria-pressed="false" data-s="imported">Imported deck</button><button type="button" aria-pressed="false" data-s="empty">New, empty</button><button type="button" aria-pressed="false" data-s="newlib">Library + menu</button><button type="button" aria-pressed="false" data-s="newsvc">Service + menu</button><button type="button" aria-pressed="false" data-s="deleted">Slide deleted</button><button type="button" aria-pressed="false" data-s="saveerr">Save failed</button></div></div>
+    <div><span>Appearance</span><div class="seg" role="group" aria-label="Appearance" id="demo-app"><button type="button" aria-pressed="true" data-a="midnight">Midnight</button><button type="button" aria-pressed="false" data-a="graphite">Graphite</button><button type="button" aria-pressed="false" data-a="black">Black</button></div></div>
+  </div></details></aside>
+  <p class="sr" aria-live="polite" id="say"></p>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var SAY={"edit":"Editing the title of slide 2. Changes are saved automatically.","layouts":"Choose a layout menu open.","image":"Choose an Image open.","theme":"Theme menu open.","imported":"Missions Update: imported from Keynote, read-only.","empty":"New Presentation, no slides yet. Choose a layout for the first slide.","newlib":"New Presentation menu open.","newsvc":"Add to Service menu open.","deleted":"Slide 7 deleted. Command Z undoes it.","saveerr":"Your last change was not saved."};
+  var SEL={imported:"mis",empty:"new"};
+  var MENU={layouts:"#laymenu button",newlib:"#libmenu button",newsvc:"#svcmenu button",theme:"#thmenu button",image:"#picker input"};
+  var TRIG={layouts:"laybtn",newlib:"libadd",newsvc:"svcadd",theme:"thbtn",image:"imgbtn"};
+  var st="edit";
+  function pick(g,attr,fn){g.addEventListener("click",function(e){var b=e.target.closest("button");if(!b||!b.dataset[attr])return;
+    [].forEach.call(g.querySelectorAll("button[data-"+attr+"]"),function(o){o.setAttribute("aria-pressed",String(o===b))});fn(b.dataset[attr])})}
+  function render(){
+    [].forEach.call(document.querySelectorAll("[data-only]"),function(el){el.hidden=el.dataset.only.split(" ").indexOf(st)<0});
+    [].forEach.call(document.querySelectorAll("[data-not]"),function(el){el.hidden=el.dataset.not.split(" ").indexOf(st)>=0});
+    document.documentElement.dataset.st=st;
+    [].forEach.call(document.querySelectorAll("[data-selin]"),function(b){b.setAttribute("aria-selected",String(b.dataset.selin.split(" ").indexOf(st)>=0))});
+    var sel=SEL[st]||"ann";
+    [].forEach.call(document.querySelectorAll("#libl [data-p]"),function(b){b.setAttribute("aria-selected",String(b.dataset.p===sel))});
+    Object.keys(TRIG).forEach(function(k){var t=$(TRIG[k]);if(t)t.setAttribute("aria-expanded",String(st===k))});
+    $("say").textContent=SAY[st]||"";
+    [].forEach.call(document.querySelectorAll("[data-disin]"),function(b){b.disabled=b.dataset.disin.split(" ").indexOf(st)>=0});
+    if(MENU[st]){var f=document.querySelector(MENU[st]+".hot")||document.querySelector(MENU[st]);if(f)f.focus({preventScroll:true})}
+  }
+  function go(s){var b=document.querySelector('#demo-state [data-s="'+s+'"]');if(b)b.click()}
+  pick($("demo-state"),"s",function(s){st=s;render()});
+  pick($("demo-app"),"a",function(a){document.documentElement.dataset.appearance=a});
+  Object.keys(TRIG).forEach(function(k){var t=$(TRIG[k]);if(t)t.addEventListener("click",function(){go(st===k?"edit":k)})});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"&&MENU[st]){var t=$(TRIG[st]);go("edit");if(t)t.focus()}});
+  [].forEach.call(document.querySelectorAll("[data-scalegroup]"),function(g){g.addEventListener("click",function(e){var b=e.target.closest("button[data-scale]");if(!b)return;
+    [].forEach.call(document.querySelectorAll("button[data-scale]"),function(o){o.setAttribute("aria-pressed",String(o.dataset.scale===b.dataset.scale))});
+    [].forEach.call(document.querySelectorAll(".sl.imported"),function(s){s.dataset.scaling=b.dataset.scale});
+    [].forEach.call(document.querySelectorAll("[data-scalehelp]"),function(p){p.hidden=p.dataset.scalehelp!==b.dataset.scale})})});
+  var h=location.hash.slice(1);if(h)go(h);
+  render();
+})();
+</script>
+</body>
+</html>
