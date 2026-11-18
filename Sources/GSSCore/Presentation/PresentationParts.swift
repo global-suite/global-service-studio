@@ -6,20 +6,66 @@ public struct PresentationSlide: Equatable, Sendable, JSONRepresentable {
     public var label: String?
     public var elements: [PresentationElement]
     public var notes: String?
+    /// The layout the editor built the slide from; absent for imported slides (ADR 0011).
+    public var layout: PresentationSlideLayout?
+    /// Whether the slide is left out of the program; written only when `true` (ADR 0011).
+    public var hidden: Bool
     public var unknown: [String: JSONValue] = [:]
-    public init(id: String, label: String? = nil, elements: [PresentationElement], notes: String? = nil) {
+    public init(id: String, label: String? = nil, elements: [PresentationElement], notes: String? = nil,
+                layout: PresentationSlideLayout? = nil, hidden: Bool = false) {
         (self.id, self.label, self.elements, self.notes) = (id, label, elements, notes)
+        (self.layout, self.hidden) = (layout, hidden)
     }
     public init(json: JSONValue, at path: String) throws {
         var reader = try JSONObjectReader(json, at: path)
+        var hidden = false
+        if let value: JSONValue = try reader.optional("hidden") {
+            guard case .bool(let flag) = value else { throw FormatError.invalidField(path + ".hidden") }
+            hidden = flag
+        }
         try self.init(id: reader.required("id"), label: reader.optional("label"),
-                      elements: reader.required("elements"), notes: reader.optional("notes"))
+                      elements: reader.required("elements"), notes: reader.optional("notes"),
+                      layout: reader.optional("layout"), hidden: hidden)
         unknown = reader.unknown
     }
     public var json: JSONValue {
-        .object(["id": id.json, "label": label?.json, "elements": elements.json, "notes": notes?.json],
+        .object(["id": id.json, "label": label?.json, "elements": elements.json, "notes": notes?.json,
+                 "layout": layout?.json, "hidden": hidden ? .bool(true) : nil],
                 unknown: unknown)
     }
+}
+
+/// The file an imported deck came from (ADR 0011).
+public struct PresentationSource: Equatable, Sendable, JSONRepresentable {
+    public var kind: PresentationSourceKind
+    /// The last known absolute path of the file.
+    public var path: String
+    /// Security-scoped bookmark data in Base64; only the app resolves it.
+    public var bookmark: String?
+    /// The time of the last import, in UTC, in RFC 3339 form.
+    public var importedAt: String
+    public var unknown: [String: JSONValue] = [:]
+    public init(kind: PresentationSourceKind, path: String, bookmark: String? = nil, importedAt: String) {
+        (self.kind, self.path, self.bookmark, self.importedAt) = (kind, path, bookmark, importedAt)
+    }
+    public init(json: JSONValue, at path: String) throws {
+        var reader = try JSONObjectReader(json, at: path)
+        try self.init(kind: reader.required("kind"), path: reader.required("path"),
+                      bookmark: reader.optional("bookmark"), importedAt: reader.required("importedAt"))
+        unknown = reader.unknown
+    }
+    public var json: JSONValue {
+        .object(["kind": kind.json, "path": path.json, "bookmark": bookmark?.json, "importedAt": importedAt.json],
+                unknown: unknown)
+    }
+}
+
+/// The application an imported deck came from; unknown kinds are kept as written.
+public struct PresentationSourceKind: OpenStringValue {
+    public let rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public static let keynote = Self(rawValue: "keynote"), powerPoint = Self(rawValue: "powerPoint"),
+                      pdf = Self(rawValue: "pdf")
 }
 
 /// Something placed on a slide: text in a theme slot or its own frame, an image or a video.

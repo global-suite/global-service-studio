@@ -83,12 +83,14 @@ final class PresentationFormatTests: XCTestCase {
         let presentation = try decodePresentation([(#""theme": "b2a4c8d0-5e2f-4c61-8a55-90f1e7d3c421","#, "")])
         XCTAssertNil(presentation.theme)
         XCTAssertNil(presentation.slides[0].notes)
+        XCTAssertFalse(presentation.slides[0].hidden)
         XCTAssertNil(presentation.slides[0].elements[0].frame)
         XCTAssertNil(presentation.slides[0].elements[1].font)
         XCTAssertNil(presentation.slides[0].elements[1].scaling)
         XCTAssertEqual(presentation.slides[0].elements[1].effectiveScaling, .fit)
         let text = String(decoding: try presentation.encoded(), as: UTF8.self)
-        for key in ["theme", "notes", "font", "color", "align", "scaling", "externalIds", "extensions"] {
+        for key in ["theme", "notes", "font", "color", "align", "scaling", "externalIds", "extensions",
+                    "layout", "hidden", "source"] {
             XCTAssertFalse(text.contains("\"\(key)\""), key)
         }
     }
@@ -114,6 +116,44 @@ final class PresentationFormatTests: XCTestCase {
         let element = try decodePresentation(edits).slides[0].elements[1]
         XCTAssertEqual(element.scaling, PresentationImageScaling(rawValue: "zoom-blur"))
         XCTAssertEqual(element.effectiveScaling, .fit)
+    }
+
+    private let deckEdits = [
+        (#""label": "Welcome","#, #""label": "Welcome", "layout": "titleText", "hidden": true,"#),
+        (#""title": "Welcome","#, #""title": "Welcome", "source": { "kind": "keynote", "path": "/Decks/Demo.key", "bookmark": "Ym9vaw==", "importedAt": "2026-11-18T14:30:00Z", "x-src": 1 },"#),
+    ]
+
+    func testLayoutHiddenAndSourceRoundTrip() throws {
+        try assertRoundTrips(deckEdits)
+        let presentation = try decodePresentation(deckEdits)
+        XCTAssertEqual(presentation.slides[0].layout, .titleText)
+        XCTAssertTrue(presentation.slides[0].hidden)
+        let source = try XCTUnwrap(presentation.source)
+        XCTAssertEqual(source.kind, .keynote)
+        XCTAssertEqual(source.path, "/Decks/Demo.key")
+        XCTAssertEqual(source.bookmark, "Ym9vaw==")
+        XCTAssertEqual(source.importedAt, "2026-11-18T14:30:00Z")
+        XCTAssertEqual(source.unknown, ["x-src": .integer(1)])
+    }
+
+    func testUnknownLayoutAndSourceKindSurvive() throws {
+        let edits = deckEdits + [(#""titleText""#, #""split""#), (#""keynote""#, #""slidesApp""#)]
+        try assertRoundTrips(edits)
+        let presentation = try decodePresentation(edits)
+        XCTAssertEqual(presentation.slides[0].layout, PresentationSlideLayout(rawValue: "split"))
+        XCTAssertEqual(presentation.source?.kind, PresentationSourceKind(rawValue: "slidesApp"))
+    }
+
+    func testHiddenIsWrittenOnlyWhenTrue() throws {
+        var presentation = try decodePresentation(deckEdits)
+        presentation.slides[0].hidden = false
+        XCTAssertFalse(String(decoding: try presentation.encoded(), as: UTF8.self).contains("hidden"))
+        assertPresentationDecodeThrows(.invalidField("slides[0].hidden"),
+                                       [(#""label": "Welcome","#, #""label": "Welcome", "hidden": "yes","#)])
+    }
+
+    func testSourceMissingPathReportsItsKeyPath() {
+        assertPresentationDecodeThrows(.missingField("source.path"), deckEdits + [(#""path": "/Decks/Demo.key", "#, "")])
     }
 
     func testNewerVersionIsRejected() {
