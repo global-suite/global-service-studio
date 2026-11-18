@@ -14,6 +14,7 @@ An ADR records one significant decision: what was decided, why, and what it cost
 | [0008](0008-media-layer-key-output-and-video.md) | Media layer, key output and video playback | Accepted |
 | [0009](0009-service-plan-format.md) | Service plan format details | Accepted |
 | [0010](0010-importing-keynote-powerpoint-and-pdf.md) | Importing Keynote, PowerPoint and PDF slides | Accepted |
+| [0011](0011-text-slides-layouts-and-editing-imported-decks.md) | Text slides, layouts and editing imported decks | Accepted |
 
 ## Adding one
 

@@ -72,6 +72,8 @@ The library folder layout, the GRDB and FTS5 search index, how it stays consiste
 
 Keynote, PowerPoint and PDF decks are imported as presentations of full-frame slide images, rendered from a PDF; the pipeline and the `scaling` field are decided in [ADR 0010](adr/0010-importing-keynote-powerpoint-and-pdf.md).
 
+Slides created in the app use layouts that fill the theme's `title`, `body` and `caption` slots, and slides can be hidden; how layouts, hidden slides and updating an imported deck from its source file are stored is decided in [ADR 0011](adr/0011-text-slides-layouts-and-editing-imported-decks.md).
+
 ## Localization
 
 English is the base language and Spanish ships alongside it from the first release. No user-facing string is hard-coded. See [localization](localization.md).
