@@ -51,6 +51,21 @@ Also part of this release:
 - Presentations with free-form slides: text, images, shapes
 - Import of plain text and OpenLyrics songs
 - Keyboard shortcuts for running a whole service
+- A locked Live mode for volunteers: run the service without editing or leaving Live
+
+### Reliability gate
+
+Maturity comes before quantity: a feature enters only when it is stable, tested and recoverable after a failure. Before the first release, and before any Phase 1 feature that is not already in progress, the app must:
+
+1. Keep file, database and decoding work off the main thread, with the compiler checking it ([ADR 0012](adr/0012-concurrency-policy.md)).
+2. Measure the outputs on the Intel test machine, and keep them running when the operator window stalls.
+3. Log what happens, detect a stalled main thread, and let the operator build a problem report that stays on the Mac until they send it.
+4. Resume a service after a crash, autosave without overwriting changes made elsewhere, watch the library folder, back it up on a schedule, and relink missing media ([ADR 0013](adr/0013-recovery.md)).
+5. Put limits on every importer, so a damaged or hostile file cannot stop the app.
+6. Ship as a signed, notarized app.
+7. Run a two-hour service on the Intel test machine without a dropped frame, and run the tests with the thread sanitizer and on Intel.
+
+Features already built stay, and must pass the same gate. The reasons and the evidence are in the [architecture research](research/mxu-architecture.md).
 
 ## Phase 2: Real church
 
@@ -64,8 +79,8 @@ Also part of this release:
 
 ## Phase 3: Control
 
-- Local remote-control API
-- Remote app for iPhone
+- Local remote-control API, reachable only from the same Mac until local network access is turned on
+- Web remote that runs in any phone's browser, then a native iPhone app
 - Macros and slide actions
 - Keyboard shortcuts and control surfaces
 
@@ -79,8 +94,8 @@ Also part of this release:
 
 ## Phase 5: Ecosystem
 
-- Service planning integrations
-- Linking several computers
+- Integrations, in this order: Planning Center, OBS, and Global Connect, the church management system built alongside this project
+- Campus link: the computers of one campus (projection, stage, a laptop for the speaker, a laptop for the band) share one library of songs, themes and templates over the local network, each keeping a full copy that works offline. A computer can follow the live service or run at its own pace. Syncing through the internet is decided after the local link works, and sharing a library between churches is an idea for later
 - Timeline and timecode
 - Edge blending and masks
 - Bibles, starting with public domain translations and an import system

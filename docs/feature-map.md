@@ -32,6 +32,9 @@ Phase **–** means the feature is deliberately out of scope for now.
 | Playlists | The order of service, as a list of songs and presentations | 1 |
 | Slide grid | See every slide; click one to send it live | 1 |
 | Clear actions | Clear the slide, the background, or everything | 1 |
+| Crash recovery | Resume the service where it stopped after the app quits unexpectedly | 1 |
+| Autosave and backups | Save changes without overwriting edits made elsewhere, and keep scheduled backups of the library | 1 |
+| Missing media | Mark slides whose media is missing and relink it by content, whatever its file name | 1 |
 | Media bin | Images and videos ready to use as backgrounds | 1 |
 | Full-screen video | Play a video with sound and playback controls | 1 |
 | PDF documents | Show the pages of a PDF as slides | 1 |
@@ -68,14 +71,16 @@ Phase **–** means the feature is deliberately out of scope for now.
 | Feature | What it does | Phase |
 |---|---|---|
 | Keyboard shortcuts | Run a whole service from the keyboard | 1 |
+| Locked Live mode | Let a volunteer run the service without editing or leaving Live | 1 |
 | Remote-control API | Control the app from other software on the network | 3 |
-| iPhone remote | Advance slides and send messages from a phone | 3 |
+| Web remote | Advance slides and send messages from any phone's browser | 3 |
+| iPhone remote | A native app for the same, after the web remote | 3 |
 | Slide actions | Trigger something when a slide goes live | 3 |
 | Macros | Run several actions with one trigger | 3 |
 | Control surfaces | Trigger actions from hardware button decks | 3 |
 | MIDI | Control and be controlled over MIDI | 4 |
 | DMX | Trigger lighting cues | 4 |
-| Network link | Keep several computers in step | 5 |
+| Network link | Let the computers of a campus follow the live service; each can follow or run at its own pace | 5 |
 | Timecode | Follow an external timecode source | 5 |
 
 ## Import and integrations
@@ -90,11 +95,14 @@ Phase **–** means the feature is deliberately out of scope for now.
 | Deck editing | Edit an imported deck inside the app | 2 |
 | CCLI number and song credits | Show license and copyright details on slides | 2 |
 | Song usage log | Export what was sung, for license reporting | 2 |
-| Service planning integration | Pull the order of service from a planning tool | 5 |
+| Service planning integration | Pull the order of service from Planning Center, then from Global Connect | 5 |
+| OBS integration | Trigger OBS actions from slides and macros | 5 |
+| Campus library sync | Keep the songs, themes and templates of a campus's computers in step over the local network, each with a full offline copy | 5 |
 | Commercial song catalogue integration | Search and import from inside the app | – |
-| Cloud sync | Sync a library through a hosted service | – |
+| Cloud sync | Sync a campus library through the internet | – |
+| Shared library between churches | Publish a library that several churches use | – |
 
-A commercial catalogue integration is out of scope because no partner program is currently open to new integrators. The [song import strategy](song-import.md) explains what is done instead. A library is a folder of plain files, so it can already be synced with any file-sync tool.
+A commercial catalogue integration is out of scope because no partner program is currently open to new integrators. The [song import strategy](song-import.md) explains what is done instead. A library is a folder of plain files, so it can already be synced with any file-sync tool. Campus library sync comes after the first release; whether it also runs through the internet, and how computers then identify themselves, is decided once the local link works. A library shared between churches is an idea for later.
 
 ## Platform
 
