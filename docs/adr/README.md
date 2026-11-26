@@ -16,6 +16,7 @@ An ADR records one significant decision: what was decided, why, and what it cost
 | [0010](0010-importing-keynote-powerpoint-and-pdf.md) | Importing Keynote, PowerPoint and PDF slides | Accepted |
 | [0011](0011-text-slides-layouts-and-editing-imported-decks.md) | Text slides, layouts and editing imported decks | Accepted |
 | [0012](0012-concurrency-policy.md) | Concurrency policy | Accepted |
+| [0013](0013-recovery.md) | Recovery after crashes, conflicts and missing files | Accepted |
 
 ## Adding one
 
