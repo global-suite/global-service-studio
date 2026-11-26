@@ -136,9 +136,11 @@ final class LibraryIndexTests: XCTestCase {
         var connection: OpaquePointer?
         XCTAssertEqual(sqlite3_open(url.path, &connection), SQLITE_OK)
         XCTAssertEqual(sqlite3_exec(connection, "BEGIN EXCLUSIVE", nil, nil, nil), SQLITE_OK)
+        // Handed over to the background closure: this thread never uses the connection again.
+        nonisolated(unsafe) let locker = connection
         DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) {
-            sqlite3_exec(connection, "COMMIT", nil, nil, nil)
-            sqlite3_close(connection)
+            sqlite3_exec(locker, "COMMIT", nil, nil, nil)
+            sqlite3_close(locker)
         }
         let reopened = try LibraryIndex(library: library, at: url)
         XCTAssertEqual(try titles(reopened, "alpha"), ["Alpha Title"])

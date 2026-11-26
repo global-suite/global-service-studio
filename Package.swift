@@ -16,13 +16,14 @@ let package = Package(
     targets: [
         // Swift 6 language mode, migrated one module at a time (ADR 0012).
         .target(name: "GSSCore", swiftSettings: [.swiftLanguageMode(.v6)]),
-        .target(name: "GSSLibrary", dependencies: ["GSSCore", .product(name: "GRDB", package: "GRDB.swift")]),
+        .target(name: "GSSLibrary", dependencies: ["GSSCore", .product(name: "GRDB", package: "GRDB.swift")],
+                swiftSettings: [.swiftLanguageMode(.v6)]),
         .target(name: "GSSApp", dependencies: ["GSSCore", "GSSLibrary"], resources: [.process("Resources")]),
         .executableTarget(name: "GlobalServiceStudio", dependencies: ["GSSApp"]),
         // Developer tool that measures video playback (ADR 0008); not part of the app.
         .executableTarget(name: "GSSVideoBench"),
         .testTarget(name: "GSSCoreTests", dependencies: ["GSSCore"], swiftSettings: [.swiftLanguageMode(.v6)]),
-        .testTarget(name: "GSSLibraryTests", dependencies: ["GSSLibrary"]),
+        .testTarget(name: "GSSLibraryTests", dependencies: ["GSSLibrary"], swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "GSSAppTests", dependencies: ["GSSApp", "GSSLibrary"]),
     ],
     swiftLanguageModes: [.v5]
