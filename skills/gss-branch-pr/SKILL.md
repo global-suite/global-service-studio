@@ -4,7 +4,7 @@ description: "Trigger: branch, commit, pull request, PR, split a large change, s
 license: MIT
 metadata:
   author: global-suite
-  version: "1.1"
+  version: "1.2"
 ---
 
 ## Activation Contract
@@ -16,7 +16,8 @@ Load this skill before creating a branch, writing a commit message or opening or
 - Never commit to `main`. Name the branch `^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)\/[a-z0-9._-]+$`.
 - Write commits as Conventional Commits: `type(scope): description`.
 - Write the pull request title as a Conventional Commit too; pull requests are squash-merged.
-- Link an issue that has `status:approved` with `Closes #N`, `Fixes #N` or `Resolves #N`, or the full issue URL. References inside HTML comments are ignored; code blocks are not, so write the keyword only for the issue you mean to close.
+- Link an issue that has `status:approved` with `Closes #N`, `Fixes #N` or `Resolves #N`. The keyword is always required: a bare issue URL fails the check, and the full URL only replaces `#N` after the keyword (`Closes https://github.com/global-suite/global-service-studio/issues/N`). References inside HTML comments are ignored; code blocks are not, so write the keyword only for the issue you mean to close.
+- When several pull requests serve one issue, each writes `Closes #N`: the check reads only the `status:approved` label, so the later ones still pass after the first merge closes the issue.
 - Give the pull request exactly one label of `type:bug`, `type:feature`, `type:docs`, `type:refactor`, `type:chore`, `type:breaking-change`. If you cannot add labels, tick the type in the template.
 - Stay within 400 changed lines (additions plus deletions) unless a maintainer granted `size:exception`.
 - Keep tests and documentation in the same pull request as the behavior they cover.
