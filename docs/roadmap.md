@@ -58,7 +58,7 @@ Also part of this release:
 Maturity comes before quantity: a feature enters only when it is stable, tested and recoverable after a failure. Before the first release, and before any Phase 1 feature that is not already in progress, the app must:
 
 1. Keep file, database and decoding work off the main thread, with the compiler checking it ([ADR 0012](adr/0012-concurrency-policy.md)).
-2. Measure the outputs on the Intel test machine, and keep them running when the operator window stalls.
+2. Measure the outputs on the Intel test machine ([live measurement](live-measurement.md)), and keep them running when the operator window stalls.
 3. Log what happens, detect a stalled main thread, and let the operator build a problem report that stays on the Mac until they send it.
 4. Resume a service after a crash, autosave without overwriting changes made elsewhere, watch the library folder, back it up on a schedule, and relink missing media ([ADR 0013](adr/0013-recovery.md)).
 5. Put limits on every importer, so a damaged or hostile file cannot stop the app.
