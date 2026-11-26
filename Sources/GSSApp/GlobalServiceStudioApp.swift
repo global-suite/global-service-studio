@@ -23,6 +23,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var stageOutput = AudienceOutputController(state: state, role: .stage, operatorWindow: windowController.window)
     private lazy var backgroundMenu = BackgroundMenuController(state: state)
     private lazy var serviceMenus = ServiceMenus(state: state)
+    /// The developer measurement, only when launched with `--measure-live` (docs/live-measurement.md).
+    private var measurement: LiveMeasurement?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = NSAppearance(named: .darkAqua)
@@ -32,6 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state.perform(.openMostRecentSong)
         state.perform(.openLibraryIndex)
         NSApp.activate(ignoringOtherApps: true)
+        measurement = LiveMeasurement.startIfRequested(state: state, operatorWindow: windowController.window)
     }
 
     @objc func showSettings(_ sender: Any?) { settingsWindow.show() }
